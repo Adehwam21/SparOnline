@@ -12,6 +12,7 @@ import bodyParser from "body-parser";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import routes from "./routes/rotues";
+import { createGameServer } from "./colyseus/gameServer";
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
@@ -63,14 +64,16 @@ export default async function start(config: Config) {
     app.use("/api/v1", routes);
 
     app.use("/health", (req, res) => {
-      res.status(200).send("Greeeeeen!");
+      res.status(200).send("Greeeeeen! ✅");
     });
 
     app.use(customError);
 
-    // start server
-    app.listen(config.app.port, () => {
-      console.log(`🚀 Server ready at http://localhost:${config.app.port}`);
+    // Create and start Colyseus + Express server
+    const { server } = createGameServer(app);
+    server.listen(config.app.port, () => {
+      console.log(`🚀 Express API running at http://localhost:${config.app.port}`);
+      console.log(`🎮 Colyseus WebSocket server running on ws://localhost:${config.app.port}`);
     });
   } catch (err) {
     console.error(err);
