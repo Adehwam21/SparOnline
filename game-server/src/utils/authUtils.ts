@@ -1,8 +1,8 @@
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
-import { _User } from "types/user";
+import { _User } from "../types/user";
 
 export const hashPassword = async (password: string) => {
     const saltRounds = 12;
