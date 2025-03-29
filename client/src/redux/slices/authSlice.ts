@@ -1,41 +1,61 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-
-interface AuthState {
-    authToken: string | null,
-    isAuthenticated: boolean,
-    isGuest: boolean | null
-    loading: boolean
-
-}
+import { AuthState } from "../../types/auth";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 const initialState: AuthState = {
-  authToken: null,
   isAuthenticated: false,
-  isGuest: null,
-  loading: false
+  token: null,
+  user: null,
+  loading: false,
+  successMessage: null,
+  errorMessage: null
 };
 
 const authSlice = createSlice({
-  name: "auth",
+  name: 'auth',
   initialState,
   reducers: {
-    playAsGuest: (state, action: PayloadAction<string>) => {
-        state.authToken = action.payload;
-        state.isAuthenticated = true;
-        state.isGuest = true;
+    loginStart(state) {
+      state.loading = true;
+      state.errorMessage = null;
+      state.successMessage = null;
     },
-    loginUser: (state, action: PayloadAction<string>) => {
-        state.authToken = action.payload;
-        state.isAuthenticated = true;
-        state.isGuest = false;
+    loginSuccess(state, action: PayloadAction<{ token: string; user: AuthState['user']}>) {
+      state.loading = false;
+      state.isAuthenticated = true;
+      state.token = action.payload.token;
+      state.user = action.payload.user;
+      state.errorMessage = null;
     },
-    logout: (state) => {
-      state.authToken = null;
+
+    registerSuccess(state, action: PayloadAction<{ token: string; user: AuthState['user']}>) {
+      state.loading = false;
+      state.isAuthenticated = true;
+      state.token = action.payload.token;
+      state.user = action.payload.user;
+      state.errorMessage = null;
+    },
+    setUsername(state, action: PayloadAction<{ username: string }>) {
+      if (state.user) {
+        state.user.username = action.payload.username;
+      }
+    },
+    loginFailure(state, action: PayloadAction<string>) {
+      state.loading = false;
+      state.successMessage = null;
+      state.errorMessage = action.payload;
+    },
+    registerFailure(state, action: PayloadAction<string>) {
+      state.loading = false;
+      state.successMessage = null;
+      state.errorMessage = action.payload;
+    },
+    logout(state) {
       state.isAuthenticated = false;
-      state.isGuest = null
+      state.token = null;
+      state.user = null;
     },
   },
 });
 
-export const { loginUser, logout, playAsGuest } = authSlice.actions;
+export const { loginStart, loginSuccess, loginFailure, registerSuccess, registerFailure, logout, setUsername } = authSlice.actions;
 export const authReducer = authSlice.reducer;
