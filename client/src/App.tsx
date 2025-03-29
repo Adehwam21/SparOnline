@@ -1,17 +1,18 @@
-import './App.css';
-import { Toaster } from 'react-hot-toast';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from "react-router-dom";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
 
-
-function App() {
+const Layout = () => {
   return (
     <>
-      <Toaster />
-      <div>
+      <Header />
+      <div className="min-h-screen text-white">
         <Outlet />
+        <Footer/>
       </div>
+
     </>
   );
-}
+};
 
-export default App;
+export default Layout;

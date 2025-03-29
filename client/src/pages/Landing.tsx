@@ -10,7 +10,7 @@ const LandingPage: React.FC = () =>  {
     };
 
     return (
-        <div className="landing-page font-poppins bg-green-700 min-h-screen flex items-center justify-center">
+        <div className="landing-page font-poppins bg-green-700 min-h-screen flex items-center p-24 justify-center">
             <div className="landing-content  bg-green-900 text-white p-8 rounded-lg shadow-lg w-full max-w-lg">
                 {showLogin ? (
                     <Login toggleForm={toggleForm} />
