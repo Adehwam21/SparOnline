@@ -1,31 +1,31 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { toast } from 'react-hot-toast';
-import axios from 'axios';
-import { LoginSignUpProps } from '../../types';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../redux/reduxStore';
+import { errorToastOptions, invalidPaawordOptions, LoginSignUpProps, successToastOptions } from '../../types';
+import axiosInstance from '../../config/axiosConfig';
+import { loginFailure, loginStart } from '../../redux/slices/authSlice';
 
 const strongPasswordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
 
-const SignUp: React.FC<LoginSignUpProps>= () => {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const SignUp: React.FC<LoginSignUpProps> = () => {
+  const dispatch = useDispatch<AppDispatch>();
+  const {loading } = useSelector((state: RootState) => state.auth); // Redux state for loading & errors
+
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
+    role: 'player'
   });
-  const [formErrors, setFormErrors] = useState({});
-  const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false); // For toggling password visibility
 
-  const handleInputChange = (e: any) => {
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
-    });
-    setFormErrors({
-      ...formErrors,
-      [name]: '',
     });
   };
 
@@ -33,45 +33,34 @@ const SignUp: React.FC<LoginSignUpProps>= () => {
     setShowPassword(!showPassword);
   };
 
-  const handleRegister = async (e: any) => {
+  const handleRegister =  async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const { username, email, password } = formData;
-    setLoading(true);
 
-    if (!strongPasswordRegex.test(password)) {
-      setFormErrors({
-        password: 'Password must be at least 6 characters long and include at least one letter, one number, and one special character.',
-      });
-      setLoading(false);
+    if (!strongPasswordRegex.test(formData.password)) {
+      toast(
+        'Password must be at least 6 characters long and include at least one letter, one number, and one special character.'
+      , invalidPaawordOptions,);
       return;
     }
 
+    dispatch(loginStart())
     try {
-      const response = await axios.post(API_BASE_URL + 'auth/signup', { username, email, password });
+      const res = await axiosInstance.post("/auth/register", formData)
 
-      if (response.data.success && response.data.success.code === 201) {
-        toast.success('Sign Up Successful');
-      } else {
-        toast.error('Sign Up Unsuccessful');
+      if (res.status !== 200){
+        toast.error(res.data.message, errorToastOptions)
       }
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        console.error('Server responded with an error:', error.response.status);
-        if (error.response.status === 400) {
-          toast.error(error.response.data.error);
-        } else if (error.response.status === 409) {
-          toast.error('The email or username is already registered.');
-        } else {
-          toast.error('An error occurred on the server. Try again later.');
-        }
-      } else if (axios.isAxiosError(error) && error.request) {
-        toast.error('Internal Server error. Try again later.');
-      } else {
-        toast.error('An error occurred. Please check your internet connection or try again later.');
-      }
-    } finally {
-      setLoading(false);
-    }
+
+      toast.success(res.data.message, successToastOptions)
+
+    } catch (error: any) {
+      dispatch(loginFailure(error))
+      const errorMessage = error.response?.data?.message || "An error occurred"
+      toast.error(errorMessage || "An error occured", errorToastOptions)
+    } 
+  
+    // Reset the form after submission
+    setFormData({ username: '', password: '', email: '', role: '' });
   };
 
   return (
@@ -79,6 +68,7 @@ const SignUp: React.FC<LoginSignUpProps>= () => {
       <h2 className="text-2xl font-bold mb-4 text-center">Sign Up</h2>
       <form onSubmit={handleRegister}>
         <div className="mb-4">
+          <label htmlFor='username'>Username</label>
           <input
             type="text"
             name="username"
@@ -90,6 +80,7 @@ const SignUp: React.FC<LoginSignUpProps>= () => {
           />
         </div>
         <div className="mb-4">
+          <label htmlFor='username'>Email</label>
           <input
             type="email"
             name="email"
@@ -100,6 +91,8 @@ const SignUp: React.FC<LoginSignUpProps>= () => {
             required
           />
         </div>
+
+        <label htmlFor='username'>Password</label>
         <div className="relative mb-6">
           <input
             type={showPassword ? 'text' : 'password'} // Toggle between text and password type
@@ -110,7 +103,7 @@ const SignUp: React.FC<LoginSignUpProps>= () => {
             className="w-full px-3 py-2 rounded-lg bg-transparent border border-white focus:border-gold focus:outline-none"
             required
           />
-         <span
+          <span
             className="absolute right-3 top-2.5 cursor-pointer"
             onClick={togglePasswordVisibility}
           >
@@ -120,13 +113,13 @@ const SignUp: React.FC<LoginSignUpProps>= () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 py-2 rounded-lg transition-all duration-200"
+          className="w-full bg-yellow-500 hover:bg-yellow-400 text-gray-900 py-2 rounded-lg transition-all duration-200"
         >
           {loading ? 'Signing Up...' : 'Sign Up'}
         </button>
       </form>
     </div>
   );
-}
+};
 
 export default SignUp;
