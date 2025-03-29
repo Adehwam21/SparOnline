@@ -11,8 +11,7 @@ const Footer: React.FC = () => {
                 <a href="/faq" className="hover:underline hover:text-gold">FAQ</a>
                 <a href="/terms" className="hover:underline hover:text-gold">Terms of Service</a>
                 <a href="/privacy" className="hover:underline hover:text-gold">Privacy Policy</a>
-                <a href="/github" className="hover:underline hover:text-gold">GitHub</a>
-                <a href="/contact" className="hover:underline hover:text-gold">Buy me coffee</a>
+                <a href="/github" className="hover:underline hover:text-gold">Contribute</a>
             </div>
         </footer>
     );
