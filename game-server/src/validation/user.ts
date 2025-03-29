@@ -5,8 +5,9 @@ export const createUserInput = Joi.object<IRegisterUserInput>({
     username: Joi.string().required(),
     email: Joi.string().email().required(),
     password: Joi.string().required(),
+    role: Joi.string()
 })
 
 export const loginUserInput = Joi.object({
-    username: Joi.string().email().required(),
+    username: Joi.string().required(),
     password: Joi.string().required()})

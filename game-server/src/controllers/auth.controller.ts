@@ -20,7 +20,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         // Check if user already exists
         const existingUser = await req.context!.services!.user.getOne({ username });
         if (existingUser) {
-            res.status(400).json({ message: 'User already exists' });
+            res.status(400).json({ message: 'Account already exists. Please log in.' });
             return;
         }
 
@@ -55,7 +55,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         const { username, password } = req.body;
         const user = await req.context!.services!.user!.getOne({ username });
         if (!user) {
-            res.status(400).json({ message: 'User not found' });
+            res.status(400).json({ message: "Account doesn't exist. Please sign up." });
             return;
         }
 
