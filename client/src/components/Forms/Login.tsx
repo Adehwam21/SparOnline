@@ -1,19 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, ChangeEvent, FormEvent } from 'react';
 import toast from 'react-hot-toast';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { LoginSignUpProps } from '../../types';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../redux/reduxStore';
+import { errorToastOptions, LoginSignUpProps, successToastOptions } from '../../types';
+import axiosInstance from '../../config/axiosConfig';
+import { loginFailure, loginStart, loginSuccess } from '../../redux/slices/authSlice';
 
 const Login: React.FC<LoginSignUpProps> = () => {
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL as string;
+  const dispatch = useDispatch<AppDispatch>()
   const navigate = useNavigate();
+  const { loading } = useSelector((state: RootState) => state.auth); // Get loading/error state
 
   const [formData, setFormData] = useState<{ username: string; password: string }>({
     username: '',
     password: '',
   });
-  const [loading, setLoading] = useState<boolean>(false);
   const [showPassword, setShowPassword] = useState<boolean>(false);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -30,56 +33,31 @@ const Login: React.FC<LoginSignUpProps> = () => {
 
   const handleLogIn = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const { username, password } = formData;
-    setLoading(true);
-
+    dispatch(loginStart())
     try {
-      const response = await axios.post(`${API_BASE_URL}auth/login`, { username, password });
+      const res = await axiosInstance.post("/auth/login", formData)
 
-      if (response.data.error) {
-        toast.error(response.data.error.message);
-      } else {
-        const { token } = response.data.success;
-
-        // Store the token and user details in localStorage
-        localStorage.setItem('token', token);
-        localStorage.setItem('username', username);
-
-        toast.success('Login Successful.');
-
-        // Redirect to lobby after a short delay
-        setTimeout(() => {
-          navigate('/lobby');
-        }, 1000);
-
-        // Reset the form
-        setFormData({ username: '', password: '' });
+      if (res.status !== 200){
+        toast.error(res.data.message, errorToastOptions)
       }
-    } catch (error) {
-      handleLoginError(error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleLoginError = (error: any) => {
-    if (axios.isAxiosError(error) && error.response) {
-      const { status } = error.response;
-      if (status === 404) {
-        toast.error('Account does not exist. Try Signing Up');
-      } else if (status === 409) {
-        toast.error('Incorrect password');
-      } else {
-        toast.error('An error occurred on the server. Try again later.');
-      }
-    } else {
-      toast.error('An error occurred. Check your internet connection or try again later.');
-    }
+      toast.success(res.data.message, successToastOptions)
+      dispatch(loginSuccess({ token: res.data.token, user: res.data.user}));
+      navigate("/lobby")
+
+    } catch (error: any) {
+      dispatch(loginFailure(error))
+      const errorMessage = error.response?.data?.message || "An error occurred"
+      toast.error(errorMessage || "An error occured", errorToastOptions)
+    } 
+  
+    // Reset the form after submission
+    setFormData({ username: '', password: '' });
   };
 
   const handleGuestLogin = () => {
     localStorage.setItem('username', 'guest');
-    toast.success('Continuing as Guest...');
+    toast.success('Logged in as Guest', successToastOptions);
     navigate('/lobby');
   };
 
@@ -87,17 +65,21 @@ const Login: React.FC<LoginSignUpProps> = () => {
     <div className="text-white p-6 max-w-sm mx-auto">
       <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
       <form onSubmit={handleLogIn}>
+        
+        <label htmlFor='username'>Username</label>
         <div className="mb-4">
           <input
             type="text"
             name="username"
             value={formData.username}
             onChange={handleInputChange}
-            placeholder="Username"
+            placeholder="Enter your username"
             className="w-full px-3 py-2 rounded-lg bg-transparent border border-white focus:border-gold focus:outline-none"
             required
           />
         </div>
+
+        <label htmlFor='username'>Password</label>
         <div className="relative mb-6">
           <input
             type={showPassword ? 'text' : 'password'}
@@ -118,7 +100,7 @@ const Login: React.FC<LoginSignUpProps> = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-yellow-500 hover:bg-gold text-gray-900 py-2 rounded-lg transition-all duration-200 mb-4"
+          className="w-full bg-yellow-500 hover:bg-yellow-400 text-gray-900 py-2 rounded-lg transition-all duration-200 mb-4"
         >
           {loading ? 'Please wait...' : 'Login'}
         </button>
