@@ -16,13 +16,24 @@ export function createDeck(): string[] {
   );
 }
 
+
 export function shuffleDeck(deck: string[]): string[] {
   return deck.sort(() => Math.random() - 0.5);
 }
 
+
+export function distributeCards(players: Object[]) {
+  return
+}
+
+
 export function getCardValue(cardName: string): number {
   const rank = cardName[0];
   return ranks.find((r) => r.name === rank)?.value || 0;
+}
+
+export function calculateMoveWinner(moves: Object[]): string {
+  return ""
 }
 
 export function calculateRoundPoints(round: any): number {

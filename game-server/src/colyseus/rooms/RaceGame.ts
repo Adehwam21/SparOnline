@@ -1,6 +1,6 @@
 import { Room, Client } from "colyseus";
 import { ArraySchema } from "@colyseus/schema";
-import { GameState, Player, Round, PlayedCard, Move } from "../schemas/GameState";
+import { GameState, Player, Round, PlayedCard, Moves } from "../schemas/GameState";
 import { createDeck, shuffleDeck, getCardValue, calculateRoundPoints } from "../utils/roomUtils";
 
 export class RaceGameRoom extends Room<GameState> {
@@ -45,7 +45,7 @@ export class RaceGameRoom extends Room<GameState> {
     if (!currentRound) return;
 
     if (!currentRound.moves.has(client.sessionId)) {
-      currentRound.moves.set(client.sessionId, new Move());
+      currentRound.moves.set(client.sessionId, new Moves());
     }
 
     const move = currentRound.moves.get(client.sessionId);
