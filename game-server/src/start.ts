@@ -14,8 +14,6 @@ import cookieParser from "cookie-parser";
 import routes from "./routes/rotues";
 import { createGameServer } from "./colyseus/gameServer";
 
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-
 
 export default async function start(config: Config) {
   try {
@@ -26,10 +24,11 @@ export default async function start(config: Config) {
     const app = express();
     app.use(cors({
       origin: [
-      FRONTEND_URL,
+      process.env.CLIENT_URL || "http://localhost:5173",
       "http://localhost:3000",
       "http://192.168.43.48:5173",
-      ]
+      ],
+      credentials: true
     }));
     app.use(morgan('dev'));
     app.use(express.json(), bodyParser.json());

@@ -4,6 +4,7 @@ export interface IRegisterUserInput {
   username: string;
   email: string;
   password: string;
+  role?: string; 
 }
 
 export interface _User {
