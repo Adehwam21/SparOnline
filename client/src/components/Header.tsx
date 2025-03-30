@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector} from "react-redux";
 import { RootState } from "../redux/reduxStore";
-import { logout } from "../redux/slices/authSlice";
-import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaBars, FaTimes } from "react-icons/fa";
+import UserHandle from "./User/UserHandle";
+import SettingsMenu from "./User/SettingsMenu";
 
 const Header: React.FC = () => {
-  const dispatch = useDispatch();
   const { user } = useSelector((state: RootState) => state.auth);
   const [isVisible, setIsVisible] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -28,11 +27,6 @@ const Header: React.FC = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const handleLogout = () => {
-    dispatch(logout());
-    toast.success("Logged out successfully");
-  };
 
   return (
     <motion.header
@@ -65,22 +59,15 @@ const Header: React.FC = () => {
       </nav>
 
       {/* Right Section: User Profile (Hidden on mobile) */}
-      <div className="md:flex items-center gap-4">
+      <div className="flex md:flex items-center justify-center gap-4">
         {user ? (
-          <>
-            <span className="text-sm font-medium">{user.username}</span>
-            <button
-              onClick={handleLogout}
-              className="bg-red-500 px-3 py-1 rounded-md text-sm hover:bg-red-600 transition"
-            >
-              Logout
-            </button>
-          </>
+            <UserHandle />
         ) : (
-          <Link to="/sign-in" className="text-sm text-green-800 font-bold bg-yellow-300 px-3 py-1 rounded-md hover:bg-yellow-500 transition">
+          <Link to="/sign-in" className=" flex justify-center text-sm h-10 text-center items-center text-green-800 font-bold bg-yellow-300 px-3 py-1 rounded-md hover:bg-yellow-500 transition">
             Sign In
           </Link>
         )}
+        <SettingsMenu/>
       </div>
 
       {/* Mobile Menu (Dropdown) */}
