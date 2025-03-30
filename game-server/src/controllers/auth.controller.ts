@@ -85,7 +85,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
                 _id: user!._id,
                 userID: user!.userID,
                 email: user!.email,
-                fullName: user!.fullName,
+                username: user!.username,
                 role: user!.role
             },
             message: 'Logged in successfully' });

@@ -42,8 +42,9 @@ const Login: React.FC<LoginSignUpProps> = () => {
       }
 
       toast.success(res.data.message, successToastOptions)
-      dispatch(loginSuccess({ token: res.data.token, user: res.data.user}));
-      navigate("/lobby")
+      console.log(res.data)
+      dispatch(loginSuccess({ token: res.data!.token, user: res.data!.user}));
+      navigate("/")
 
     } catch (error: any) {
       dispatch(loginFailure(error))
@@ -58,7 +59,7 @@ const Login: React.FC<LoginSignUpProps> = () => {
   const handleGuestLogin = () => {
     localStorage.setItem('username', 'guest');
     toast.success('Logged in as Guest', successToastOptions);
-    navigate('/lobby');
+    navigate('/');
   };
 
   return (
