@@ -62,7 +62,7 @@ export default async function start(config: Config) {
     //use routes
     app.use("/api/v1", routes);
 
-    app.use("/health", (req, res) => {
+    app.use("/ping", (req, res) => {
       res.status(200).send("Greeeeeen! ✅");
     });
 

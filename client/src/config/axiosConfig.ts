@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Get API base URL from environment variables
-const BASE_URL = import.meta.env.VITE_SERVER_URL;
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Create an Axios instance
 const axiosInstance = axios.create({
