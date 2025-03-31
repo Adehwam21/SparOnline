@@ -33,33 +33,33 @@ const Header: React.FC = () => {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: isVisible ? 0 : -100, opacity: isVisible ? 1 : 0 }}
       transition={{ duration: 0.4, ease: "easeInOut" }}
-      className="fixed top-0 left-0 w-full h-16 bg-green-900 text-white px-4 flex items-center justify-between shadow-md z-50"
+      className= "fixed top-0 left-0 w-full h-16 bg-green-900 text-white px-4 flex items-center justify-between shadow-md z-50 rounded-b-2xl"
     >
       {/* Left Section: Mobile Menu Button & Logo */}
       <div className="flex items-center gap-4">
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden text-yellow-400 text-2xl"
+          className="md:hidden text-yellow-300 text-2xl"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
-          {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+          {isMobileMenuOpen ? <FaTimes size={40} /> : <FaBars size={40} />}
         </button>
 
         {/* Logo */}
-        <Link to="/" className="text-xl font-bold text-yellow-400">
+        <Link to="/" className="text-xl font-bold text-yellow-300">
           SparOnline
         </Link>
       </div>
 
       {/* Middle Section: Navigation (Hidden on mobile) */}
-      <nav className="hidden md:flex gap-6 text-sm">
-        <Link to="/" className="hover:text-yellow-400 transition">Play</Link>
-        <Link to="/learn" className="hover:text-yellow-400 transition">Learn</Link>
-        <Link to="/watch" className="hover:text-yellow-400 transition">Leaderboard</Link>
+      <nav className="hidden md:flex gap-6 text-lg">
+        <Link to="/" className="hover:text-yellow-300 transition">Play</Link>
+        <Link to="/learn" className="hover:text-yellow-300 transition">Learn</Link>
+        <Link to="/watch" className="hover:text-yellow-300 transition">Leaderboard</Link>
       </nav>
 
       {/* Right Section: User Profile (Hidden on mobile) */}
-      <div className="flex md:flex items-center justify-center gap-4">
+      <div className="flex md:flex items-center justify-center gap-2">
         {user ? (
             <UserHandle />
         ) : (

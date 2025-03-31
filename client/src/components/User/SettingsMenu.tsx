@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaCog, FaBell, FaPalette, FaLock, FaServer } from "react-icons/fa";
+import { FaCog, FaBell, FaPalette, FaLock } from "react-icons/fa";
 import axios from "axios";
 import { SERVER_BASE_URL } from "../../constants";
 
@@ -52,7 +52,7 @@ const SettingsMenu: React.FC = () => {
     <div className="relative" ref={menuRef}>
       {/* Settings Button */}
       <button
-        className="flex items-center gap-2 p-3 rounded-lg hover:bg-green-700 transition text-yellow-400"
+        className="flex items-center gap-2 p-3 rounded-lg hover:text-green-800 hover:bg-yellow-300 transition text-yellow-300"
         onClick={() => setIsOpen(!isOpen)}
       >
         <FaCog className="w-6 h-6" />
@@ -66,7 +66,7 @@ const SettingsMenu: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-            className="absolute right-0 mt-2 w-56 bg-white text-gray-700 rounded-lg shadow-lg"
+            className="absolute right-0 mt-3 w-56 bg-white rounded-lg text-green-900 shadow-lg"
           >
             <ul className="py-2">
               <li>
@@ -87,22 +87,24 @@ const SettingsMenu: React.FC = () => {
 
               {/* Ping & Server Processing Time */}
               <li className="px-4 py-2 border-t border-gray-200">
-                <motion.div
-                  className="flex items-center gap-2 text-sm"
-                  animate={{ opacity: [0.5, 1], scale: [0.95, 1] }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <FaServer />
-                  <span>PING: {ping !== null ? `${ping} ms` : "N/A"}</span>
-                </motion.div>
-                <motion.div
-                  className="flex items-center gap-2 text-sm mt-1"
-                  animate={{ opacity: [0.5, 1], scale: [0.95, 1] }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <FaServer />
-                  <span>SERVER: {serverProcessingTime !== null ? `${serverProcessingTime} ms` : "N/A"}</span>
-                </motion.div>
+                <div >
+                  <motion.div
+                    className="flex items-center gap-2 text-sm"
+                    animate={{ opacity: [0.5, 1], scale: [0.95, 1] }}
+                    transition={{ duration: 0.5 }}
+                    >
+                    {/* <FaServer /> */}
+                    <span>PING: <span className="text-bold text-lg">{ping !== null ? `${ping} ms` : "N/A"}</span></span>
+                  </motion.div>
+                  <motion.div
+                    className="flex items-center gap-2 text-sm mt-1"
+                    animate={{ opacity: [0.5, 1], scale: [0.95, 1] }}
+                    transition={{ duration: 0.5 }}
+                    >
+                    {/* <FaServer /> */}
+                    <span>SERVER: <span className="text-bold text-lg">{serverProcessingTime !== null ? `${serverProcessingTime} ms` : "N/A"}</span></span>
+                  </motion.div>
+                </div>
               </li>
             </ul>
           </motion.div>

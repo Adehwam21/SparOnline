@@ -21,7 +21,7 @@ const Lobby: React.FC = () => {
   return (
     <div className="flex items-center justify-center min-h-screen bg-green-700">
         {/* Buttons Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 gap-6">
+        <div className="flex flex-col space-y-3 p-10 pt-20  w-full sm:w-fit sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6">
           <CustomButton label="Create Room" icon={FaPlusCircle} onClick={handleOpenCreateRoomModal} />
           <CustomButton label="Join Room" icon={FaUsers} onClick={handleOpenJoinRoomModal} />
           <CustomButton label="Quick Pairing" icon={FaBolt} onClick={() => {}} />

@@ -36,7 +36,7 @@ const LearnPage: React.FC = () => {
 
         <h2 className="text-2xl font-bold text-green-900 mt-6 mb-2">Winning the Game</h2>
         <p className="mb-4">
-          The game continues until a player reaches the maximum score set at the start. The first player to reach this wins.
+          The game continues until a player reaches the maximum score set at the start. Depending on the mode, the first player to reach this wins, or the last man standing wins (i.e. when other all players have been eliminated).
         </p>
 
         <h2 className="text-2xl font-bold text-green-900 mt-6 mb-2">Special Bonus</h2>
@@ -50,6 +50,7 @@ const LearnPage: React.FC = () => {
         </ul>
         <p>
           For this to hold, a card in the sequence must not have the same suit as the next card in the sequence
+          Note that the last card always takes precedence in points calculation.
         </p>
         <p className="mt-3">
           Example1: Assuming the player was never out-bidded in the last three bids,
