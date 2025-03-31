@@ -35,11 +35,12 @@ const UserHandle: React.FC = () => {
     <div className="relative" ref={menuRef}>
       {/* User Button */}
       <button
-        className="flex items-center gap-2 p-2 rounded-lg hover:bg-green-700 transition text-yellow-400"
+        className="flex items-center gap-2 p-2 rounded-lg hover:text-green-800 hover:bg-yellow-300 transition text-yellow-300"
         onClick={() => setIsOpen(!isOpen)}
       >
+        <FaUserCircle size={30} />
         <span className="md:inline-block">{username || "Guest"}</span>
-        <FaUserCircle className="w-8 h-8" />
+        
       </button>
 
       {/* Dropdown Menu */}

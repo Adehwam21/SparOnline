@@ -63,7 +63,7 @@ const Login: React.FC<LoginSignUpProps> = () => {
   };
 
   return (
-    <div className="text-white p-6 max-w-sm mx-auto">
+    <div className="text-white w-full p-4 md:w-full md:p-6 max-w-sm mx-auto">
       <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
       <form onSubmit={handleLogIn}>
         

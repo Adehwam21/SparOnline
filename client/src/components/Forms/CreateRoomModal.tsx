@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import BaseModal from "./BaseModal";
+import FormField from "./FormField";
 
 interface CreateRoomModalProps {
   isOpen: boolean;
@@ -8,19 +9,21 @@ interface CreateRoomModalProps {
 
 const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) => {
   const [roomName, setRoomName] = useState("");
-  const [maxPlayers, setMaxPlayers] = useState<number>(2);
+  const [maxPlayers, setMaxPlayers] = useState(2);
+  const [maxPoints, setMaxPoints] = useState(5);
+  const [gameMode, setGameMode] = useState("race");
 
   const handleCreateRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Creating room:", { roomName, maxPlayers });
+    console.log("Creating room:", { roomName, maxPlayers, maxPoints, gameMode });
     onClose();
   };
 
   return (
     <BaseModal isOpen={isOpen} onClose={onClose} title="Create a Room">
-      <form onSubmit={handleCreateRoom} className="space-y-4">
-        <div>
-          <label className="block text-gray-700">Room Name</label>
+      <form onSubmit={handleCreateRoom} className="space-y-4 text-black">
+        {/* Room Name */}
+        <FormField label="Custom Room Name" tooltipText="Set a custom name for your room.">
           <input
             type="text"
             value={roomName}
@@ -28,19 +31,48 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
             className="w-full p-2 border border-gray-300 rounded"
             required
           />
-        </div>
-        <div>
-          <label className="block text-gray-700">Max Players</label>
+        </FormField>
+
+        {/* Maximum Points */}
+        <FormField label="Set the Maximum Points" tooltipText="Choose the maximum number of points.">
+          <select
+            value={maxPoints}
+            onChange={(e) => setMaxPoints(Number(e.target.value))}
+            className="w-full p-2 border border-gray-300 rounded"
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={15}>15</option>
+            <option value={20}>20</option>
+          </select>
+        </FormField>
+
+        {/* Game Mode */}
+        <FormField label="Game Mode" tooltipText="Race: Be the fastest to reach maximum points. Survival: Be the last man standing to win.">
+          <select
+            value={gameMode}
+            onChange={(e) => setGameMode(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded"
+          >
+            <option value="race">Race</option>
+            <option value="survival">Survival</option>
+          </select>
+        </FormField>
+
+        {/* Number of Players */}
+        <FormField label="Number of Players" tooltipText="Choose how many players can join this room.">
           <select
             value={maxPlayers}
             onChange={(e) => setMaxPlayers(Number(e.target.value))}
             className="w-full p-2 border border-gray-300 rounded"
           >
             <option value={2}>2 Players</option>
+            <option value={3}>3 Players</option>
             <option value={4}>4 Players</option>
-            <option value={6}>6 Players</option>
           </select>
-        </div>
+        </FormField>
+
+        {/* Submit Button */}
         <button type="submit" className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">
           Create Room
         </button>
