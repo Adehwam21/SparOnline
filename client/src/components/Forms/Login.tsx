@@ -101,7 +101,7 @@ const Login: React.FC<LoginSignUpProps> = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-yellow-500 hover:bg-yellow-400 text-gray-900 py-2 rounded-lg transition-all duration-200 mb-4"
+          className="w-full bg-yellow-300 hover:bg-yellow-400 text-gray-900 py-2 rounded-lg transition-all duration-200 mb-4"
         >
           {loading ? 'Please wait...' : 'Login'}
         </button>

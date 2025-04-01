@@ -22,7 +22,7 @@ const LandingPage: React.FC = () =>  {
                         {showLogin ? "Don't have an account? " : "Already have an account? "}
                         <span
                             onClick={toggleForm}
-                            className="text-yellow-500 hover:text-yellow-600 cursor-pointer font-semibold"
+                            className="text-yellow-300 hover:text-yellow-400 cursor-pointer font-semibold"
                         >
                             {showLogin ? 'Sign Up' : 'Log In'}
                         </span>

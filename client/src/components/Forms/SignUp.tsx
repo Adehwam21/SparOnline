@@ -113,7 +113,7 @@ const SignUp: React.FC<LoginSignUpProps> = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-yellow-500 hover:bg-yellow-400 text-gray-900 py-2 rounded-lg transition-all duration-200"
+          className="w-full bg-yellow-300 hover:bg-yellow-400 text-gray-900 py-2 rounded-lg transition-all duration-200"
         >
           {loading ? 'Signing Up...' : 'Sign Up'}
         </button>
