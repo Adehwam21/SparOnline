@@ -3,6 +3,7 @@ import App from '../App';
 import LandingPage from '../pages/Landing';
 import LearnPage from '../pages/Learn';
 import Lobby from '../components/Lobby/Lobby';
+import GamePage from '../pages/Game';
 
 export const router = createBrowserRouter([
   {
@@ -12,6 +13,7 @@ export const router = createBrowserRouter([
       { index: true, element: <Lobby /> },
       {  path:"/sign-in", element: <LandingPage /> },
       { path:"/learn", element: <LearnPage /> },
+      { path:"/game", element: <GamePage/>}
     ],
   },
 ]);

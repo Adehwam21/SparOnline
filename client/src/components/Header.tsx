@@ -63,7 +63,7 @@ const Header: React.FC = () => {
         {user ? (
             <UserHandle />
         ) : (
-          <Link to="/sign-in" className=" flex justify-center text-sm h-10 text-center items-center text-green-800 font-bold bg-yellow-300 px-3 py-1 rounded-md hover:bg-yellow-500 transition">
+          <Link to="/sign-in" className="flex justify-center text-lg text-center items-center text-green-800 font-bold bg-yellow-300 px-3 py-1 rounded-md hover:bg-yellow-500 transition">
             Sign In
           </Link>
         )}
