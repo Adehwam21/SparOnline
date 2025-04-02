@@ -4,7 +4,7 @@ import Header from "./components/Header";
 
 const Layout = () => {
   return (
-    <div className="h-full bg-green-600">
+    <div className="md:h-full bg-green-600">
       <Header />
       <div>
         <Outlet />

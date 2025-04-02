@@ -11,7 +11,7 @@ interface OpponentProps {
 
 const Opponent: React.FC<OpponentProps> = ({ username, score, bids, maxPoints }) => {
   return (
-    <div className="bg-green-700 text-white px-2 py-2 rounded-lg shadow-lg">
+    <div className="min-w-72 bg-green-700 text-white px-2 py-2 rounded-sm shadow-lg">
       {/* Opponent Header: Avatar + Username + Score */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

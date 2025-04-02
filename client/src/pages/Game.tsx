@@ -14,11 +14,11 @@ const GamePage: React.FC = () => {
   }, []);
 
   if (!gameState) {
-    return <div className="flex items-center p-15 justify-center h-screen text-white">Loading game...</div>
+    return <div className="flex items-center justify-center h-screen text-white">Loading game...</div>
   }
 
   return (
-    <div className="w-full p-10 bg-green-600 pt-30 text-white">
+    <div className="h-[60rem] md:h-full bg-green-600 pt-20 text-white">
       <Room players={gameState.players} currentPlayerId={gameState.currentPlayerId} maxPoints={gameState.maxPoints} />
     </div>
   );
