@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from "react";
 import Card from "./Card";
 
@@ -7,11 +8,12 @@ interface PlayerBarProps {
   playableCards: string[];
   isTurn: boolean;
   maxPoints: string;
-  onCardDropped: (card: string) => void
+  onCardDropped: (cardName: string) => void
+  
 }
 
-const PlayerBar: React.FC<PlayerBarProps> = ({ username, score, playableCards: initialCards, isTurn, maxPoints }) => {
-  const [cards, setCards] = useState<string[]>(initialCards);
+const PlayerBar: React.FC<PlayerBarProps> = ({ username, score, playableCards, isTurn, maxPoints, onCardDropped }) => {
+  const [cards, setCards] = useState<string[]>(playableCards);
   const [draggedCardIndex, setDraggedCardIndex] = useState<number | null>(null);
 
   // Handle drag start
@@ -33,13 +35,13 @@ const PlayerBar: React.FC<PlayerBarProps> = ({ username, score, playableCards: i
   };
 
   return (
-    <div className="bg-green-700 text-white p-2 md:p-4 rounded-lg shadow-lg w-full max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-around space-y-4 md:space-y-0 md:space-x-4">
+    <div className="min-w-72 min-h-36 bg-green-700 text-white p-2 md:p-4 rounded-sm shadow-lg max-w-4xl flex flex-col md:flex-row items-center justify-around space-y-4 md:space-y-0 md:space-x-4">
       
       {/* Player Info */}
-      <div className="flex flex-row space-x-4 md:flex-row justify-center items-center">
+      <div className="flex flex-row space-x-4 md:flex-row justify-evenly items-center">
         <div className="flex flex-row space-x-4 md:space-y-4 md:flex-col justify-between items-center">
           <div className="flex flex-row space-x-2">
-            <span className="text-sm md:text-base font-semibold">{username}</span>
+            <span className="text-sm md:text-base text-center font-bold">{username}</span>
           </div>
           <div className={`text-center px-3 py-1 text-sm rounded-sm ${isTurn ? "bg-green-500" : "bg-red-500"}`}>
             {isTurn ? "Your Turn" : "Waiting..."}
@@ -53,7 +55,7 @@ const PlayerBar: React.FC<PlayerBarProps> = ({ username, score, playableCards: i
       </div>
 
       {/* Playable Cards (Scrollable) */}
-      <div className="p-2 rounded-md flex gap-1 overflow-x-auto w-full md:w-auto">
+      <div className="p-1 rounded-md flex gap-1 overflow-x-auto w-full md:w-auto">
         {cards.map((card, index) => (
           <div
             key={index}

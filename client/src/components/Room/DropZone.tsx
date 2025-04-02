@@ -14,11 +14,11 @@ const DropZone: React.FC<DropZoneProps> = ({ isTurn, onCardDropped }) => {
     if (!isTurn) return; // Prevent drop if not the player's turn
 
     const card = e.dataTransfer.getData("text/plain").split("/").pop();
-    const cardName = card!.split(".")[0];
+    const cardName = card!.split(".")[0]; // Selects only the card name, eg 6H
     if (!card || droppedCards.includes(cardName)) return; // Prevent duplicate drops
 
     setDroppedCards((prevCards) => [...prevCards, card]); // Add to drop zone
-    onCardDropped(card); // Call the handler to remove the card from PlayerBar
+    onCardDropped(cardName); // Call the handler to remove the card from PlayerBar
   };
 
   const preventDrag = (e: React.DragEvent<HTMLDivElement>) => {
@@ -27,7 +27,7 @@ const DropZone: React.FC<DropZoneProps> = ({ isTurn, onCardDropped }) => {
 
   return (
     <div 
-      className="w-80 h-28 flex flex-col items-center justify-center bg-green-700 rounded-sm text-white text-sm font-bold transition-all p-2"
+      className="h-28 min-w-72 flex flex-col items-center justify-center bg-green-700 rounded-sm text-white text-sm font-bold transition-all p-2"
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()} // Allow dropping from PlayerBar
     >

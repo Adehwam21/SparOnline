@@ -7,7 +7,7 @@ interface CardProps {
 
 const Card: React.FC<CardProps> = ({ card }) => {
   return (
-    <div className={`relative h-20  rounded-lg`}>
+    <div className={`relative h-18 md:h-20 rounded-lg`}>
       <img
         src={`images/cards/${card.toUpperCase()}.png`}
         alt={card.toUpperCase()}

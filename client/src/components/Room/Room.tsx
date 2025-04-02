@@ -3,7 +3,7 @@ import GameBoard from "./GameBoard";
 
 interface RoomProps {
 //   roomName?: string;
-  players: { id: string; username: string; score: number; bids: string[] }[];
+  players: { id: string; username: string; score: number; bids: string[], hand:string[] }[];
   currentPlayerId: string;
   maxPoints: string
 }

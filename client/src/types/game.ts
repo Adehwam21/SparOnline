@@ -3,6 +3,7 @@ export interface Player {
     username: string;
     score: number;
     bids: string[];
+    hand: string[];
   }
   
   export interface GameState {
