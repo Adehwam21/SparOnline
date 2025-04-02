@@ -3,35 +3,46 @@ import Card from "./Card";
 
 interface DropZoneProps {
   isTurn: boolean;
+  onCardDropped: (card: string) => void;
 }
 
-const DropZone: React.FC<DropZoneProps> = ({ isTurn }) => {
+const DropZone: React.FC<DropZoneProps> = ({ isTurn, onCardDropped }) => {
   const [droppedCards, setDroppedCards] = useState<string[]>([]);
 
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (isTurn) {
-      const card = e.dataTransfer.getData("text/plain");
-      setDroppedCards((prevCards) => [...prevCards, card]); // Store dropped card
-    }
+    if (!isTurn) return; // Prevent drop if not the player's turn
+
+    const card = e.dataTransfer.getData("text/plain").split("/").pop();
+    const cardName = card!.split(".")[0];
+    if (!card || droppedCards.includes(cardName)) return; // Prevent duplicate drops
+
+    setDroppedCards((prevCards) => [...prevCards, card]); // Add to drop zone
+    onCardDropped(card); // Call the handler to remove the card from PlayerBar
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault(); // Allow drop
+  const preventDrag = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault(); // Stop dragging inside DropZone
   };
 
   return (
     <div 
-      className={`w-80 h-28 flex flex-col items-center justify-center bg-green-700 rounded-t-lg text-white font-bold transition-all p-2`}
+      className="w-80 h-28 flex flex-col items-center justify-center bg-green-700 rounded-sm text-white text-sm font-bold transition-all p-2"
       onDrop={handleDrop}
-      onDragOver={handleDragOver}
+      onDragOver={(e) => e.preventDefault()} // Allow dropping from PlayerBar
     >
       {droppedCards.length === 0 ? (
-        <span>{isTurn ? "Drop Card Here" : "Not Your Turn"}</span>
+        <span>{isTurn ? "Drop Card Here to bid" : "Not Your Turn"}</span>
       ) : (
         <div className="flex">
-          {droppedCards.map((card) => (
-            <Card card={card}/>
+          {droppedCards.map((card, index) => (
+            <div key={index} 
+              draggable={false} // Disable dragging inside DropZone
+              onDragStart={preventDrag} // Prevent drag events
+              className="cursor-default" // Prevents visual drag cursor
+            >
+              <Card card={card} />
+            </div>
           ))}
         </div>
       )}

@@ -33,7 +33,7 @@ const Header: React.FC = () => {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: isVisible ? 0 : -100, opacity: isVisible ? 1 : 0 }}
       transition={{ duration: 0.4, ease: "easeInOut" }}
-      className= "fixed top-0 left-0 w-full h-16 bg-green-900 text-white px-4 flex items-center justify-between shadow-md z-50 rounded-b-2xl"
+      className= "fixed top-0 left-0 w-full h-16 bg-green-900 text-white px-4 flex items-center justify-between shadow-md z-50 shadow-2xll"
     >
       {/* Left Section: Mobile Menu Button & Logo */}
       <div className="flex items-center gap-4">

@@ -1,16 +1,15 @@
 import { Outlet } from "react-router-dom";
-// import Header from "./components/Header";
+import Header from "./components/Header";
 // import Footer from "./components/Footer";
 
 const Layout = () => {
   return (
-    <>
-      {/* <Header /> */}
-      <div className="min-h-screen bg-green-700 text-white">
+    <div className="h-full bg-green-600">
+      <Header />
+      <div>
         <Outlet />
-        {/* <Footer/> */}
       </div>
-    </>
+    </div>
   );
 };
 
