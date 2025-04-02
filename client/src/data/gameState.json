@@ -1,10 +1,10 @@
 {
     "roomName": "Memory Showdown",
     "players": [
-      { "id": "1", "username": "Aaron", "score": 10, "bids": ["6H", "QS"]  },
+      { "id": "1", "username": "Aaron", "score": 10, "bids": ["6H", "QS", "10D", "6C", "9H"]  },
       { "id": "2", "username": "Opponent1", "score": 8, "bids": ["6H", "QS", "10D", "6C", "9H"]  },
-      { "id": "3", "username": "Opponent2", "score": 6, "bids": ["6H", "QS", "10D"] },
-      { "id": "4", "username": "Opponent3", "score": 5, "bids": [] }
+      { "id": "3", "username": "Opponent2", "score": 6, "bids": ["6H", "QS", "10D", "6C", "9H"] },
+      { "id": "4", "username": "Opponent3", "score": 5, "bids": ["6H", "QS", "10D", "6C", "9H"] }
     ],
     "currentPlayerId" : "1",
     "maxPoints": "20"

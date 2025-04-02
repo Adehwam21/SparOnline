@@ -1,66 +1,61 @@
-import React from "react";
+import React, { useState } from "react";
 import Opponent from "./Opponent";
-// import CardPile from "./CardPile";
 import PlayerBar from "./PlayerBar";
 import DropZone from "./DropZone";
 
 interface GameBoardProps {
   players: { id: string; username: string; score: number; bids: string[] }[];
-  currentPlayerId: string
-  maxPoints: string
+  currentPlayerId: string;
+  maxPoints: string;
 }
 
-const GameBoard: React.FC<GameBoardProps> = ({ players, currentPlayerId, maxPoints}) => {
-    const player = players.find((p) => p.id === currentPlayerId);
-    const opponents = players.filter((p) => p.id !== currentPlayerId);
-    const isTurn = (player!.id === currentPlayerId)
+const GameBoard: React.FC<GameBoardProps> = ({ players, currentPlayerId, maxPoints }) => {
+  const player = players.find((p) => p.id === currentPlayerId);
+  const opponents = players.filter((p) => p.id !== currentPlayerId);
+  const isTurn = player!.id === currentPlayerId;
 
-    return (
-        <div className="relative w-full h-screen flex flex-col items-center justify-center bg-green-600 text-white">
-        {/* Top Opponent (For 2 & 4 Players) */}
-        {opponents.length === 1 ? (
-            <div className="absolute top-2 w-full flex justify-center">
-            <Opponent {...opponents[0]} />
-            </div>
-        ) : null}
+  const [playableCards, setPlayableCards] = useState<string[]>(player?.bids || []);
 
-        {/* Left & Right Opponents (For 3 Players) */}
-        {opponents.length === 2 ? (
-            <>
-            <div className="absolute left-5 top-64 transform -translate-y-1/2">
-                <Opponent {...opponents[0]} />
-            </div>
-            <div className="absolute right-5 top-64 transform -translate-y-1/2">
-                <Opponent {...opponents[1]} />
-            </div>
-            </>
-        ) : null}
+  // This function is called when a card is dropped in DropZone
+  const handleCardDropped = (card: string) => {
+    setPlayableCards((prevCards) => prevCards.filter((c) => c !== card)); // Remove dropped card
+  };
 
-        {/** Top left right Opponents (For 4 players) */}
-        {opponents.length === 3 ? (
-            <>
-                <div className="absolute left-2 top-64 transform -translate-y-1/2">
-                    <Opponent {...opponents[0]} />
-                </div>
-                <div className="absolute top-2 w-full flex justify-center">
-                    <Opponent {...opponents[1]} />
-                </div>
-                <div className="absolute right-2 top-64 transform -translate-y-1/2">
-                    <Opponent {...opponents[2]} />
-                </div>
-            </>
-        ) : null}
-
-        {/* Bottom Played Cards Bar (Current Player) */}
-        {player && (
-            <div className="absolute p-2 bottom-2 flex flex-col justify-center items-center w-full">
-                {/* <CardPile bids={player.bids} /> */}
-                <DropZone isTurn={isTurn}/>
-                <PlayerBar username={player.username} isTurn={isTurn} score={player.score} playableCards={player.bids} maxPoints={maxPoints} />
+  return (
+    <div className="relative w-full h-screen flex flex-col items-center justify-center bg-green-600 text-white">
+      {/* Opponents (Mobile: Stack, Desktop: Positioned) */}
+      <div className="w-full flex mb-5 flex-col md:flex-row items-center justify-center gap-4 md:absolute md:top-5">
+        {opponents.length > 0 &&
+          opponents.map((opponent, index) => (
+            <div
+              key={index}
+              className={`w-full md:w-auto ${opponents.length === 1 ? "text-center" : ""}`}
+            >
+              <Opponent {...opponent} maxPoints={maxPoints} />
             </div>
-        )}
+          ))}
+      </div>
+
+      {/* Player Section (Bottom) */}
+      {/* Drop Zone and Player Bar */}
+      {player && (
+        <div className="relative p-2 flex flex-col justify-center space-y-4 items-center w-full">
+          <DropZone
+            isTurn={isTurn}
+            onCardDropped={handleCardDropped} // Pass handleCardDropped to DropZone
+          />
+          <PlayerBar
+            username={player.username}
+            score={player.score}
+            playableCards={playableCards} // Pass playableCards as prop
+            isTurn={isTurn}
+            maxPoints={maxPoints}
+            onCardDropped={handleCardDropped} // Pass handleCardDropped to PlayerBar
+          />
         </div>
-    );
+      )}
+    </div>
+  );
 };
 
 export default GameBoard;
