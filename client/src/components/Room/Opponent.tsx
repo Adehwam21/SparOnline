@@ -11,7 +11,7 @@ interface OpponentProps {
 
 const Opponent: React.FC<OpponentProps> = ({ username, score, bids, maxPoints }) => {
   return (
-    <div className="min-w-72 bg-green-700 text-white px-2 py-2 rounded-sm shadow-lg">
+    <div className="min-w-72 bg-green-900 text-white px-2 py-2 rounded-sm shadow-lg">
       {/* Opponent Header: Avatar + Username + Score */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -25,11 +25,11 @@ const Opponent: React.FC<OpponentProps> = ({ username, score, bids, maxPoints })
 
       {/* Played Cards Section */}
       <div className=" flex h-24 w-64 rounded-md justify-center items-center">
-       {bids.length > 0 ? (
-            <CardPile bids={bids}/>
-       ):(
-        <p className="text-white font-bold text-sm">No bids yet!</p>
-       ) }
+        {bids.length > 0 ? (
+          <CardPile bids={bids}/>
+        ):(
+          <p className="text-white font-bold text-sm">No bids yet!</p>
+        ) }
       </div>
     </div>
   );

@@ -27,7 +27,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ players, currentPlayerId, maxPoin
   }, [playableCards]); // Runs whenever playableCards changes
 
   return (
-    <div className="relative w-full h-screen  flex flex-col items-center justify-evenly bg-green-600 text-white">
+    <div className="relative w-full h-fit rounded-lg flex flex-col p-10 items-center justify-evenly bg-green-700 text-white">
       {/* Opponents */}
       <div className="flex mb-2 flex-col lg:flex-row items-center justify-center gap-4">
         {opponents.length > 0 &&

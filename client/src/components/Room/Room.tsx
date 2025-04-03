@@ -10,11 +10,9 @@ interface RoomProps {
 
 const Room: React.FC<RoomProps> = ({players, currentPlayerId , maxPoints}) => {
   return (
-    <div className="w-full h-screen flex flex-col p-10 items-center justify-center text-white">
+    <div className="w-full h-full md:h-fit flex flex-col p-5 lg:p-10 items-center justify-center text-white">
       {/* Game Board */}
-      <div className="flex-1 w-full flex justify-center items-center">
         <GameBoard players={players} currentPlayerId={currentPlayerId} maxPoints={maxPoints} />
-      </div>
     </div>
   );
 };
