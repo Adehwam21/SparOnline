@@ -1,6 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom';
 import App from '../App';
-import LandingPage from '../pages/Landing';
+import LandingPage from '../pages/Lobby';
 import LearnPage from '../pages/Learn';
 import Lobby from '../components/Lobby/Lobby';
 import GamePage from '../pages/Game';

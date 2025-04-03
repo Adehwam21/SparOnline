@@ -27,7 +27,7 @@ const DropZone: React.FC<DropZoneProps> = ({ isTurn, onCardDropped }) => {
 
   return (
     <div 
-      className="h-28 min-w-72 flex flex-col items-center justify-center bg-green-700 rounded-sm text-white text-sm font-bold transition-all p-2"
+      className="h-28 min-w-72 flex flex-col items-center justify-center bg-green-900 rounded-sm text-white text-sm font-bold transition-all p-2"
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()} // Allow dropping from PlayerBar
     >
