@@ -5,27 +5,28 @@ export class Player extends Schema {
   @type("string") id: string = ""; 
   @type("string") username: string = "";
   @type(["string"]) hand = new ArraySchema<string>(); // Fixed
-  @type(["string"]) bids = new ArraySchema<string>(); // Fixed
   @type("number") score: number = 0;
 }
 
 // PlayedCard represents a single card played in a move
 export class PlayedCard extends Schema {
-  @type("string") username: string = "";
+  @type("string") playerName: string = "";
   @type("string") cardName: string = "";
-  @type("number") playedAt: number = Date.now(); // Timestamp for AI training
+  @type("string") moveIndex?: string = "";
 }
 
 // Move represents a player's action in a round
 export class Moves extends Schema {
-  @type([PlayedCard]) cardsPlayed = new ArraySchema<PlayedCard>();
+  @type([PlayedCard]) bids = new ArraySchema<PlayedCard>();
+  @type("string") moveWinner: string = ""; // Username of the player who won the move 
 }
 
 // Round keeps track of moves, status, and winner
 export class Round extends Schema {
   @type("number") roundNumber: number = 0;
   @type({ map: Moves }) moves = new MapSchema<Moves>(); // Changed to MapSchema for tracking moves per player
-  @type("string") winner: string = ""; // Username of the round winner
+  @type([PlayedCard]) winningCards = new ArraySchema<PlayedCard>(); // List of all the winning card per move in a round
+  @type("string") roundWinner: string = ""; // Takes the username of the round winner
   @type("string") roundStatus: string = "pending";
 }
 
@@ -35,8 +36,7 @@ export class GameState extends Schema {
   @type({ map: Player }) players = new MapSchema<Player>(); // Fixed
   @type([Round]) rounds = new ArraySchema<Round>(); // Fixed
   @type("number") nextPlayerIndex: number = 0; // Ensure you check for valid values in logic
-  @type("string") roundStatus: string = "pending";
-  @type("string") roundWinner: string = ""; // Takes the username of the round winner
-  @type("string") gameStatus: string = "pending"; // Fixed
+  @type("string") roundStatus: string = "pending"; 
+  @type("string") gameStatus: string = "pending"; 
   @type("string") gameWinner: string = "";
 }
