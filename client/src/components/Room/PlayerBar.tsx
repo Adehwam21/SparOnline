@@ -39,19 +39,19 @@ const PlayerBar: React.FC<PlayerBarProps> = ({ username, score, playableCards, i
     <div className="min-w-72 min-h-36 bg-green-900 text-white p-2 md:p-4 rounded-sm shadow-lg max-w-4xl flex flex-col md:flex-row items-center justify-around space-y-4 md:space-y-0 md:space-x-4">
       
       {/* Player Info */}
-      <div className="flex flex-row space-x-4 md:flex-row justify-evenly items-center">
+      <div className="flex flex-row space-x-4 md:flex-row justify-between items-center">
         <div className="flex flex-row space-x-4 md:space-y-4 md:flex-col justify-between items-center">
           <div className="flex flex-row justify-center items-center lg:mx-3 space-x-2">
-            <FaUser size={20} className={`${!isTurn ? "text-green-500" : "text-red-500"}`}/>
+            <FaUser size={20} className={`${isTurn ? "text-green-500" : "text-red-500"}`}/>
             <span className="text-sm md:text-base text-center font-bold">{username}</span>
           </div>
-          <div className={`text-center px-3 py-1 text-sm font-bold rounded-sm ${!isTurn ? "bg-green-500" : "bg-red-500"}`}>
-            {!isTurn ? "Your Turn" : "Waiting..."}
+          <div className={`text-center px-3 py-1 text-sm font-bold rounded-sm ${isTurn ? "bg-green-500" : "bg-red-500"}`}>
+            {isTurn ? "Your Turn" : "Waiting..."}
           </div>
         </div>
 
         {/* Score Section */}
-        <p className="text-yellow-300 text-4xl md:text-5xl font-bold">
+        <p className="text-yellow-300 text-2xl md:text-3xl font-bold">
           {score}<span className="text-lg md:text-xl font-bold">/{maxPoints}</span>
         </p>
       </div>

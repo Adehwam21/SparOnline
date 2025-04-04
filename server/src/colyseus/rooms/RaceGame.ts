@@ -50,9 +50,9 @@ export class RaceGameRoom extends Room<GameState> {
 
     const move = currentRound.moves.get(client.sessionId);
     const playedCard = new PlayedCard();
-    playedCard.username = player.username;
+    playedCard.playerName = player.username;
     playedCard.cardName = message.cardName;
-    move?.cardsPlayed.push(playedCard);
+    move?.bids.push(playedCard);
 
     // Remove played card correctly from player's hand
     const cardIndex = player.hand.indexOf(message.cardName);
@@ -75,7 +75,7 @@ export class RaceGameRoom extends Room<GameState> {
     let roundWinner = null;
 
     for (const [playerId, move] of currentRound.moves.entries()) {
-      const lastCard = move.cardsPlayed[move.cardsPlayed.length - 1];
+      const lastCard = move.bids[move.bids.length - 1];
       if (!highestCard || getCardValue(lastCard.cardName) > getCardValue(highestCard.cardName)) {
         highestCard = lastCard;
         roundWinner = playerId;
@@ -83,9 +83,8 @@ export class RaceGameRoom extends Room<GameState> {
     }
 
     if (roundWinner) {
-      currentRound.winner = roundWinner;
+      currentRound.roundWinner = roundWinner;
       this.state.players.get(roundWinner)!.score += calculateRoundPoints(currentRound);
-      this.state.roundWinner = roundWinner;
     }
 
     currentRound.roundStatus = "complete";
@@ -115,7 +114,8 @@ export class RaceGameRoom extends Room<GameState> {
 
   advanceTurn(): number {
     const playersArray = Array.from(this.state.players.keys()); // Convert MapSchema to array
-    const winnerIndex = playersArray.indexOf(this.state.roundWinner);
+    const winnerIndex = playersArray.indexOf(this.state.rounds[this.state.rounds.length - 1].roundWinner);
+    if (winnerIndex === -1) return this.state.nextPlayerIndex; // No winner found, return current index
 
     return (winnerIndex + 1) % playersArray.length;
   }

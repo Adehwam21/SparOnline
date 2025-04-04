@@ -7,7 +7,7 @@ interface CardPileProps {
 
 const CardPile: React.FC<CardPileProps> = ({ bids }) => {
   return (
-    <div className="flex justify-center items-center relative h-24 w-80">
+    <div className="flex justify-center items-center relative h-24 w-full mx-3">
       {bids.map((card, index) => (
         <div
           key={index}

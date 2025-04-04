@@ -7,11 +7,11 @@ interface CardProps {
 
 const Card: React.FC<CardProps> = ({ card }) => {
   return (
-    <div className={`relative h-18 md:h-20 rounded-lg`}>
+    <div className={`relative h-18 md:h-20`}>
       <img
         src={`images/cards/${card.toUpperCase()}.png`}
         alt={card.toUpperCase()}
-        className="w-full h-full object-cover border border-green-700"
+        className="w-full h-full object-cover rounded-sm"
       />
     </div>
   );
