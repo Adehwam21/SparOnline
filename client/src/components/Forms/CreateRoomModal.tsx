@@ -1,6 +1,9 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
 import BaseModal from "./BaseModal";
 import FormField from "./FormField";
+import { useSelector } from "react-redux";
+
 
 interface CreateRoomModalProps {
   isOpen: boolean;
@@ -12,10 +15,11 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
   const [maxPlayers, setMaxPlayers] = useState(2);
   const [maxPoints, setMaxPoints] = useState(5);
   const [gameMode, setGameMode] = useState("race");
+  const creator = useSelector((state:any ) => state.auth.username); 
 
   const handleCreateRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Creating room:", { roomName, maxPlayers, maxPoints, gameMode });
+    console.log("Creating room:", { roomName, maxPlayers, maxPoints, gameMode, creator });
     onClose();
   };
 

@@ -4,15 +4,16 @@ import PlayerBar from "./PlayerBar";
 import DropZone from "./DropZone";
 
 interface GameBoardProps {
-  players: { id: string; username: string; score: number; bids: string[]; hand: string[] }[];
-  currentPlayerId: string;
+  players: {username: string; score: number; hand: string[] }[];
+  bids: { username: string; cards: string[] }[];
+  currentTurn: string;
   maxPoints: string;
 }
 
-const GameBoard: React.FC<GameBoardProps> = ({ players, currentPlayerId, maxPoints }) => {
-  const player = players.find((p) => p.id === currentPlayerId);
-  const opponents = players.filter((p) => p.id !== currentPlayerId);
-  const isTurn = player!.id === currentPlayerId;
+const GameBoard: React.FC<GameBoardProps> = ({ players, bids, currentTurn, maxPoints }) => {
+  const player = players.find((p) => p.username === currentTurn);
+  const opponents = players.filter((p) => p.username !== currentTurn);
+  const isTurn = player!.username === currentTurn;
 
   const [playableCards, setPlayableCards] = useState<string[]>(player?.hand || []);
 
@@ -30,12 +31,20 @@ const GameBoard: React.FC<GameBoardProps> = ({ players, currentPlayerId, maxPoin
     <div className="relative w-full h-fit rounded-lg flex flex-col p-10 items-center justify-evenly bg-green-700 text-white">
       {/* Opponents */}
       <div className="flex mb-2 flex-col lg:flex-row items-center justify-center gap-4">
-        {opponents.length > 0 &&
-          opponents.map((opponent, index) => (
+      {opponents.length > 0 &&
+        opponents.map((opponent, index) => {
+          const opponentBid = bids.find((bid) => bid.username === opponent.username); // 👈 get this opponent's bid
+
+          return (
             <div key={index} className={`w-full md:w-auto ${opponents.length === 1 ? "text-center" : ""}`}>
-              <Opponent {...opponent} maxPoints={maxPoints} />
+              <Opponent
+                {...opponent}
+                maxPoints={maxPoints}
+                bids={opponentBid?.cards || []} // 👈 only their bid
+              />
             </div>
-          ))}
+          );
+        })}
       </div>
 
       {/* Player Section */}

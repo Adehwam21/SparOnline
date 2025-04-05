@@ -7,13 +7,18 @@ export interface Player {
 
 export interface PlayedCard {
   player: string; // Username of the player who played the card
-  card: string; // Card value
+  cards: string[]; // Card value
 }
 
 export interface GameState {
   players: Player[]; // List of players in the game
   bids: PlayedCard[]; // Cards played in the current round
-  round: number; // Current round number
-  currentTurn: string; // Username of the player whose turn it is
-  gameStarted: boolean; // Indicates if the game has started
+  round: string; // Current round number
+  currentTurn: string; // Index of the player whose turn it is
+  gameStatus: string; // Indicates if the game has started
+  maxPoints: string; // Maximum points to win the game
+  gameMode: string; // Type of game (e.g., "classic", "custom")
+  creator: string; // Store host player username
+  gameId: string; // Unique identifier for the game
+  gameName: string; // Name of the game
 }
