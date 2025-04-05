@@ -1,9 +1,9 @@
 import Joi from "joi";
 import { ICreateGameInput } from "../types/game";
-import { IGameRoom } from "../types/game";
+
 
 export const createGameInput = Joi.object<ICreateGameInput>({
-    roomId: Joi.string().required(),
+    roomName: Joi.string().required(),
     maxPlayers: Joi.string().required(), // Maximum number of players allowed in the room
     maxPoints: Joi.string().required(), // Maximum points to win the game
     gameMode: Joi.string(), // Type of game (e.g., "classic", "custom")

@@ -9,7 +9,7 @@ const Card: React.FC<CardProps> = ({ card }) => {
   return (
     <div className={`relative h-18 md:h-20`}>
       <img
-        src={`images/cards/${card.toUpperCase()}.png`}
+        src={`/images/cards/${card.toUpperCase()}.png`}
         alt={card.toUpperCase()}
         className="w-full h-full object-cover rounded-sm"
       />
