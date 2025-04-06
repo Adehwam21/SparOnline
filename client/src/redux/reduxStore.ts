@@ -13,8 +13,7 @@ const authPersistConfig = {
       getItem: () => Promise.resolve(null),
       setItem: () => Promise.resolve(),
       removeItem: () => Promise.resolve(),
-    },
-    whitelist: ['authState'],
+    }
   };
 
 const gamePersistConfig = {
@@ -23,8 +22,7 @@ const gamePersistConfig = {
       getItem: () => Promise.resolve(null),
       setItem: () => Promise.resolve(),
       removeItem: () => Promise.resolve(),
-    },
-    whitelist: ['gameState'],
+    }
 };
 
 const rootReducer = combineReducers({
