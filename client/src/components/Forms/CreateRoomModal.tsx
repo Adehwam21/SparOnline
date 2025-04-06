@@ -1,8 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import BaseModal from "./BaseModal";
 import FormField from "./FormField";
 import { useSelector } from "react-redux";
+import { createMultiplayerRoom } from "../../services/game";
+import { AppDispatch, RootState } from "../../redux/reduxStore";
+import { useDispatch } from "react-redux";
+import { setGameState } from "../../redux/slices/gameSlice";
 
 
 interface CreateRoomModalProps {
@@ -11,15 +15,20 @@ interface CreateRoomModalProps {
 }
 
 const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const creator = useSelector((state: RootState) => state.auth?.user?.username) || "Guest";
   const [roomName, setRoomName] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(2);
   const [maxPoints, setMaxPoints] = useState(5);
   const [gameMode, setGameMode] = useState("race");
-  const creator = useSelector((state:any ) => state.auth.username); 
 
-  const handleCreateRoom = (e: React.FormEvent) => {
+
+  const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Creating room:", { roomName, maxPlayers, maxPoints, gameMode, creator });
+    const data = await createMultiplayerRoom({ roomName, maxPlayers: String(maxPlayers), maxPoints: String(maxPoints), gameMode, creator })
+    dispatch(setGameState(data))
+    navigate(`/game/${data!.roomInfo!.roomId}`);
     onClose();
   };
 
@@ -78,7 +87,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
 
         {/* Submit Button */}
         <button type="submit" className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">
-          Create Room
+          Create Game
         </button>
       </form>
     </BaseModal>

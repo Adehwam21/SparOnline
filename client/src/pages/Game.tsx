@@ -1,14 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import Room from "../components/Room/Room";
 import { GameState } from "../types/game";
 import gameData from "../data/gameState.json"; // Import the JSON file
 import WaitingScreen  from "../components/Room/WaitingScreen"; // Import the WaitingScreen component
 import { useSelector } from "react-redux";
+import { RootState } from "../redux/reduxStore";
 
 
 const GamePage: React.FC = () => {
-  const currentUser = useSelector((state: any) => state.auth.username) || "Aaron"; // Replace with your actual user selector
+  const currentUser = useSelector((state: RootState) => state.auth?.user?.username) || "Aaron";
+  const roomLink = useSelector((state: RootState) => state.game.roomLink );
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [isHost, setIsHost] = useState(false);
   const [isWaitingScreenOpen, setIsWaitingScreenOpen] = useState(true);
@@ -33,7 +34,7 @@ const GamePage: React.FC = () => {
     <div className="h-[60rem] md:h-full bg-green-600 pt-20 text-white">
       <WaitingScreen
         isOpen={isWaitingScreenOpen}
-        roomLink={`https://game.com/room/${gameState.gameId}`}
+        roomLink={roomLink!}
         gameStatus={gameState.gameStatus as "waiting" | "ready" | "started"}
         isHost={isHost}
         onStartGame={() => console.log("Game started!")}
@@ -42,7 +43,7 @@ const GamePage: React.FC = () => {
 
       <Room
         players={gameState.players}
-        currentTurn={gameState.currentTurn}
+        currentTurn={gameState.currentTurn} 
         maxPoints={gameState.maxPoints}
         bids={gameState.bids}
       />

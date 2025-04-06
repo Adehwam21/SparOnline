@@ -22,6 +22,6 @@ const GameRoomSchema = new Schema<IGameRoomDocument>(
 );
 
 // Create the model
-export const GameRoomModel = mongoose.model<IGameRoomDocument, IGameRoomModel>("GameSession", GameRoomSchema);
+export const GameRoomModel = mongoose.model<IGameRoomDocument, IGameRoomModel>("GameRoom", GameRoomSchema);
 
 
