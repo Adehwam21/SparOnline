@@ -3,7 +3,7 @@ import "dotenv/config";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { Config } from "./types/config";
-import customError from "./types/error";
+import customError from "./middleware/error";
 import { IAppContext } from "./types/app";
 import InitDB from "./db";
 import initServices from "./services/index";
@@ -13,7 +13,7 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import routes from "./routes/rotues";
 import { createGameServer } from "./colyseus/gameServer";
-
+import { playground } from "@colyseus/playground";
 
 export default async function start(config: Config) {
   try {
@@ -67,6 +67,7 @@ export default async function start(config: Config) {
     });
 
     app.use(customError);
+    app.use("/colyseus-playground", playground());
 
     // Create and start Colyseus + Express server
     const { server } = createGameServer(app);

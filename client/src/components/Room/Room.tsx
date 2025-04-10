@@ -15,7 +15,7 @@ const Room: React.FC<RoomProps> = ({players, currentTurn, maxPoints, bids}) => {
       {/* Game Board */}
         <GameBoard 
           players={players} 
-          bids={bids.map(bid => ({ username: bid.player, cards: bid.cards }))} 
+          bids={bids.map(bid => ({ username: bid.player, cards: bid.cards }))}
           currentTurn={currentTurn} 
           maxPoints={maxPoints} 
         />

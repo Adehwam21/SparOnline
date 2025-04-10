@@ -40,7 +40,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ players, bids, currentTurn, maxPo
               <Opponent
                 {...opponent}
                 maxPoints={maxPoints}
-                bids={opponentBid?.cards || []} // 👈 only their bid
+                bids={opponentBid?.cards || []}
               />
             </div>
           );
@@ -55,7 +55,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ players, bids, currentTurn, maxPo
             <PlayerBar
               username={player.username}
               score={player.score}
-              playableCards={playableCards} // Pass updated state
+              playableCards={playableCards}
               isTurn={isTurn}
               maxPoints={maxPoints}
               onCardDropped={handleCardDropped}

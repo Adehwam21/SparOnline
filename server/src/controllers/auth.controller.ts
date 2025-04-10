@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { _User } from '../types/user';
 import { createUserInput, loginUserInput } from '../validation/user';
@@ -6,7 +6,7 @@ import { config } from '../config';
 import { comparePassword, hashPassword } from '../utils/authUtils';
 
 // Register User
-export const register = async (req: Request, res: Response): Promise<void> => {
+export const register = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
         // Validate create user input
         const { error } = createUserInput.validate(req.body);
@@ -34,8 +34,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
         res.status(201).json({ message: 'User registered successfully' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Internal server error' });
+        next(error);
         return;
     }
 };
