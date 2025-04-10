@@ -36,22 +36,26 @@ export const createMultiplayerRoom = async (config: multiplayerConfig) => {
 
 export const joinColyseusRoom = async (
     roomId: string,
-    gameMode: string,
+    playerUsername: string,
     dispatch: AppDispatch
     ): Promise<Room<GameState> | null> => {
     try {
-        const room = await colyseusSDK.joinById<GameState>(roomId, { gameMode });
+        const room = await colyseusSDK.joinById<GameState>(roomId, { playerUsername });
+        if (!room) {
+            toast.error("Failed to join room. Try again.", errorToastOptions);
+            return null;
+        }
 
         room.onMessage("add_player", (players) => {
-        dispatch(updatePlayers(players));
+            dispatch(updatePlayers(players));
         });
 
         room.onMessage("update_round", (roundInfo) => {
-        dispatch(updateRound(roundInfo.round));
+            dispatch(updateRound(roundInfo.round));
         });
 
         room.onMessage("update_player_hand", (message) => {
-        dispatch(setHand(message.hand));
+            dispatch(setHand(message.hand));
         });
 
         (window as any).colyseusRoom = room;
