@@ -14,10 +14,10 @@ export class RaceGameRoom extends Room<GameState> {
     this.state.creator = options.creator;
   }
 
-  onJoin(client: Client, options: { username: string }) {
+  onJoin(client: Client, options: { playerUsername: string }) {
     const player = new Player();
     player.id = client.sessionId;
-    player.username = options.username;
+    player.username = options.playerUsername;
     this.state.players.set(client.sessionId, player);
   }
 

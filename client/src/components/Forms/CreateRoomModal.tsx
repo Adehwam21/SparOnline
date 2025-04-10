@@ -40,7 +40,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
       dispatch(setGameState(data));
   
       // Join the room immediately
-      await joinColyseusRoom(data.colyseusRoomId, gameMode, dispatch);
+      await joinColyseusRoom(data.colyseusRoomId, creator, dispatch);
 
       // Redirect and waiting screen
       navigate(`/game/${data.colyseusRoomId}`);
