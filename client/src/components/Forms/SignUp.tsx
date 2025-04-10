@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../redux/reduxStore';
 import { errorToastOptions, invalidPaawordOptions, LoginSignUpProps, successToastOptions } from '../../types';
 import axiosInstance from '../../config/axiosConfig';
-import { loginFailure, loginStart } from '../../redux/slices/authSlice';
+import { registerSuccess, registerFailure, loginStart } from '../../redux/slices/authSlice';
 
 const strongPasswordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
 
@@ -17,7 +17,6 @@ const SignUp: React.FC<LoginSignUpProps> = () => {
     username: '',
     email: '',
     password: '',
-    role: 'player'
   });
   const [showPassword, setShowPassword] = useState(false); // For toggling password visibility
 
@@ -35,32 +34,33 @@ const SignUp: React.FC<LoginSignUpProps> = () => {
 
   const handleRegister =  async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
     if (!strongPasswordRegex.test(formData.password)) {
       toast(
         'Password must be at least 6 characters long and include at least one letter, one number, and one special character.'
       , invalidPaawordOptions,);
       return;
     }
-
+    
     dispatch(loginStart())
     try {
       const res = await axiosInstance.post("/auth/register", formData)
 
-      if (res.status !== 200){
+      if (res.status !== 201){
         toast.error(res.data.message, errorToastOptions)
       }
 
       toast.success(res.data.message, successToastOptions)
+      dispatch(registerSuccess(res.data))
+    
 
     } catch (error: any) {
-      dispatch(loginFailure(error))
+      dispatch(registerFailure(error))
       const errorMessage = error.response?.data?.message || "An error occurred"
       toast.error(errorMessage || "An error occured", errorToastOptions)
-    } 
+    }
   
     // Reset the form after submission
-    setFormData({ username: '', password: '', email: '', role: '' });
+    setFormData({ username: '', password: '', email: '' });
   };
 
   return (

@@ -1,6 +1,7 @@
 import { Response, Request} from 'express';
 import { ICreateGameInput } from '../types/game';
 import {createGameInput} from '../validation/game';
+import { matchMaker } from 'colyseus';
 
 
 export const createGameRoom = async (req: Request, res: Response): Promise<void> => {
@@ -13,31 +14,47 @@ export const createGameRoom = async (req: Request, res: Response): Promise<void>
             return;
         }
 
+        // Create the Colyseus room
+        const colyseusRoom = await matchMaker.createRoom(gameMode, {
+            roomName,
+            maxPlayers,
+            maxPoints,
+            gameMode,
+            creator,
+        });
 
+        if (!colyseusRoom) {
+            res.status(500).json({ message: 'Error creating game room' });
+            return;
+        }
+        // Get the roomId from the Colyseus room
+        const roomId = colyseusRoom.roomId;
+
+        // Save the room to your MongoDB with the roomId
         const newGameRoom: ICreateGameInput = {
             roomName,
             maxPlayers,
             maxPoints,
             gameMode,
-            creator, // Initialize with an empty array of players
-            gameState: {}, // Initialize with an empty game state
+            creator,
+            gameState: {}, // Add initial state if needed
         };
 
-        // Save the new game room to the database
-        
         const savedGameRoom = await req.context!.services!.game.createGame(newGameRoom);
         if (!savedGameRoom) {
-            res.status(500).json({ message: 'Error creating game room' });
+            res.status(500).json({ message: 'Error saving game room' });
             return;
         }
-        
-        const link = `${req.protocol}://${req.get('host')}/game/${savedGameRoom.roomId}`; // Construct the room link
 
-
-        res.status(201).json({roomInfo: savedGameRoom, roomLink: link, message: 'Game room created successfully'});
+        const link = `${req.protocol}://${req.get('host')}/game/${roomId}`;
+        res.status(201).json({
+            roomInfo: savedGameRoom,
+            colyseusRoomId: roomId,
+            roomLink: link,
+            message: 'Game room created successfully'
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal server error' });
     }
-
 };

@@ -2,12 +2,10 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BaseModal from "./BaseModal";
 import FormField from "./FormField";
-import { useSelector } from "react-redux";
-import { createMultiplayerRoom } from "../../services/game";
+import { useSelector, useDispatch } from "react-redux";
+import { createMultiplayerRoom, joinColyseusRoom } from "../../services/game";
 import { AppDispatch, RootState } from "../../redux/reduxStore";
-import { useDispatch } from "react-redux";
 import { setGameState } from "../../redux/slices/gameSlice";
-
 
 interface CreateRoomModalProps {
   isOpen: boolean;
@@ -18,6 +16,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
   const creator = useSelector((state: RootState) => state.auth?.user?.username) || "Guest";
+  
   const [roomName, setRoomName] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(2);
   const [maxPoints, setMaxPoints] = useState(5);
@@ -26,10 +25,29 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
 
   const handleCreateRoom = async (e: React.FormEvent) => {
     e.preventDefault();
-    const data = await createMultiplayerRoom({ roomName, maxPlayers: String(maxPlayers), maxPoints: String(maxPoints), gameMode, creator })
-    dispatch(setGameState(data))
-    navigate(`/game/${data!.roomInfo!.roomId}`);
-    onClose();
+  
+    try {
+      const data = await createMultiplayerRoom({
+        roomName,
+        maxPlayers: String(maxPlayers),
+        maxPoints: String(maxPoints),
+        gameMode,
+        creator
+      });
+  
+      if (!data?.colyseusRoomId) throw new Error("Room creation failed");
+  
+      dispatch(setGameState(data));
+  
+      // Join the room immediately
+      await joinColyseusRoom(data.colyseusRoomId, gameMode, dispatch);
+
+      // Redirect and waiting screen
+      navigate(`/game/${data.colyseusRoomId}`);
+      onClose();
+    } catch (err) {
+      console.error("Error creating room:", err);
+    }
   };
 
   return (
@@ -61,7 +79,10 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
         </FormField>
 
         {/* Game Mode */}
-        <FormField label="Game Mode" tooltipText="Race: Be the fastest to reach maximum points. Survival: Be the last man standing to win.">
+        <FormField
+          label="Game Mode"
+          tooltipText="Race: Be the fastest to reach maximum points. Survival: Be the last man standing to win."
+        >
           <select
             value={gameMode}
             onChange={(e) => setGameMode(e.target.value)}

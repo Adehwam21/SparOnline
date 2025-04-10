@@ -32,6 +32,10 @@ export class Round extends Schema {
 
 // GameState keeps track of the entire game
 export class GameState extends Schema {
+  @type("string") roomId: string = ""; // Unique identifier for the room
+  @type("number") maxPlayers: number = 4; // Maximum number of players allowed in the room
+  @type("number") maxPoints: number = 100; // Maximum points to win the game
+  @type("string") creator: string = ""; // Creator of the room
   @type(["string"]) deck = new ArraySchema<string>();
   @type({ map: Player }) players = new MapSchema<Player>(); // Fixed
   @type([Round]) rounds = new ArraySchema<Round>(); // Fixed

@@ -4,11 +4,14 @@ import { GameState, Player, Round, PlayedCard, Moves } from "../schemas/GameStat
 import { createDeck, shuffleDeck, getCardValue, calculateRoundPoints } from "../utils/roomUtils";
 
 export class RaceGameRoom extends Room<GameState> {
-  maxClients = 4;
+  maxClients: number = 4;
 
-  onCreate() {
-    this.setState(new GameState());
-    this.onMessage("play_card", (client, message) => this.handlePlayCard(client, message));
+  onCreate(options: { roomId: string; maxPlayers: number; maxPoints: number; creator: string }) {
+    this.state = new GameState();
+    this.state.roomId = options?.roomId || this.roomId;
+    this.maxClients = Number(options.maxPlayers);
+    this.state.maxPoints = Number(options.maxPoints);
+    this.state.creator = options.creator;
   }
 
   onJoin(client: Client, options: { username: string }) {
