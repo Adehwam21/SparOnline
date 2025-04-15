@@ -9,17 +9,51 @@ export class RaceGameRoom extends Room<GameState> {
   onCreate(options: { roomId: string; maxPlayers: number; maxPoints: number; creator: string }) {
     this.state = new GameState();
     this.state.roomId = options?.roomId || this.roomId;
-    this.maxClients = Number(options.maxPlayers);
+    this.maxClients = Number(options.maxPlayers) + 1; // +1 for the host
+    this.state.maxPlayers = Number(options.maxPlayers);
     this.state.maxPoints = Number(options.maxPoints);
     this.state.creator = options.creator;
   }
 
   onJoin(client: Client, options: { playerUsername: string }) {
+    // Check for existing player by username
+    const existingEntry = Array.from(this.state.players.entries()).find(
+      ([, player]) => player.username === options.playerUsername
+    );
+  
+    if (existingEntry) {
+      const [oldClientId, player] = existingEntry;
+  
+      // Remove old entry
+      this.state.players.delete(oldClientId);
+  
+      // Assign new sessionId and re-add player
+      player.id = client.sessionId;
+      this.state.players.set(client.sessionId, player);
+  
+      console.log(`Reconnected player: ${player.username}`);
+      return;
+    }
+  
+    // Create a new player instance
     const player = new Player();
     player.id = client.sessionId;
     player.username = options.playerUsername;
+    this.state.playerUsernames.push(options.playerUsername);
+  
     this.state.players.set(client.sessionId, player);
+    console.log(`New player joined: ${player.username}`);
+
+    //
+    //  Check if the all the players have joined the game and start the game
+    //
+
+    if (this.state.players.size === this.state.maxPlayers) {
+      this.state.gameStatus = "ready";
+      this.broadcast("game_ready", { roomInfo: this.state });
+    }
   }
+  
 
   startGame() {
     const deck = shuffleDeck(createDeck());
@@ -127,4 +161,32 @@ export class RaceGameRoom extends Room<GameState> {
     this.broadcast("game_over", { winner: this.state.gameWinner });
     this.disconnect();
   }
+
+  async onLeave(client: Client, consented: boolean) {
+    try {
+      // Flag the player as inactive for other players
+      this.state.players.get(client.sessionId)!.active = false;
+
+      //
+      // If player leaves voluntarily, remove them from the game
+      //
+
+      if (consented) {
+        this.state.players.delete(client.sessionId);
+        console.log(`Player ${client.sessionId} left the game.`);
+        return;
+      }
+
+      //
+      // If player left the game involuntarily, attempt to reconnect within 60 seconds, 
+      // If reconnection is successful, flag player as active
+      //
+      await this.allowReconnection(client, 60);
+      this.state.players.get(client.sessionId)!.active = true;
+
+    } catch (error: any) {
+      throw new Error("Reconnection failed: " + error.message);
+    }
+  }
+
 }

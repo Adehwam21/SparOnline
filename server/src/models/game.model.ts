@@ -12,6 +12,7 @@ const GameRoomSchema = new Schema<IGameRoomDocument>(
     roomId: { type: String, required: true, default: uuidv4, unique: true, index: true },
     roomName: {type: String, required: true},
     creator: { type: String, required: true }, // Creator of the game room
+    players: { type: [String], required: true }, // List of players in the game
     gameMode: { type: String, enum: ["race", "survival"], required: true }, // Type of game (e.g., "classic", "custom")
     maxPlayers: { type: String, required: true }, // Maximum number of players allowed in the room
     maxPoints: { type: String, required: true }, // Maximum points to win the game

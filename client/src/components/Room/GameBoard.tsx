@@ -4,17 +4,18 @@ import PlayerBar from "./PlayerBar";
 import DropZone from "./DropZone";
 
 interface GameBoardProps {
-  players: {username: string; score: number; hand: string[] }[];
+  players: {id:string, username: string; score: number; hand: string[], active: boolean,  }[];
   bids: { username: string; cards: string[] }[];
   currentTurn: string;
+  currentUser: string;
   maxPoints: string;
 }
 
-const GameBoard: React.FC<GameBoardProps> = ({ players, bids, currentTurn, maxPoints }) => {
-  const player = players.find((p) => p.username === currentTurn);
-  const opponents = players.filter((p) => p.username !== currentTurn);
-  const isTurn = player!.username === currentTurn;
-
+const GameBoard: React.FC<GameBoardProps> = ({ players = [], bids = [], currentTurn, currentUser, maxPoints }) => {
+  const player = players.find((p) => p.username === currentUser);
+  const opponents = players.filter((p) => p.username !== currentUser) || [];
+  const isTurn = player?.username === currentTurn;
+  
   const [playableCards, setPlayableCards] = useState<string[]>(player?.hand || []);
 
   // This function is called when a card is dropped in DropZone
@@ -28,12 +29,12 @@ const GameBoard: React.FC<GameBoardProps> = ({ players, bids, currentTurn, maxPo
   }, [playableCards]); // Runs whenever playableCards changes
 
   return (
-    <div className="relative w-full h-fit rounded-lg flex flex-col p-10 items-center justify-evenly bg-green-700 text-white">
+    <div className="relative w-full min-h-[50rem] md:min-h-[30rem] rounded-lg flex flex-col p-10 items-center justify-evenly bg-green-700 text-white">
       {/* Opponents */}
       <div className="flex mb-2 flex-col lg:flex-row items-center justify-center gap-4">
       {opponents.length > 0 &&
         opponents.map((opponent, index) => {
-          const opponentBid = bids.find((bid) => bid.username === opponent.username); // 👈 get this opponent's bid
+          const opponentBid = bids.find((bid) => bid.username === opponent.username); // get this opponent's bid
 
           return (
             <div key={index} className={`w-full md:w-auto ${opponents.length === 1 ? "text-center" : ""}`}>

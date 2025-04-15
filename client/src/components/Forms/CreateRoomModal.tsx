@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import BaseModal from "./BaseModal";
 import FormField from "./FormField";
 import { useSelector, useDispatch } from "react-redux";
-import { createMultiplayerRoom, joinColyseusRoom } from "../../services/game";
+import { createMultiplayerRoom } from "../../services/game";
 import { AppDispatch, RootState } from "../../redux/reduxStore";
 import { setGameState } from "../../redux/slices/gameSlice";
 
@@ -38,9 +38,6 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
       if (!data?.colyseusRoomId) throw new Error("Room creation failed");
   
       dispatch(setGameState(data));
-  
-      // Join the room immediately
-      await joinColyseusRoom(data.colyseusRoomId, creator, dispatch);
 
       // Redirect and waiting screen
       navigate(`/game/${data.colyseusRoomId}`);

@@ -4,6 +4,7 @@ import LandingPage from '../pages/Lobby';
 import LearnPage from '../pages/Learn';
 import Lobby from '../components/Lobby/Lobby';
 import GamePage from '../pages/Game';
+import { RoomProvider } from '../contexts/roomContext';
 
 export const router = createBrowserRouter([
   {
@@ -13,7 +14,12 @@ export const router = createBrowserRouter([
       { index: true, element: <Lobby /> },
       {  path:"/sign-in", element: <LandingPage /> },
       { path:"/learn", element: <LearnPage /> },
-      { path:"/game/:id", element: <GamePage/>}
+      { path:"/game/:id", element: (
+        <RoomProvider>
+          <GamePage/>
+        </RoomProvider>
+        
+      )}
     ],
   },
 ]);

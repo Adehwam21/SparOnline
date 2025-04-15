@@ -2,13 +2,15 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 // Player interface with hand of cards
 interface Player {
+  id: string; // Unique identifier for the player (session ID)
   username: string;
   score: number;
   rating: number;
   hand: string[]; // Each player's hand (cards)
+  active: boolean; // Indicates if the player is active in the game
 }
 
-interface GameState {
+export interface GameState {
   // loading: boolean; // Loading state for the game
   roomInfo: { 
     roomId: string | null; // Unique identifier for the room

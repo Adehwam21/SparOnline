@@ -15,12 +15,14 @@ export const createGameRoom = async (req: Request, res: Response): Promise<void>
         }
 
         // Create the Colyseus room
-        const colyseusRoom = await matchMaker.createRoom(gameMode, {
+        const colyseusRoom = await matchMaker.create(gameMode, {
             roomName,
             maxPlayers,
             maxPoints,
             gameMode,
             creator,
+            players: [creator],
+            playerUsername: creator,
         });
 
         if (!colyseusRoom) {
@@ -28,15 +30,17 @@ export const createGameRoom = async (req: Request, res: Response): Promise<void>
             return;
         }
         // Get the roomId from the Colyseus room
-        const roomId = colyseusRoom.roomId;
+        const roomId = colyseusRoom.room.roomId;
 
         // Save the room to your MongoDB with the roomId
         const newGameRoom: ICreateGameInput = {
+            roomId,
             roomName,
             maxPlayers,
             maxPoints,
             gameMode,
             creator,
+            players: [creator],
             gameState: {}, // Add initial state if needed
         };
 

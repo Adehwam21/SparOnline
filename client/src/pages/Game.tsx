@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
 import Room from "../components/Room/Room";
 import WaitingScreen  from "../components/Room/WaitingScreen"; // Import the WaitingScreen component
-import { useSelector } from "react-redux";
-import { RootState } from "../redux/reduxStore";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../redux/reduxStore";
+import { useRoom } from "../contexts/roomContext";
+import { useParams } from "react-router-dom";
 
 
 const GamePage: React.FC = () => {
-  const currentUser = useSelector((state: RootState) => state.auth?.user?.username) || "Aaron";
-  // const roomInfo = useSelector((state: RootState) => state.game?.roomInfo);
-  // const gameMode = roomInfo?.gameMode;
-  // const roomId = roomInfo?.roomId;
-
-
-  const roomLink = useSelector((state: RootState) => state.game.roomLink );
+  const dispatch = useDispatch<AppDispatch>();
+  const { join, isConnected, isConnecting, } = useRoom();
+  const { id: roomId } = useParams();
   const gameState = useSelector((state: RootState) => state.game);
-  const [isHost, setIsHost] = useState(false);
+  const currentUser = useSelector((state: RootState) => state.auth?.user?.username) || "Guest";
+  const roomLink = useSelector((state: RootState) => state.game.roomLink );
+  const [isHost, setIsHost] = useState(true);
   const [isWaitingScreenOpen, setIsWaitingScreenOpen] = useState(true);
 
   const handleCloseWaitingScreen = () => {
@@ -26,6 +26,12 @@ const GamePage: React.FC = () => {
       setIsHost(gameState.roomInfo.creator === currentUser);
     }
   }, [gameState, currentUser]);
+
+  useEffect(() => {
+    if (!isConnected && !isConnecting && roomId) {
+      join(roomId, currentUser, dispatch);
+    }
+  }, [roomId, isConnected, isConnecting, dispatch, join, currentUser]);
   
 
   if (!gameState) {
@@ -37,17 +43,18 @@ const GamePage: React.FC = () => {
       <WaitingScreen
         isOpen={isWaitingScreenOpen}
         roomLink={roomLink!}
-        gameStatus={gameState.roomInfo.gameStatus as "waiting" | "ready" | "started"}
+        gameStatus={gameState.roomInfo!.gameStatus as "ready" | "started"}
         isHost={isHost}
         onStartGame={() => console.log("Game started!")}
         onClose={handleCloseWaitingScreen}
       />
 
       <Room
-        players={gameState.roomInfo.players}
-        currentTurn={gameState.roomInfo!.currentTurn!} 
-        maxPoints={gameState.roomInfo!.maxPoints!}
-        bids={gameState.roomInfo!.bids!}
+        players={Object.values(gameState.roomInfo?.players || {})}
+        currentTurn={gameState.roomInfo?.currentTurn ?? ""}
+        currentUser={currentUser}
+        maxPoints={gameState.roomInfo?.maxPoints ?? "0"}
+        bids={gameState.roomInfo?.bids ?? []}
       />
     </div>
   );

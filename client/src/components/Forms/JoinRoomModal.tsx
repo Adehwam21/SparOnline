@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import BaseModal from "./BaseModal";
 import FormField from "./FormField";
+import { useNavigate } from "react-router-dom";
 
 interface JoinRoomModalProps {
   isOpen: boolean;
@@ -8,11 +9,14 @@ interface JoinRoomModalProps {
 }
 
 const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ isOpen, onClose }) => {
-  const [roomCode, setRoomCode] = useState("");
+  const navigate = useNavigate();
+  const [roomLink, setRoomCode] = useState("");
+
 
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Joining room:", { roomCode });
+    const roomId = roomLink.split("/").pop(); // Extract the room ID from the link
+    navigate(`/game/${roomId}`);
     onClose();
   };
 
@@ -22,7 +26,7 @@ const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ isOpen, onClose }) => {
       <FormField label="Room code or link" tooltipText="Enter the room code or the room link">
           <input
             type="text"
-            value={roomCode}
+            value={roomLink}
             onChange={(e) => setRoomCode(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded"
             required
