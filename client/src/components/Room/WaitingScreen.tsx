@@ -8,7 +8,7 @@ import { successToastOptions } from '../../types';
 interface WaitingScreenProps {
     isOpen: boolean;
     roomLink: string;
-    gameStatus: "waiting" | "ready" | "started";
+    gameStatus: "ready" | "started";
     isHost: boolean;
     onStartGame?: () => void;
     onClose: () => void; // Add an onClose prop to close the screen
@@ -34,14 +34,12 @@ interface WaitingScreenProps {
 
     const getStatusMessage = () => {
         switch (gameStatus) {
-        case "waiting":
-            return "Waiting for players to join the room...";
         case "ready":
             return "Room is full. Ready to start the game!";
         case "started":
             return "Game is in progress...";
         default:
-            return "";
+            return "Waiting for players to join the room...";
         }
     };
 
@@ -81,13 +79,13 @@ interface WaitingScreenProps {
             <p className="text-sm text-center text-gray-600">{getStatusMessage()}</p>
 
             {gameStatus === "ready" && isHost && (
-            <button
-                onClick={onStartGame}
-                className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-4 rounded-md mx-auto mt-2 transition"
-            >
-                <FaPlay size={14} />
-                Start Game
-            </button>
+                <button
+                    onClick={onStartGame}
+                    className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-4 rounded-md mx-auto mt-2 transition"
+                >
+                    <FaPlay size={14} />
+                    Start Game
+                </button>
             )}
         </motion.div>
         </div>

@@ -12,16 +12,19 @@ export interface IGameRoom {
     maxPoints: string; // Maximum points to win the game
     gameMode: string; // Type of game (e.g., "classic", "custom")
     creator: string; // Store player data
+    players: string[]; // List of players in the game
     gameState: any; // Store snapshot of game state
     createdAt: Date;
 }
 
 
 export interface ICreateGameInput {
+    roomId: string; // Unique identifier for the room
     roomName: string;
     maxPlayers: string; // Maximum number of players allowed in the room
     maxPoints: string; // Maximum points to win the game
     gameMode: string; // Type of game (e.g., "classic", "custom")
+    players: string[]; // List of players in the game
     creator: string; // Store player data
     gameState?: any; // Store snapshot of game state
 }
