@@ -1,5 +1,5 @@
 import { colyseus } from "use-colyseus";
-import { GameState } from "../redux/slices/gameSlice";
+import { GameState } from "./GameState";
 import { COLYSEUS_WS_URL } from "../constants";
 
 export const {
@@ -7,5 +7,5 @@ export const {
     connectToColyseus,
     disconnectFromColyseus,
     useColyseusRoom,
-    useColyseusState,
-} = colyseus<GameState>(COLYSEUS_WS_URL);
+    useColyseusState
+} = colyseus(COLYSEUS_WS_URL, GameState);

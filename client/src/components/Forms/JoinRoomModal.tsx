@@ -10,12 +10,11 @@ interface JoinRoomModalProps {
 
 const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const [roomLink, setRoomCode] = useState("");
+  const [roomId, setRoomId] = useState("");
 
 
   const handleJoinRoom = (e: React.FormEvent) => {
     e.preventDefault();
-    const roomId = roomLink.split("/").pop(); // Extract the room ID from the link
     navigate(`/game/${roomId}`);
     onClose();
   };
@@ -26,8 +25,8 @@ const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ isOpen, onClose }) => {
       <FormField label="Room code or link" tooltipText="Enter the room code or the room link">
           <input
             type="text"
-            value={roomLink}
-            onChange={(e) => setRoomCode(e.target.value)}
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded"
             required
           />

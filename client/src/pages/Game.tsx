@@ -7,14 +7,13 @@ import { useRoom } from "../contexts/roomContext";
 import { useParams } from "react-router-dom";
 
 
+
 const GamePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { join, isConnected, isConnecting, } = useRoom();
+  const { join, isConnected, isConnecting } = useRoom();
   const { id: roomId } = useParams();
   const gameState = useSelector((state: RootState) => state.game);
   const currentUser = useSelector((state: RootState) => state.auth?.user?.username) || "Guest";
-  const roomLink = useSelector((state: RootState) => state.game.roomLink );
-  const [isHost, setIsHost] = useState(true);
   const [isWaitingScreenOpen, setIsWaitingScreenOpen] = useState(true);
 
   const handleCloseWaitingScreen = () => {
@@ -22,17 +21,21 @@ const GamePage: React.FC = () => {
   };
 
   useEffect(() => {
-    if (gameState) {
-      setIsHost(gameState.roomInfo.creator === currentUser);
-    }
-  }, [gameState, currentUser]);
-
-  useEffect(() => {
     if (!isConnected && !isConnecting && roomId) {
       join(roomId, currentUser, dispatch);
     }
   }, [roomId, isConnected, isConnecting, dispatch, join, currentUser]);
   
+
+  useEffect(() => {
+    if (
+      gameState &&
+      gameState.roomInfo!.gameStatus === "started" &&
+      gameState.roomInfo!.players!
+    ) {
+      setIsWaitingScreenOpen(false);
+    }
+  }, [gameState]);
 
   if (!gameState) {
     return <div className="flex items-center justify-center h-screen text-white">Loading game...</div>;
@@ -42,10 +45,8 @@ const GamePage: React.FC = () => {
     <div className="h-[60rem] md:h-full bg-green-600 pt-20 text-white">
       <WaitingScreen
         isOpen={isWaitingScreenOpen}
-        roomLink={roomLink!}
+        roomId={roomId!}
         gameStatus={gameState.roomInfo!.gameStatus as "ready" | "started"}
-        isHost={isHost}
-        onStartGame={() => console.log("Game started!")}
         onClose={handleCloseWaitingScreen}
       />
 

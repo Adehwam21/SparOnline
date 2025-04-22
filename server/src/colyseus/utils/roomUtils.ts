@@ -1,3 +1,8 @@
+interface PlayerHand {
+  username: string;
+  hand: string[];
+}
+
 const suits = ["H", "D", "C", "S"];
 const ranks = [
   { name: "6", value: 6 },
@@ -22,8 +27,13 @@ export function shuffleDeck(deck: string[]): string[] {
 }
 
 
-export function distributeCards(players: Object[]) {
-  return
+export function distributeCards(playerHands: PlayerHand[], deck: string[]): PlayerHand[] {
+  for (let i = 0; i < playerHands.length; i++) {
+    const firstShare = deck.slice(3 * i, 3 * i + 3);
+    const secondShare = deck.slice((3 * playerHands.length) + (i * 2), (3 * playerHands.length) + (i * 2) + 2);
+    playerHands[i].hand = [...firstShare, ...secondShare];
+  }
+  return playerHands;
 }
 
 

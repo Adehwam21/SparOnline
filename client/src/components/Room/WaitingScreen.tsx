@@ -1,24 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FiCopy } from 'react-icons/fi';
-import { FaPlay, FaTimes } from 'react-icons/fa';
+import { FaTimes } from 'react-icons/fa';
 import toast from 'react-hot-toast';
 import { successToastOptions } from '../../types';
 
 interface WaitingScreenProps {
     isOpen: boolean;
-    roomLink: string;
+    roomId: string;
     gameStatus: "ready" | "started";
-    isHost: boolean;
     onStartGame?: () => void;
     onClose: () => void; // Add an onClose prop to close the screen
     }
 
-    const WaitingScreen: React.FC<WaitingScreenProps> = ({ isOpen, roomLink, gameStatus, isHost, onStartGame, onClose }) => {
+    const WaitingScreen: React.FC<WaitingScreenProps> = ({ isOpen, roomId, gameStatus, onClose }) => {
     const [copied, setCopied] = useState(false);
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(roomLink).then(() => {
+        navigator.clipboard.writeText(roomId).then(() => {
         setCopied(true);
         });
     };
@@ -34,10 +33,8 @@ interface WaitingScreenProps {
 
     const getStatusMessage = () => {
         switch (gameStatus) {
-        case "ready":
-            return "Room is full. Ready to start the game!";
         case "started":
-            return "Game is in progress...";
+            return "Room is full. Ready to start the game!";
         default:
             return "Waiting for players to join the room...";
         }
@@ -64,7 +61,7 @@ interface WaitingScreenProps {
             <input
                 type="text"
                 readOnly
-                value={roomLink}
+                value={roomId}
                 className="flex-1 px-3 py-2 border rounded-md text-sm text-gray-700"
             />
             <button
@@ -77,16 +74,6 @@ interface WaitingScreenProps {
             </div>
 
             <p className="text-sm text-center text-gray-600">{getStatusMessage()}</p>
-
-            {gameStatus === "ready" && isHost && (
-                <button
-                    onClick={onStartGame}
-                    className="flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white font-semibold py-2 px-4 rounded-md mx-auto mt-2 transition"
-                >
-                    <FaPlay size={14} />
-                    Start Game
-                </button>
-            )}
         </motion.div>
         </div>
     );
