@@ -15,6 +15,7 @@ import routes from "./routes/rotues";
 import { createGameServer } from "./colyseus/gameServer";
 import { playground } from "@colyseus/playground";
 
+
 export default async function start(config: Config) {
   try {
     // initialize server and services

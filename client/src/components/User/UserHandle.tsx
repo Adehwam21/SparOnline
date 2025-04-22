@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
+import { useSelector } from "react-redux";
 import { RootState } from "../../redux/reduxStore";
-import { logout } from "../../redux/slices/authSlice";
+// import { logout } from "../../redux/slices/authSlice";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaUserCircle, FaUser, FaCog, FaSignOutAlt } from "react-icons/fa";
 
 const UserHandle: React.FC = () => {
-  const dispatch = useDispatch();
+  // const dispatch = useDispatch();
   const { username } = useSelector((state: RootState) => state.auth!.user!);
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -26,7 +26,10 @@ const UserHandle: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
-    dispatch(logout());
+    // dispatch(logout());
+    localStorage.removeItem("persist:auth");
+    localStorage.removeItem("persist:game");
+    localStorage.removeItem("reconnection");
     toast.success("Logged out successfully");
     setIsOpen(false);
   };

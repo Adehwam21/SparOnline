@@ -1,88 +1,123 @@
 import { Room, Client } from "colyseus";
-import { ArraySchema } from "@colyseus/schema";
+import { ArraySchema, MapSchema } from "@colyseus/schema";
 import { GameState, Player, Round, PlayedCard, Moves } from "../schemas/GameState";
-import { createDeck, shuffleDeck, getCardValue, calculateRoundPoints } from "../utils/roomUtils";
+import { createDeck, shuffleDeck, getCardValue, calculateRoundPoints, distributeCards } from "../utils/roomUtils";
+import { start } from "repl";
 
 export class RaceGameRoom extends Room<GameState> {
+  deck = shuffleDeck(createDeck());
   maxClients: number = 4;
+  usernameToSessionMap = new Map<string, string>();
 
-  onCreate(options: { roomId: string; maxPlayers: number; maxPoints: number; creator: string }) {
+  override onCreate(options: { roomId: string; maxPlayers: number; maxPoints: number; creator: string }) {
     this.state = new GameState();
+    this.state.deck = new ArraySchema(...this.deck);
     this.state.roomId = options?.roomId || this.roomId;
-    this.maxClients = Number(options.maxPlayers) + 1; // +1 for the host
     this.state.maxPlayers = Number(options.maxPlayers);
+    this.maxClients = Number(options.maxPlayers)+1
     this.state.maxPoints = Number(options.maxPoints);
     this.state.creator = options.creator;
+    this.setMetadata(options)
+
+    this.onMessage("play_card", this.handlePlayCard.bind(this));
   }
 
-  onJoin(client: Client, options: { playerUsername: string }) {
-    // Check for existing player by username
-    const existingEntry = Array.from(this.state.players.entries()).find(
-      ([, player]) => player.username === options.playerUsername
-    );
+  override onJoin(client: Client, options: { playerUsername: string }) {
+    const existingSessionId = this.usernameToSessionMap.get(options.playerUsername);
   
-    if (existingEntry) {
-      const [oldClientId, player] = existingEntry;
-  
-      // Remove old entry
-      this.state.players.delete(oldClientId);
-  
-      // Assign new sessionId and re-add player
-      player.id = client.sessionId;
-      this.state.players.set(client.sessionId, player);
-  
-      console.log(`Reconnected player: ${player.username}`);
-      return;
+    if (existingSessionId) {
+      const player = this.state.players.get(existingSessionId);
+      if (player) {
+        this.state.players.delete(existingSessionId);
+        player.id = client.sessionId;
+        player.active = true;
+        this.state.players.set(client.sessionId, player);
+        this.usernameToSessionMap.set(options.playerUsername, client.sessionId);
+        console.log(`Reconnected player: ${player.username}`);
+        this.broadcastGameState();
+        return;
+      }
     }
   
-    // Create a new player instance
+    // New player join
     const player = new Player();
     player.id = client.sessionId;
     player.username = options.playerUsername;
-    this.state.playerUsernames.push(options.playerUsername);
+    player.active = true;
+  
+    if (!this.state.playerUsernames.includes(options.playerUsername)) {
+      this.state.playerUsernames.push(options.playerUsername);
+    }
   
     this.state.players.set(client.sessionId, player);
+    this.usernameToSessionMap.set(options.playerUsername, client.sessionId);
     console.log(`New player joined: ${player.username}`);
-
-    //
-    //  Check if the all the players have joined the game and start the game
-    //
-
-    if (this.state.players.size === this.state.maxPlayers) {
-      this.state.gameStatus = "ready";
-      this.broadcast("game_ready", { roomInfo: this.state });
-    }
-  }
   
+    if (this.state.players.size >= this.state.maxPlayers) {
+      this.state.gameStatus = "ready";
+      this.startGame()
+    }
+  
+    this.broadcastGameState();
+  }
+
+  private broadcastGameState() {
+    this.broadcast("update_state", { roomInfo: this.state });
+  }
+
 
   startGame() {
-    const deck = shuffleDeck(createDeck());
+    this.state.gameStatus = "started";
+
+    //
+    // Start a the first round of the game
+    //
+    this.state.nextPlayerIndex = 0;
+    this.state.roundStatus = "in_progress";
+    this.startRound();
+  }
+
+  startRound() {
+    const round = new Round();
+    round.roundNumber = 0;
+    this.state.rounds.push(round);
+    this.state.moveNumber = 0
+
+    const deck = this.deck;
     const playersArray = Array.from(this.state.players.values());
-    const cardsPerPlayer = Math.floor(deck.length / playersArray.length);
+    const playerHands = distributeCards(playersArray, deck)
 
-    playersArray.forEach((player, index) => {
-      player.hand = new ArraySchema(...deck.slice(index * cardsPerPlayer, (index + 1) * cardsPerPlayer));
-    });
+    //
+    // Assign the player hands to the players in the game state
+    //
 
-    for (let i = 0; i < 5; i++) {
-      const round = new Round();
-      round.roundNumber = i + 1;
-      this.state.rounds.push(round);
+    for (const player of this.state.players.values()) {
+      const playerHand = playerHands.find((hand) => hand.username === player.username);
+      if (playerHand) {
+        player.hand = new ArraySchema(...playerHand.hand);
+      }
     }
 
-    this.state.nextPlayerIndex = 0;
-    this.state.gameStatus = "in_progress";
+    this.state.currentTurn = this.state.playerUsernames[this.state.nextPlayerIndex]
+
+
+    this.state.rounds[this.state.rounds.length - 1].moves = new MapSchema<Moves>();
+    this.state.rounds[this.state.rounds.length - 1].winningCards = new ArraySchema<PlayedCard>();
+    this.state.rounds[this.state.rounds.length - 1].roundStatus = "in_progress";
+
+    this.broadcastGameState()
   }
 
   handlePlayCard(client: Client, message: { cardName: string }) {
+
     const player = this.state.players.get(client.sessionId);
     if (!player || this.state.nextPlayerIndex !== Array.from(this.state.players.keys()).indexOf(client.sessionId)) return;
 
     const currentRound = this.state.rounds[this.state.rounds.length - 1];
     if (!currentRound) return;
 
-    if (!currentRound.moves.has(client.sessionId)) {
-      currentRound.moves.set(client.sessionId, new Moves());
+    if (!currentRound.moves.has(String(this.state.moveNumber))) {
+      currentRound.moves.set(String(this.state.moveNumber), new Moves());
     }
 
     const move = currentRound.moves.get(client.sessionId);
@@ -97,11 +132,15 @@ export class RaceGameRoom extends Room<GameState> {
       player.hand.splice(cardIndex, 1);
     }
 
-    if (currentRound.moves.size === this.state.players.size) {
-      this.evaluateRound();
-    } else {
-      this.advanceTurn();
-    }
+    // if (currentRound.moves.size === this.state.players.size) {
+    //   this.evaluateRound();
+    // } else {
+    //   this.advanceTurn();
+    // }
+
+    console.log("playedCard")
+
+    this.broadcastGameState();
   }
 
   evaluateRound() {
@@ -162,7 +201,7 @@ export class RaceGameRoom extends Room<GameState> {
     this.disconnect();
   }
 
-  async onLeave(client: Client, consented: boolean) {
+  override async onLeave(client: Client, consented: boolean) {
     try {
       // Flag the player as inactive for other players
       this.state.players.get(client.sessionId)!.active = false;

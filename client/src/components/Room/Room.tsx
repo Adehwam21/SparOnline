@@ -4,7 +4,7 @@ import GameBoard from "./GameBoard";
 interface RoomProps {
 //   roomName?: string;
   players: {id:string, username: string; score: number; hand:string[], active: boolean }[];
-  bids: { player: string; cards: string[] }[];
+  bids: { playerUsername: string; cards: string[] }[];
   currentTurn: string;
   currentUser: string;
   maxPoints: string
@@ -16,7 +16,7 @@ const Room: React.FC<RoomProps> = ({players, currentTurn, currentUser, maxPoints
       {/* Game Board */}
         <GameBoard 
           players={players} 
-          bids={bids.map(bid => ({ username: bid.player, cards: bid.cards }))}
+          bids={bids.map(bid => ({ username: bid.playerUsername, cards: bid.cards }))}
           currentTurn={currentTurn}
           currentUser={currentUser} 
           maxPoints={maxPoints} 
