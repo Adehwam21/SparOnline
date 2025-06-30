@@ -1,8 +1,8 @@
 import { Room, Client } from "colyseus";
 import { ArraySchema, MapSchema } from "@colyseus/schema";
 import { GameState, Player, Round, PlayedCard, Moves } from "../schemas/GameState";
-import { createDeck, shuffleDeck, getCardValue, calculateRoundPoints, distributeCards } from "../utils/roomUtils";
-import { start } from "repl";
+import { createDeck, shuffleDeck,calculateRoundPoints, distributeCards, calculateMoveWinner, getCardRank, getCardSuit, getCardValue, getCardPoints } from "../utils/roomUtils";
+import { IBids } from "../../types/game";
 
 export class RaceGameRoom extends Room<GameState> {
   deck = shuffleDeck(createDeck());
@@ -20,6 +20,7 @@ export class RaceGameRoom extends Room<GameState> {
     this.setMetadata(options)
 
     this.onMessage("play_card", this.handlePlayCard.bind(this));
+    this.onMessage("leave_room", this._onLeave);
   }
 
   override onJoin(client: Client, options: { playerUsername: string }) {
@@ -85,14 +86,20 @@ export class RaceGameRoom extends Room<GameState> {
 
     const deck = this.deck;
     const playersArray = Array.from(this.state.players.values());
-    const playerHands = distributeCards(playersArray, deck)
+    const playerHands = distributeCards(
+      playersArray.map(player => ({
+        playerName: player.username,
+        hand: player.hand ? Array.from(player.hand) : []
+      })),
+      deck
+    );
 
     //
     // Assign the player hands to the players in the game state
     //
 
     for (const player of this.state.players.values()) {
-      const playerHand = playerHands.find((hand) => hand.username === player.username);
+      const playerHand = playerHands.find((hand) => hand.playerName === player.username);
       if (playerHand) {
         player.hand = new ArraySchema(...playerHand.hand);
       }
@@ -109,21 +116,29 @@ export class RaceGameRoom extends Room<GameState> {
   }
 
   handlePlayCard(client: Client, message: { cardName: string }) {
-
     const player = this.state.players.get(client.sessionId);
     if (!player || this.state.nextPlayerIndex !== Array.from(this.state.players.keys()).indexOf(client.sessionId)) return;
 
     const currentRound = this.state.rounds[this.state.rounds.length - 1];
     if (!currentRound) return;
+    
+    const moveKey = String(this.state.moveNumber);
 
-    if (!currentRound.moves.has(String(this.state.moveNumber))) {
-      currentRound.moves.set(String(this.state.moveNumber), new Moves());
+    // Create the move if it doesn't exist yet
+    if (!currentRound.moves.has(moveKey)) {
+      currentRound.moves.set(moveKey, new Moves());
     }
 
-    const move = currentRound.moves.get(client.sessionId);
+    const move = currentRound.moves.get(moveKey);
     const playedCard = new PlayedCard();
     playedCard.playerName = player.username;
     playedCard.cardName = message.cardName;
+    playedCard.rank = getCardRank(message.cardName);
+    playedCard.suit = getCardSuit(message.cardName);
+    playedCard.value = getCardValue(message.cardName);
+    playedCard.point = getCardPoints(message.cardName);
+    playedCard.bidIndex = (move!.bids!.length);
+
     move?.bids.push(playedCard);
 
     // Remove played card correctly from player's hand
@@ -132,50 +147,97 @@ export class RaceGameRoom extends Room<GameState> {
       player.hand.splice(cardIndex, 1);
     }
 
-    // if (currentRound.moves.size === this.state.players.size) {
-    //   this.evaluateRound();
-    // } else {
-    //   this.advanceTurn();
-    // }
-
-    console.log("playedCard")
+    // Advance to next player or evaluate the round
+    const allPlayersPlayed = move?.bids.length === this.state.players.size;
+    if (allPlayersPlayed) {
+      this.evaluateMove();
+    } else {
+      this.state.nextPlayerIndex = (this.state.nextPlayerIndex + 1) % this.state.players.size;
+      this.state.currentTurn = this.state.playerUsernames[this.state.nextPlayerIndex];
+    }
 
     this.broadcastGameState();
+    console.log("playedCard", message.cardName);
   }
 
-  evaluateRound() {
+  evaluateMove() {
     const currentRound = this.state.rounds[this.state.rounds.length - 1];
     if (!currentRound) return;
 
-    let highestCard = null;
-    let roundWinner = null;
+    const currentMoveNumber = this.state.moveNumber; // use current before incrementing
+    const moveKey = String(currentMoveNumber);
+    const move = currentRound.moves.get(moveKey);
 
-    for (const [playerId, move] of currentRound.moves.entries()) {
-      const lastCard = move.bids[move.bids.length - 1];
-      if (!highestCard || getCardValue(lastCard.cardName) > getCardValue(highestCard.cardName)) {
-        highestCard = lastCard;
-        roundWinner = playerId;
+    // Wait until all players have played this move
+    if (!move || move.bids.length < this.state.players.size) return;
+
+    // Collect all played cards (bids) across all players for the current move
+    const allBids: IBids[] = move.bids.map(bid => ({ ...bid, bidIndex: String(bid.bidIndex) }));
+
+    // If no cards were played, return early
+    if (allBids.length === 0) return;
+
+    // Determine the winner of this move and save winning card
+    const { winningCard, moveWinner } = calculateMoveWinner(allBids)!;
+
+    const winningPlayedCard = new PlayedCard();
+    winningPlayedCard.cardName = winningCard.cardName;
+    winningPlayedCard.playerName = winningCard.playerName;
+    winningPlayedCard.rank = winningCard.rank;
+    winningPlayedCard.suit = winningCard.suit;
+    winningPlayedCard.value = winningCard.value;
+    winningPlayedCard.point = winningCard.point;
+    winningPlayedCard.bidIndex = winningCard.bidIndex;
+    currentRound.winningCards.push(winningPlayedCard);
+
+    console.log("Move completed:", {
+      moveNumber: this.state.moveNumber,
+      moveWinner,
+      winningCard: winningCard.cardName,
+    });
+
+    // Move completed, increment move number
+    this.state.moveNumber++;
+
+    // If this was the last move (5 total), complete the round
+    if (this.state.moveNumber === 5) {
+      const lastWinningCard = currentRound.winningCards[currentRound.winningCards.length - 1];
+      currentRound.roundWinner = lastWinningCard.playerName;
+
+      // Add points for the round winner
+      const winnerPlayer = this.state.players.get(lastWinningCard.playerName);
+      if (winnerPlayer) {
+        winnerPlayer.score += calculateRoundPoints(currentRound.winningCards as any);
       }
-    }
 
-    if (roundWinner) {
-      currentRound.roundWinner = roundWinner;
-      this.state.players.get(roundWinner)!.score += calculateRoundPoints(currentRound);
-    }
+      currentRound.roundStatus = "complete";
 
-    currentRound.roundStatus = "complete";
+      console.log("Round completed:", {
+        roundNumber: currentRound.roundNumber,
+        roundWinner: lastWinningCard.playerName,
+        totalScore: winnerPlayer?.score,
+      });
 
-    if (this.checkGameOver()) {
-      this.endGame();
+      // Proceed to next phase
+      if (this.checkGameOver()) {
+        this.endGame();
+      } else {
+        this.startNextRound();
+      }
+
     } else {
-      this.startNextRound();
+      // Prepare for next move
+      this.state.nextPlayerIndex = this.advanceTurn();
+      this.state.currentTurn = this.state.playerUsernames[this.state.nextPlayerIndex];
     }
+
+    this.broadcastGameState();
   }
 
   checkGameOver(): boolean {
     for (const player of this.state.players.values()) {
       if (player.score >= 50) {
-        this.state.gameWinner = player.id;
+        this.state.gameWinner = player.username;
         this.state.gameStatus = "complete";
         return true;
       }
@@ -227,5 +289,4 @@ export class RaceGameRoom extends Room<GameState> {
       throw new Error("Reconnection failed: " + error.message);
     }
   }
-
 }

@@ -13,21 +13,25 @@ export class Player extends Schema {
 export class PlayedCard extends Schema {
   @type("string") playerName: string = "";
   @type("string") cardName: string = "";
-  @type("string") moveIndex?: string = "";
+  @type("string") rank: string = "";
+  @type("string") suit: string = "";
+  @type("number") value: number = 0;
+  @type("number") point: number = 0;
+  @type("number") bidIndex: number = 0;
 }
 
 // Move represents a player's action in a round
 export class Moves extends Schema {
-  @type([PlayedCard]) bids = new ArraySchema<PlayedCard>();
-  @type("string") moveWinner: string = ""; // Username of the player who won the move 
+  @type([PlayedCard]) bids = new ArraySchema<PlayedCard>(); // Keyed by playerUsername
+  @type("string") moveWinner: string = "";
 }
 
-// Round keeps track of moves, status, and winner
+
 export class Round extends Schema {
   @type("number") roundNumber: number = 0;
-  @type({ map: Moves }) moves = new MapSchema<Moves>(); // Changed to MapSchema for tracking moves per player
-  @type([PlayedCard]) winningCards = new ArraySchema<PlayedCard>(); // List of all the winning card per move in a round
-  @type("string") roundWinner: string = ""; // Takes the username of the round winner
+  @type({ map: Moves }) moves = new MapSchema<Moves>(); // Keyed by moveNumber
+  @type([PlayedCard]) winningCards = new ArraySchema<PlayedCard>();
+  @type("string") roundWinner: string = "";
   @type("string") roundStatus: string = "pending";
 }
 
@@ -36,7 +40,7 @@ export class GameState extends Schema {
   // Add this to your room's state or as a private field
   @type("string") roomId: string = ""; // Unique identifier for the room
   @type("number") maxPlayers: number = 4; // Maximum number of players allowed in the room
-  @type("number") maxPoints: number = 100; // Maximum points to win the game
+  @type("number") maxPoints: number = 40; // Maximum points to win the game
   @type("string") creator: string = ""; // Creator of the room
   @type("string") gameMode: string = ""; // Type of game (e.g., "classic", "custom")
   @type("string") gameName: string = ""; // Name of the game

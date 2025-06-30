@@ -28,3 +28,19 @@ export interface ICreateGameInput {
     creator: string; // Store player data
     gameState?: any; // Store snapshot of game state
 }
+
+export interface IBids {
+    playerName: string;
+    cardName: string;
+    bidIndex: string;
+}
+
+export interface IWinningCard {
+    cardName:string;
+    suit: string;
+    rank: string;
+    value: number;
+    points: number;
+    playerName: string;
+    bidIndex: number;
+}
