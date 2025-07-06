@@ -1,13 +1,5 @@
 import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
 
-// Player stores individual player data
-export class Player extends Schema {
-  @type("string") id: string = ""; 
-  @type("string") username: string = "";
-  @type(["string"]) hand = new ArraySchema<string>(); // Fixed
-  @type("number") score: number = 0;
-  @type("boolean") active = true; // whether the player is active in the game
-}
 
 // PlayedCard represents a single card played in a move
 export class PlayedCard extends Schema {
@@ -22,7 +14,7 @@ export class PlayedCard extends Schema {
 
 // Move represents a player's action in a round
 export class Moves extends Schema {
-  @type([PlayedCard]) bids = new ArraySchema<PlayedCard>(); // Keyed by playerUsername
+  @type([PlayedCard]) bids = new ArraySchema<PlayedCard>();
   @type("string") moveWinner: string = "";
 }
 
@@ -34,6 +26,17 @@ export class Round extends Schema {
   @type("string") roundWinner: string = "";
   @type("string") roundStatus: string = "pending";
 }
+
+// Player stores individual player data
+export class Player extends Schema {
+  @type("string") id: string = ""; 
+  @type("string") username: string = "";
+  @type(["string"]) hand = new ArraySchema<string>(); // Fixed
+  @type("number") score: number = 0;
+  @type([PlayedCard]) bids = new ArraySchema<PlayedCard>()
+  @type("boolean") active = true; // whether the player is active in the game
+}
+
 
 // GameState keeps track of the entire game
 export class GameState extends Schema {
