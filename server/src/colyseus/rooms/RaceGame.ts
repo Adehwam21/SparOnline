@@ -130,6 +130,8 @@ export class RaceGameRoom extends Room<GameState> {
     }
 
     const move = currentRound.moves.get(moveKey);
+
+    // TODO: Convert this into a function
     const playedCard = new PlayedCard();
     playedCard.playerName = player.username;
     playedCard.cardName = message.cardName;
@@ -139,7 +141,8 @@ export class RaceGameRoom extends Room<GameState> {
     playedCard.point = getCardPoints(message.cardName);
     playedCard.bidIndex = (move!.bids!.length);
 
-    move?.bids.push(playedCard);
+    player?.bids.push(playedCard) // Update the player bids array with played card or bid
+    move?.bids.push(playedCard); // Update the moves object for computation
 
     // Remove played card correctly from player's hand
     const cardIndex = player.hand.indexOf(message.cardName);
