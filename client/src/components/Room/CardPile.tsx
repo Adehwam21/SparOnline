@@ -11,7 +11,7 @@ const CardPile: React.FC<CardPileProps> = ({ bids }) => {
       {bids.map((card, index) => (
         <div
           key={index}
-          className="absolute transition-all"
+          className="absolute flex justify-center items-center transition-all"
           style={{ left: `${index * 3}rem` }}
         >
           <Card card={card} />

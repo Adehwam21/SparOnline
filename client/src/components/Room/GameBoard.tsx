@@ -1,34 +1,23 @@
 import React, { useState, useEffect } from "react";
 import Opponent from "./Opponent";
 import PlayerBar from "./PlayerBar";
-import DropZone from "./DropZone";
-import { useRoom } from "../../contexts/roomContext";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "../../redux/reduxStore";
+import BidZone from "./BidZone";
 
 interface GameBoardProps {
-  players: {id:string, username: string; score: number; hand: string[], active: boolean,  }[];
+  players: {id:string, username: string; score: number; hand: string[], active: boolean, bids: string[] }[];
   bids: { username: string; cards: string[] }[];
   currentTurn: string;
   currentUser: string;
   maxPoints: string;
 }
 
-const GameBoard: React.FC<GameBoardProps> = ({ players = [], bids = [], currentTurn, currentUser, maxPoints }) => {
-  const dispatch = useDispatch<AppDispatch>()
+const GameBoard: React.FC<GameBoardProps> = ({ players = [], currentTurn, currentUser, maxPoints }) => {
   const player = players.find((p) => p.username === currentUser);
   const opponents = players.filter((p) => p.username !== currentUser) || [];
   const isTurn = player?.username === currentTurn;
   
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [playableCards, setPlayableCards] = useState<string[]>(player?.hand || []);
-  const { playCard } = useRoom()
-
-  // This function is called when a card is dropped in DropZone
-  const handleCardDropped = (card: string) => {
-    setPlayableCards((prevCards) => prevCards.filter((c) => c !== card)); // Update state correctly
-    playCard(card, dispatch)
-  };
 
   useEffect(() => {
     if (player?.hand) setPlayableCards(player?.hand);
@@ -42,14 +31,11 @@ const GameBoard: React.FC<GameBoardProps> = ({ players = [], bids = [], currentT
       <div className="flex mb-2 flex-col lg:flex-row items-center justify-center gap-4">
       {opponents.length > 0 &&
         opponents.map((opponent, index) => {
-          const opponentBid = bids.find((bid) => bid.username === opponent.username); // get this opponent's bid
-
           return (
             <div key={index} className={`w-full md:w-auto ${opponents.length === 1 ? "text-center" : ""}`}>
               <Opponent
                 {...opponent}
                 maxPoints={maxPoints}
-                bids={opponentBid?.cards || []}
               />
             </div>
           );
@@ -60,14 +46,13 @@ const GameBoard: React.FC<GameBoardProps> = ({ players = [], bids = [], currentT
       <div>
         {player && (
           <div className="relative p-2 flex flex-col justify-center space-y-2 items-center w-full">
-            <DropZone isTurn={isTurn} onCardDropped={handleCardDropped} />
+            <BidZone bidCards={player.bids}/>
             <PlayerBar
               username={player.username}
               score={player.score}
               playableCards={player.hand}
               isTurn={isTurn}
               maxPoints={maxPoints}
-              onCardDropped={handleCardDropped}
               />
           </div>
         )}

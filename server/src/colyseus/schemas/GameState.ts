@@ -33,7 +33,7 @@ export class Player extends Schema {
   @type("string") username: string = "";
   @type(["string"]) hand = new ArraySchema<string>(); // Fixed
   @type("number") score: number = 0;
-  @type([PlayedCard]) bids = new ArraySchema<PlayedCard>()
+  @type(["string"]) bids = new ArraySchema<string>(); // store the card names
   @type("boolean") active = true; // whether the player is active in the game
 }
 

@@ -1,246 +1,249 @@
 import { Room, Client } from "colyseus";
 import { ArraySchema, MapSchema } from "@colyseus/schema";
-import { GameState, Player, Round, PlayedCard, Moves } from "../schemas/GameState";
-import { createDeck, shuffleDeck,calculateRoundPoints, distributeCards, calculateMoveWinner, getCardRank, getCardSuit, getCardValue, getCardPoints } from "../utils/roomUtils";
+import {
+  GameState,
+  Player,
+  Round,
+  PlayedCard,
+  Moves,
+} from "../schemas/GameState";
+import {
+  createDeck,
+  shuffleDeck,
+  calculateRoundPoints,
+  distributeCards,
+  calculateMoveWinner,
+  getCardRank,
+  getCardSuit,
+  getCardValue,
+  getCardPoints,
+} from "../utils/roomUtils";
 import { IBids } from "../../types/game";
 
 export class RaceGameRoom extends Room<GameState> {
-  deck = shuffleDeck(createDeck());
-  maxClients: number = 4;
-  usernameToSessionMap = new Map<string, string>();
+  DECK = shuffleDeck(createDeck());
+  MAX_CLIENTS = 4;
+  MAX_MOVES = 5;
+  USER_TO_SESSION_MAP = new Map<string, string>();
 
-  override onCreate(options: { roomId: string; maxPlayers: number; maxPoints: number; creator: string }) {
+  override onCreate(
+    options: { roomId: string; maxPlayers: number; maxPoints: number; creator: string },
+  ) {
     this.state = new GameState();
-    this.state.deck = new ArraySchema(...this.deck);
-    this.state.roomId = options?.roomId || this.roomId;
+    this.state.deck = new ArraySchema(...this.DECK);
+    this.state.roomId = options.roomId || this.roomId;
     this.state.maxPlayers = Number(options.maxPlayers);
-    this.maxClients = Number(options.maxPlayers)+1
+    this.MAX_CLIENTS = this.state.maxPlayers + 1;
     this.state.maxPoints = Number(options.maxPoints);
     this.state.creator = options.creator;
-    this.setMetadata(options)
+    this.setMetadata(options);
 
     this.onMessage("play_card", this.handlePlayCard.bind(this));
     this.onMessage("leave_room", this._onLeave);
   }
 
-  override onJoin(client: Client, options: { playerUsername: string }) {
-    const existingSessionId = this.usernameToSessionMap.get(options.playerUsername);
-  
-    if (existingSessionId) {
-      const player = this.state.players.get(existingSessionId);
-      if (player) {
-        this.state.players.delete(existingSessionId);
-        player.id = client.sessionId;
-        player.active = true;
-        this.state.players.set(client.sessionId, player);
-        this.usernameToSessionMap.set(options.playerUsername, client.sessionId);
-        console.log(`Reconnected player: ${player.username}`);
-        this.broadcastGameState();
-        return;
+  override onJoin(client: Client, { playerUsername }: { playerUsername: string }) {
+    try { // ⚠️ reconnect / new‑join can throw if Map ops fail
+      const existing = this.USER_TO_SESSION_MAP.get(playerUsername);
+
+      if (existing) {
+        const prev = this.state.players.get(existing);
+        if (prev) {
+          this.state.players.delete(existing);
+          prev.id = client.sessionId;
+          prev.active = true;
+          this.state.players.set(client.sessionId, prev);
+          this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
+          console.log(`Reconnected: ${playerUsername}`);
+          this.broadcastGameState();
+          return;
+        }
       }
+
+      /* new player */
+      const p = new Player();
+      p.id = client.sessionId;
+      p.username = playerUsername;
+      p.active = true;
+
+      if (!this.state.playerUsernames.includes(playerUsername)) {
+        this.state.playerUsernames.push(playerUsername);
+      }
+      this.state.players.set(client.sessionId, p);
+      this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
+      console.log(`Joined: ${playerUsername}`);
+
+      if (this.state.players.size >= this.state.maxPlayers) {
+        this.state.gameStatus = "ready";
+        this.startGame();
+      }
+      this.broadcastGameState();
+    } catch (e) {
+      console.error("[onJoin] fatal", e);
+      client.error(2000, `${e}`);
     }
-  
-    // New player join
-    const player = new Player();
-    player.id = client.sessionId;
-    player.username = options.playerUsername;
-    player.active = true;
-  
-    if (!this.state.playerUsernames.includes(options.playerUsername)) {
-      this.state.playerUsernames.push(options.playerUsername);
-    }
-  
-    this.state.players.set(client.sessionId, player);
-    this.usernameToSessionMap.set(options.playerUsername, client.sessionId);
-    console.log(`New player joined: ${player.username}`);
-  
-    if (this.state.players.size >= this.state.maxPlayers) {
-      this.state.gameStatus = "ready";
-      this.startGame()
-    }
-  
-    this.broadcastGameState();
   }
 
+  /* UTIL */
   private broadcastGameState() {
-    this.broadcast("update_state", { roomInfo: this.state });
+    this.broadcast("update_state", { roomInfo: this.state  }, {afterNextPatch: true});
   }
 
+  /* ───────── GAME FLOW ───────── */
 
   startGame() {
-    this.state.gameStatus = "started";
-
-    //
-    // Start a the first round of the game
-    //
-    this.state.nextPlayerIndex = 0;
-    this.state.roundStatus = "in_progress";
-    this.startRound();
+    try {                           // ⚠️
+      this.state.gameStatus = "started";
+      this.state.nextPlayerIndex = 0;
+      this.state.roundStatus = "in_progress";
+      this.startRound();
+    } catch (e) {
+      console.error("[startGame]", e);
+    }
   }
 
   startRound() {
-    const round = new Round();
-    round.roundNumber = 0;
-    this.state.rounds.push(round);
-    this.state.moveNumber = 0
+    try {
+      const rnd = new Round();
+      rnd.roundNumber = this.state.rounds.length;
+      this.state.rounds.push(rnd);
+      this.state.moveNumber = 0;
 
-    const deck = this.deck;
-    const playersArray = Array.from(this.state.players.values());
-    const playerHands = distributeCards(
-      playersArray.map(player => ({
-        playerName: player.username,
-        hand: player.hand ? Array.from(player.hand) : []
-      })),
-      deck
-    );
+      /* deal */
+      const hands = distributeCards(
+        Array.from(this.state.players.values()).map(p => ({
+          playerName: p.username,
+          hand: Array.from(p.hand),
+        })),
+        this.DECK,
+      );
 
-    //
-    // Assign the player hands to the players in the game state
-    //
-
-    for (const player of this.state.players.values()) {
-      const playerHand = playerHands.find((hand) => hand.playerName === player.username);
-      if (playerHand) {
-        player.hand = new ArraySchema(...playerHand.hand);
+      for (const p of this.state.players.values()) {
+        const h = hands.find(h => h.playerName === p.username);
+        if (h) p.hand = new ArraySchema(...h.hand);
       }
+
+      this.state.currentTurn =
+        this.state.playerUsernames[this.state.nextPlayerIndex];
+
+      rnd.moves = new MapSchema<Moves>();
+      rnd.winningCards = new ArraySchema<PlayedCard>();
+      rnd.roundStatus = "in_progress";
+
+      this.broadcastGameState();
+    } catch (e) {
+      console.error("[startRound]", e);
     }
-
-    this.state.currentTurn = this.state.playerUsernames[this.state.nextPlayerIndex]
-
-
-    this.state.rounds[this.state.rounds.length - 1].moves = new MapSchema<Moves>();
-    this.state.rounds[this.state.rounds.length - 1].winningCards = new ArraySchema<PlayedCard>();
-    this.state.rounds[this.state.rounds.length - 1].roundStatus = "in_progress";
-
-    this.broadcastGameState()
   }
 
-  handlePlayCard(client: Client, message: { cardName: string }) {
-    const player = this.state.players.get(client.sessionId);
-    if (!player || this.state.nextPlayerIndex !== Array.from(this.state.players.keys()).indexOf(client.sessionId)) return;
+  handlePlayCard(client: Client, { cardName }: { cardName: string }) {
+    try {
+      const player = this.state.players.get(client.sessionId);
+      if (!player || player.username !== this.state.currentTurn) return;
 
-    const currentRound = this.state.rounds[this.state.rounds.length - 1];
-    if (!currentRound) return;
-    
-    const moveKey = String(this.state.moveNumber);
+      const round = this.state.rounds.at(-1);
+      if (!round) return;
 
-    // Create the move if it doesn't exist yet
-    if (!currentRound.moves.has(moveKey)) {
-      currentRound.moves.set(moveKey, new Moves());
+      const key = String(this.state.moveNumber);
+      if (!round.moves.has(key)) round.moves.set(key, new Moves());
+      const move = round.moves.get(key)!;
+
+      const pc = new PlayedCard();
+      pc.playerName = player.username;
+      pc.cardName = cardName;
+      pc.rank = getCardRank(cardName);
+      pc.suit = getCardSuit(cardName);
+      pc.value = getCardValue(cardName);
+      pc.point = getCardPoints(cardName);
+      pc.bidIndex = move.bids.length;
+
+      player.bids.push(pc.cardName);
+      move.bids.push(pc);
+
+      const idx = player.hand.indexOf(cardName);
+      if (idx !== -1) player.hand.splice(idx, 1);
+
+      if (move.bids.length === this.state.players.size) {
+        this.evaluateMove();
+      } else {
+        this.state.nextPlayerIndex =
+          (this.state.nextPlayerIndex + 1) % this.state.players.size;
+        this.state.currentTurn =
+          this.state.playerUsernames[this.state.nextPlayerIndex];
+      }
+      this.broadcastGameState();
+    } catch (e) {
+      console.error("[handlePlayCard]", e);
+      client.error(4000, `${e}`);
     }
-
-    const move = currentRound.moves.get(moveKey);
-
-    // TODO: Convert this into a function
-    const playedCard = new PlayedCard();
-    playedCard.playerName = player.username;
-    playedCard.cardName = message.cardName;
-    playedCard.rank = getCardRank(message.cardName);
-    playedCard.suit = getCardSuit(message.cardName);
-    playedCard.value = getCardValue(message.cardName);
-    playedCard.point = getCardPoints(message.cardName);
-    playedCard.bidIndex = (move!.bids!.length);
-
-    player?.bids.push(playedCard) // Update the player bids array with played card or bid
-    move?.bids.push(playedCard); // Update the moves object for computation
-
-    // Remove played card correctly from player's hand
-    const cardIndex = player.hand.indexOf(message.cardName);
-    if (cardIndex !== -1) {
-      player.hand.splice(cardIndex, 1);
-    }
-
-    // Advance to next player or evaluate the round
-    const allPlayersPlayed = move?.bids.length === this.state.players.size;
-    if (allPlayersPlayed) {
-      this.evaluateMove();
-    } else {
-      this.state.nextPlayerIndex = (this.state.nextPlayerIndex + 1) % this.state.players.size;
-      this.state.currentTurn = this.state.playerUsernames[this.state.nextPlayerIndex];
-    }
-
-    this.broadcastGameState();
-    console.log("playedCard", message.cardName);
   }
 
   evaluateMove() {
-    const currentRound = this.state.rounds[this.state.rounds.length - 1];
-    if (!currentRound) return;
+    try {
+      const round = this.state.rounds.at(-1);
+      if (!round) return;
 
-    const currentMoveNumber = this.state.moveNumber; // use current before incrementing
-    const moveKey = String(currentMoveNumber);
-    const move = currentRound.moves.get(moveKey);
+      const key = String(this.state.moveNumber);
+      const move = round.moves.get(key);
+      if (!move || move.bids.length < this.state.players.size) return;
 
-    // Wait until all players have played this move
-    if (!move || move.bids.length < this.state.players.size) return;
+      const { winningCard, moveWinner } = calculateMoveWinner(
+        move.bids as unknown as IBids[],
+      )!;
+      move.moveWinner = moveWinner;
 
-    // Collect all played cards (bids) across all players for the current move
-    const allBids: IBids[] = move.bids.map(bid => ({ ...bid, bidIndex: String(bid.bidIndex) }));
+      const win = new PlayedCard();
+      Object.assign(win, winningCard);
+      round.winningCards.push(win);
 
-    // If no cards were played, return early
-    if (allBids.length === 0) return;
+      this.state.moveNumber++;
 
-    // Determine the winner of this move and save winning card
-    const { winningCard, moveWinner } = calculateMoveWinner(allBids)!;
-
-    const winningPlayedCard = new PlayedCard();
-    winningPlayedCard.cardName = winningCard.cardName;
-    winningPlayedCard.playerName = winningCard.playerName;
-    winningPlayedCard.rank = winningCard.rank;
-    winningPlayedCard.suit = winningCard.suit;
-    winningPlayedCard.value = winningCard.value;
-    winningPlayedCard.point = winningCard.point;
-    winningPlayedCard.bidIndex = winningCard.bidIndex;
-    currentRound.winningCards.push(winningPlayedCard);
-
-    console.log("Move completed:", {
-      moveNumber: this.state.moveNumber,
-      moveWinner,
-      winningCard: winningCard.cardName,
-    });
-
-    // Move completed, increment move number
-    this.state.moveNumber++;
-
-    // If this was the last move (5 total), complete the round
-    if (this.state.moveNumber === 5) {
-      const lastWinningCard = currentRound.winningCards[currentRound.winningCards.length - 1];
-      currentRound.roundWinner = lastWinningCard.playerName;
-
-      // Add points for the round winner
-      const winnerPlayer = this.state.players.get(lastWinningCard.playerName);
-      if (winnerPlayer) {
-        winnerPlayer.score += calculateRoundPoints(currentRound.winningCards as any);
-      }
-
-      currentRound.roundStatus = "complete";
-
-      console.log("Round completed:", {
-        roundNumber: currentRound.roundNumber,
-        roundWinner: lastWinningCard.playerName,
-        totalScore: winnerPlayer?.score,
-      });
-
-      // Proceed to next phase
-      if (this.checkGameOver()) {
-        this.endGame();
+      /* round in progress */
+      if (this.state.moveNumber < this.MAX_MOVES) {
+        this.state.nextPlayerIndex =
+          this.state.playerUsernames.indexOf(moveWinner);
+        this.state.currentTurn = moveWinner;
       } else {
-        this.startNextRound();
+        /* round finished */
+        round.roundWinner = moveWinner;
+
+        const sess = this.USER_TO_SESSION_MAP.get(moveWinner);
+        if (sess) {
+          const p = this.state.players.get(sess)!;
+          p.score += calculateRoundPoints(round.winningCards as any);
+        }
+        round.roundStatus = "complete";
+
+        if (this.checkGameOver()) {
+          this.endGame();
+          return;
+        }
+        this.startNextRound(moveWinner);
       }
-
-    } else {
-      // Prepare for next move
-      this.state.nextPlayerIndex = this.advanceTurn();
-      this.state.currentTurn = this.state.playerUsernames[this.state.nextPlayerIndex];
+      this.broadcastGameState();
+    } catch (e) {
+      console.error("[evaluateMove]", e);
     }
+  }
 
-    this.broadcastGameState();
+  advanceTurn(winnerName: string): number {
+    const i = this.state.playerUsernames.indexOf(winnerName);
+    return i === -1 ? this.state.nextPlayerIndex : (i + 1) % this.state.playerUsernames.length;
+  }
+
+  startNextRound(roundWinner: string) {
+    try {                           // ⚠️
+      this.state.nextPlayerIndex = this.advanceTurn(roundWinner);
+      this.startRound();
+    } catch (e) {
+      console.error("[startNextRound]", e);
+    }
   }
 
   checkGameOver(): boolean {
-    for (const player of this.state.players.values()) {
-      if (player.score >= 50) {
-        this.state.gameWinner = player.username;
+    for (const p of this.state.players.values()) {
+      if (p.score >= this.state.maxPoints) {
+        this.state.gameWinner = p.username;
         this.state.gameStatus = "complete";
         return true;
       }
@@ -248,48 +251,27 @@ export class RaceGameRoom extends Room<GameState> {
     return false;
   }
 
-  startNextRound() {
-    this.state.nextPlayerIndex = this.advanceTurn();
-    this.state.roundStatus = "in_progress";
-  }
-
-  advanceTurn(): number {
-    const playersArray = Array.from(this.state.players.keys()); // Convert MapSchema to array
-    const winnerIndex = playersArray.indexOf(this.state.rounds[this.state.rounds.length - 1].roundWinner);
-    if (winnerIndex === -1) return this.state.nextPlayerIndex; // No winner found, return current index
-
-    return (winnerIndex + 1) % playersArray.length;
-  }
-
   endGame() {
-    this.broadcast("game_over", { winner: this.state.gameWinner });
-    this.disconnect();
+    try {
+      this.broadcast("game_over", { winner: this.state.gameWinner });
+    } catch (e) {
+      console.error("[endGame]", e);
+    }
   }
 
   override async onLeave(client: Client, consented: boolean) {
-    try {
-      // Flag the player as inactive for other players
+    try {                           // ⚠️
       this.state.players.get(client.sessionId)!.active = false;
-
-      //
-      // If player leaves voluntarily, remove them from the game
-      //
 
       if (consented) {
         this.state.players.delete(client.sessionId);
-        console.log(`Player ${client.sessionId} left the game.`);
+        console.log(`Left: ${client.sessionId}`);
         return;
       }
-
-      //
-      // If player left the game involuntarily, attempt to reconnect within 60 seconds, 
-      // If reconnection is successful, flag player as active
-      //
       await this.allowReconnection(client, 60);
       this.state.players.get(client.sessionId)!.active = true;
-
-    } catch (error: any) {
-      throw new Error("Reconnection failed: " + error.message);
+    } catch (e) {
+      console.error("[onLeave]", e);
     }
   }
 }

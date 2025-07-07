@@ -60,7 +60,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         }, [room, isConnected, dispatch]);
 
 
-    const join = async (roomId: string, playerUsername: string, dispatch: AppDispatch) => {
+    const join = async (roomId: string, playerUsername: string) => {
         // Avoid duplicate join attempts
         if (hasActiveJoinRequest) return;
         
@@ -71,11 +71,6 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         try {
             const joinedRoom = await client.joinById<GameState>(roomId, { playerUsername });
         setRoom(joinedRoom);
-
-        // Use `joinedRoom` directly here
-        joinedRoom.onMessage("update_state", (payload) => {
-        dispatch(setGameState(payload));
-        });
 
         joinedRoom.onStateChange((state) => setState(state.toJSON()));
         joinedRoom.onLeave(() => setIsConnected(false));
@@ -100,7 +95,6 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         if (!room && !isConnected) return;
 
         if (hasActiveJoinRequest) return;
-        
         hasActiveJoinRequest = true;
     
         setIsConnecting(true);
@@ -129,28 +123,24 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         }
     }
 
-    const playCard =  async (cardName: string, dispatch: AppDispatch) => {
-        if (!room && !isConnected) return;
+    const playCard = async (cardName: string,) => {
+    if (!room || !isConnected) return;
+    if (hasActiveJoinRequest) return;
 
-        if (hasActiveJoinRequest) return;
-        
-        hasActiveJoinRequest = true;
-    
-        setIsConnecting(true);
+    hasActiveJoinRequest = true;
+    setIsConnecting(true);
 
-        if (!room || !isConnected) return;
-    
-        try {
-            room.send("play_card", { cardName });
-
-            room.onMessage("update_state", (payload) => {
-                dispatch(setGameState(payload));
-            });
-
-        } catch (error) {
-            console.error("Error playing card:", error);
-        }
+    try {
+        room.send("play_card", { cardName });
+        // you already have an update_state listener in useEffect, no need to add again
+    } catch (err) {
+        console.error("Error playing card:", err);
+    } finally {
+        setIsConnecting(false);
+        hasActiveJoinRequest = false;      // ← release the lock
+    }
     };
+
 
     return (
         <RoomContext.Provider value={{ isConnecting, isConnected, room, join, startGame, playCard, joinError, state }}>
