@@ -6,6 +6,7 @@ interface Player {
   score: number;
   rating: number;
   hand: string[]; // Each player's hand (cards)
+  bids: string[];
   active: boolean; // Indicates if the player is active in the game
 }
 
@@ -64,30 +65,36 @@ const gameSlice = createSlice({
   reducers: {
 
     setGameState : (state, action: PayloadAction<GameState>) => {
-      state.roomInfo = action.payload.roomInfo;
+      state.roomInfo! = action.payload.roomInfo;
       state.colyseusRoomId = action.payload.colyseusRoomId;
       state.roomLink = action.payload.roomLink;
     },
 
     updateRoomInfo: (state, action: PayloadAction<GameState>) => {
-      state.roomInfo = action.payload.roomInfo;
+      state.roomInfo! = action.payload.roomInfo;
     },
 
     addBid: (state, action: PayloadAction<{ playerUsername: string; cards: string[] }>) => {
-      state.roomInfo.bids.push(action.payload);
+      state!.roomInfo!.bids.push(action.payload);
     },
 
     setCurrentTurn: (state, action: PayloadAction<string>) => {
-      state.roomInfo.currentTurn = action.payload;
+      state.roomInfo!.currentTurn = action.payload;
     },
 
     updatePlayers: (state, action: PayloadAction<Player[]>) => {
-      state.roomInfo.players = action.payload;
+      state.roomInfo!.players = action.payload;
     },
 
     resetBids: (state) => {
-      state.roomInfo.bids = [];
+      state.roomInfo!.bids = [];
     },
+
+    // logOut: (state) => {
+    //   state.roomInfo! = null,
+    //   state.colyseusRoomId = null,
+    //   state.roomLink = null,
+    // },
   }
 });
 

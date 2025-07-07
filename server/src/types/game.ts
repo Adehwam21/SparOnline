@@ -40,7 +40,7 @@ export interface IWinningCard {
     suit: string;
     rank: string;
     value: number;
-    points: number;
+    point: number;
     playerName: string;
     bidIndex: number;
 }

@@ -53,37 +53,51 @@ export function getCardValue(cardName: string): number {
 
 export function getCardPoints(cardName: string): number {
   const rank = getCardRank(cardName);
-  return ranks.find((r) => r.name === rank)?.points || 0;
+  return ranks.find((r) => r.name === rank)?.points! || 0;
 }
 
-export function calculateRoundPoints(comboList: IWinningCard[]): number {
-  if (comboList.length < 5) return 0;
+export function calculateRoundPoints(combo: IWinningCard[]): number {
+  if (combo.length < 5) return 0;
 
-  const third = comboList[2];
-  const fourth = comboList[3];
-  const fifth = comboList[4];
+  const third  = combo[2];
+  const fourth = combo[3];
+  const fifth  = combo[4];
 
-  const isSamePlayer = (...cards: IWinningCard[]) => cards.every(c => c.playerName === cards[0].playerName);
-  const areSuitsUnique = (a: IWinningCard, b: IWinningCard, c?: IWinningCard) => {
-    if (!c) return a.suit !== b.suit;
-    return new Set([a.suit, b.suit, c.suit]).size === 3;
-  };
-  const allBidFirst = (...cards: IWinningCard[]) => cards.every(c => c.bidIndex === 0);
-  const allLowWeight = (...cards: IWinningCard[]) => cards.every(c => c.value < 8);
+  const isSamePlayer  = (...c: IWinningCard[]) =>
+    c.every(x => x.playerName === c[0].playerName);
 
-  let finalPoints = fifth.value;
+  const areSuitsUnique = (a: IWinningCard, b: IWinningCard, c?: IWinningCard) =>
+    c
+      ? new Set([a.suit, b.suit, c.suit]).size === 3
+      : a.suit !== b.suit;
 
-  const threeCardCombo = isSamePlayer(third, fourth, fifth) &&areSuitsUnique(third, fourth, fifth) && allBidFirst(third, fourth, fifth) && allLowWeight(third, fourth, fifth);
-  const twoCardCombo = isSamePlayer(fourth, fifth) && areSuitsUnique(fourth, fifth) && allBidFirst(fourth, fifth) && allLowWeight(fourth, fifth);
+  const allBidFirst = (...c: IWinningCard[]) => c.every(x => x.bidIndex === 0);
+  const allLowValue = (...c: IWinningCard[]) => c.every(x => x.value < 8);
+
+  /*  Base case: just the value of the 5‑th trick’s winning card  */
+  let points = fifth.point;
+
+  const threeCardCombo =
+    isSamePlayer(third, fourth, fifth) &&
+    areSuitsUnique(third, fourth, fifth) &&
+    allBidFirst(third, fourth, fifth) &&
+    allLowValue(third, fourth, fifth);
+
+  const twoCardCombo =
+    isSamePlayer(fourth, fifth) &&
+    areSuitsUnique(fourth, fifth) &&
+    allBidFirst(fourth, fifth) &&
+    allLowValue(fourth, fifth);
 
   if (threeCardCombo) {
-    finalPoints = third.points + fourth.points + fifth.points;
+    points = third.point + fourth.point + fifth.point;
   } else if (twoCardCombo) {
-    finalPoints = fourth.points + fifth.points;
+    points = fourth.point + fifth.point;
   }
 
-  return finalPoints;
+  return points;       // always a number
 }
+
 
 
 export function calculateMoveWinner(bids: IBids[]) {
