@@ -1,63 +1,75 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { DndContext, DragStartEvent, DragEndEvent, DragOverlay } from "@dnd-kit/core";
 import Opponent from "./Opponent";
 import PlayerBar from "./PlayerBar";
 import BidZone from "./BidZone";
+import Card from "./Card";
+import { useRoom } from "../../contexts/roomContext";
+import { useDispatch } from "react-redux";
+import { AppDispatch } from "../../redux/reduxStore";
 
 interface GameBoardProps {
-  players: {id:string, username: string; score: number; hand: string[], active: boolean, bids: string[] }[];
+  players: { id: string; username: string; score: number; hand: string[]; active: boolean; bids: string[] }[];
   bids: { username: string; cards: string[] }[];
   currentTurn: string;
   currentUser: string;
   maxPoints: string;
 }
 
-const GameBoard: React.FC<GameBoardProps> = ({ players = [], currentTurn, currentUser, maxPoints }) => {
-  const player = players.find((p) => p.username === currentUser);
-  const opponents = players.filter((p) => p.username !== currentUser) || [];
-  const isTurn = player?.username === currentTurn;
-  
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [playableCards, setPlayableCards] = useState<string[]>(player?.hand || []);
+const GameBoard: React.FC<GameBoardProps> = ({
+  players = [],
+  currentTurn,
+  currentUser,
+  maxPoints,
+}) => {
+  const dispatch = useDispatch<AppDispatch>();
+  const { playCard } = useRoom();
 
-  useEffect(() => {
-    if (player?.hand) setPlayableCards(player?.hand);
-    console.log(player?.hand)
-  }, [player]);
-  
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const player = players.find(p => p.username === currentUser);
+  const opponents = players.filter(p => p.username !== currentUser);
+  const isTurn = player?.username === currentTurn;
+  const bidCards = player?.bids || [];
+
+  const onDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
+
+  const onDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (over?.id === "bid-zone" && isTurn) playCard(String(active.id), dispatch);
+    setActiveId(null);
+  };
+
+  if (!player) return null;
 
   return (
-    <div className="relative w-full min-h-[50rem] md:min-h-[30rem] rounded-lg flex flex-col p-10 items-center justify-evenly bg-green-700 text-white">
-      {/* Opponents */}
-      <div className="flex mb-2 flex-col lg:flex-row items-center justify-center gap-4">
-      {opponents.length > 0 &&
-        opponents.map((opponent, index) => {
-          return (
-            <div key={index} className={`w-full md:w-auto ${opponents.length === 1 ? "text-center" : ""}`}>
-              <Opponent
-                {...opponent}
-                maxPoints={maxPoints}
-              />
+    <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd} autoScroll={false}>
+      <div className="relative w-full min-h-[50rem] md:min-h-[30rem] rounded-lg flex flex-col p-10 items-center justify-evenly bg-green-700 text-white">
+        <div className="flex mb-2 flex-col lg:flex-row items-center justify-center gap-4">
+          {opponents.map((o, i) => (
+            <div key={i} className={`w-full md:w-auto ${opponents.length === 1 ? "text-center" : ""}`}>
+              <Opponent {...o} maxPoints={maxPoints} />
             </div>
-          );
-        })}
+          ))}
+        </div>
+
+        <div className="relative p-2 flex flex-col justify-center space-y-2 items-center w-full">
+          <BidZone bidCards={bidCards} />
+          <PlayerBar
+            username={player.username}
+            score={player.score}
+            playableCards={player.hand}
+            isTurn={isTurn}
+            maxPoints={maxPoints}
+          />
+        </div>
       </div>
 
-      {/* Player Section */}
-      <div>
-        {player && (
-          <div className="relative p-2 flex flex-col justify-center space-y-2 items-center w-full">
-            <BidZone bidCards={player.bids}/>
-            <PlayerBar
-              username={player.username}
-              score={player.score}
-              playableCards={player.hand}
-              isTurn={isTurn}
-              maxPoints={maxPoints}
-              />
-          </div>
-        )}
-      </div>
-    </div>
+      {/* only one overlay, no duplicate “shadow” */}
+      <DragOverlay dropAnimation={null}>
+        {activeId && <Card card={activeId} />}
+      </DragOverlay>
+    </DndContext>
   );
 };
 
