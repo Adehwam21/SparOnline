@@ -26,6 +26,8 @@ export class RaceGameRoom extends Room<GameState> {
   MAX_MOVES = 5;
   USER_TO_SESSION_MAP = new Map<string, string>();
 
+  SECONDS_UNTIL_DISPOSE = 60 * 1000
+
   override onCreate(
     options: { roomId: string; maxPlayers: number; maxPoints: number; creator: string },
   ) {
@@ -84,15 +86,29 @@ export class RaceGameRoom extends Room<GameState> {
     }
   }
 
-  /* UTIL */
   private broadcastGameState() {
     this.broadcast("update_state", { roomInfo: this.state  }, {afterNextPatch: true});
   }
 
   /* ───────── GAME FLOW ───────── */
 
+  private dealCards(deck: string[]) {
+    const playersArr = Array.from(this.state.players.values());
+
+    const hands = distributeCards(
+      playersArr.map(p => ({ playerName: p.username, hand: [] })),
+      deck
+    );
+
+    for (const p of playersArr) {
+      const h = hands.find(h => h.playerName === p.username);
+      p.hand = new ArraySchema(...(h?.hand || []));
+      p.bids = new ArraySchema();
+    }
+  }
+
   startGame() {
-    try {                           // ⚠️
+    try {
       this.state.gameStatus = "started";
       this.state.nextPlayerIndex = 0;
       this.state.roundStatus = "in_progress";
@@ -110,19 +126,8 @@ export class RaceGameRoom extends Room<GameState> {
       this.state.moveNumber = 0;
 
       /* deal */
-      const hands = distributeCards(
-        Array.from(this.state.players.values()).map(p => ({
-          playerName: p.username,
-          hand: Array.from(p.hand),
-        })),
-        this.DECK,
-      );
-
-      for (const p of this.state.players.values()) {
-        const h = hands.find(h => h.playerName === p.username);
-        if (h) p.hand = new ArraySchema(...h.hand);
-      }
-
+      this.dealCards(this.DECK)
+      
       this.state.currentTurn =
         this.state.playerUsernames[this.state.nextPlayerIndex];
 
@@ -232,7 +237,8 @@ export class RaceGameRoom extends Room<GameState> {
   }
 
   startNextRound(roundWinner: string) {
-    try {                           // ⚠️
+    try {
+      
       this.state.nextPlayerIndex = this.advanceTurn(roundWinner);
       this.startRound();
     } catch (e) {
@@ -253,14 +259,20 @@ export class RaceGameRoom extends Room<GameState> {
 
   endGame() {
     try {
-      this.broadcast("game_over", { winner: this.state.gameWinner });
+      this.broadcastGameState();
+
+      // Dispose the room after one minute
+      setTimeout(() => {
+        this.disconnect(4000)
+      }, (this.SECONDS_UNTIL_DISPOSE))
+
     } catch (e) {
       console.error("[endGame]", e);
     }
   }
 
   override async onLeave(client: Client, consented: boolean) {
-    try {                           // ⚠️
+    try {
       this.state.players.get(client.sessionId)!.active = false;
 
       if (consented) {
