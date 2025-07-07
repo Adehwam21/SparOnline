@@ -29,14 +29,40 @@ export function shuffleDeck(deck: string[]): string[] {
 }
 
 
-export function distributeCards(playerHands: PlayerHand[], deck: string[]): PlayerHand[] {
-  for (let i = 0; i < playerHands.length; i++) {
-    const firstShare = deck.slice(3 * i, 3 * i + 3);
-    const secondShare = deck.slice((3 * playerHands.length) + (i * 2), (3 * playerHands.length) + (i * 2) + 2);
-    playerHands[i].hand = [...firstShare, ...secondShare];
+export function distributeCards(
+  playerHands: PlayerHand[],
+  deck: string[]
+): PlayerHand[] {
+  const n = playerHands.length;
+
+  for (let i = 0; i < n; i++) {
+    const first  = deck.slice(3 * i, 3 * i + 3);
+    const second = deck.slice(3 * n + 2 * i, 3 * n + 2 * i + 2);
+    playerHands[i].hand = [...first, ...second];
   }
+
+  let spare = deck.slice(5 * n); // undealt cards
+
+  for (const p of playerHands) {
+    const suits = p.hand.map(getCardSuit);
+    if (new Set(suits).size === 1 && spare.length) {
+      const removeIdx = Math.floor(Math.random() * 5);
+      const flushSuit = getCardSuit(p.hand[removeIdx]);
+
+      const spareIdx = spare.findIndex(
+        c => getCardSuit(c) !== flushSuit
+      );
+      if (spareIdx !== -1) {
+        const replacement = spare[spareIdx];
+        [p.hand[removeIdx], spare[spareIdx]] = [replacement, p.hand[removeIdx]];
+      }
+    }
+  }
+
   return playerHands;
 }
+
+
 
 export function getCardSuit(cardName: string): string {
   return cardName.slice(-1); // last character
