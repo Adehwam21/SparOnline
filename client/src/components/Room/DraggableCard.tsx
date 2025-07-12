@@ -13,14 +13,16 @@ const DraggableCard: React.FC<Props> = ({ id }) => {
 
     const style = {
       transform: CSS.Translate.toString(transform),
+      touchaction: "none",
+      userSction: "none"
     };
 
   return (
     <button
       ref={setNodeRef}
       style={style}
-      className={`transition-transform hover:scale-105 z-50 hover:cursor-pointer overflow-hidden ${
-        isDragging ? "opacity-50 cursor-hand" : ""
+      className={`transition-transform hover:scale-105 z-50 overflow-hidden ${
+        isDragging ? "cursor-grab opacity-0" : "hover:cursor-pointer"
       }`}
       {...listeners}
       {...attributes}

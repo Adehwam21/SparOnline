@@ -28,8 +28,8 @@ export interface GameState {
     nextPlayerIndex: number | null;
     roundStatus: string | null;
     gameStatus: string | null;
-
-  },
+    gameWinner: string | null;
+  } | null,
   colyseusRoomId: string | null; // ID of the Colyseus room
   roomLink: string | null;
 
@@ -52,6 +52,7 @@ const initialState: GameState = {
     roundStatus: null,
     gameStatus: null,
     creator: null,
+    gameWinner: null,
     maxPoints: null, // Maximum points to win the game
   },
   colyseusRoomId: null,
@@ -65,13 +66,13 @@ const gameSlice = createSlice({
   reducers: {
 
     setGameState : (state, action: PayloadAction<GameState>) => {
-      state.roomInfo! = action.payload.roomInfo;
+      state.roomInfo = action.payload.roomInfo;
       state.colyseusRoomId = action.payload.colyseusRoomId;
       state.roomLink = action.payload.roomLink;
     },
 
     updateRoomInfo: (state, action: PayloadAction<GameState>) => {
-      state.roomInfo! = action.payload.roomInfo;
+      state.roomInfo = action.payload.roomInfo;
     },
 
     addBid: (state, action: PayloadAction<{ playerUsername: string; cards: string[] }>) => {
@@ -90,14 +91,13 @@ const gameSlice = createSlice({
       state.roomInfo!.bids = [];
     },
 
-    // logOut: (state) => {
-    //   state.roomInfo! = null,
-    //   state.colyseusRoomId = null,
-    //   state.roomLink = null,
-    // },
+    logOut: (state) => {
+      state.roomInfo = null;
+      state.colyseusRoomId = null;
+      state.roomLink = null;
+    }
   }
 });
 
-export const { setGameState, addBid, setCurrentTurn, updatePlayers, resetBids, updateRoomInfo } = gameSlice.actions;
+export const { setGameState, addBid, setCurrentTurn, updatePlayers, resetBids, updateRoomInfo, logOut} = gameSlice.actions;
 export const gameReducer =  gameSlice.reducer;
-

@@ -42,39 +42,39 @@ interface WaitingScreenProps {
 
     return (
         <div className="fixed inset-0 flex font-bold items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
-        <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="bg-white p-6 rounded-lg mx-4 shadow-xl w-full max-w-md relative space-y-4"
-        >
-            <button
-            onClick={onClose} // Close the waiting screen when clicked
-            className="absolute top-2 right-2 p-2 rounded-lg bg-red-400 hover:bg-red-500"
+            <motion.div
+                initial={{ opacity: 0, y: -50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -50 }}
+                className="bg-white p-6 rounded-lg mx-4 shadow-xl w-full max-w-md relative space-y-4"
             >
-            <FaTimes size={16} />
-            </button>
+                <button
+                onClick={onClose} // Close the waiting screen when clicked
+                className="absolute top-2 right-2 p-2 rounded-lg bg-red-400 hover:bg-red-500"
+                >
+                <FaTimes size={16} />
+                </button>
 
-            <h2 className="text-lg font-bold text-center text-green-800">Room Link</h2>
+                <h2 className="text-lg font-bold text-center text-green-800">Room Link</h2>
 
-            <div className="flex items-center gap-2">
-            <input
-                type="text"
-                readOnly
-                value={roomId}
-                className="flex-1 px-3 py-2 border rounded-md text-sm text-gray-700"
-            />
-            <button
-                onClick={handleCopy}
-                className="p-2 rounded-md bg-green-600 hover:bg-green-700 transition text-white"
-                title="Copy room link"
-            >
-                <FiCopy size={16} />
-            </button>
-            </div>
+                <div className="flex items-center gap-2">
+                <input
+                    type="text"
+                    readOnly
+                    value={roomId}
+                    className="flex-1 px-3 py-2 border rounded-md text-sm text-gray-700"
+                />
+                <button
+                    onClick={handleCopy}
+                    className="p-2 rounded-md bg-green-600 hover:bg-green-700 transition text-white"
+                    title="Copy room link"
+                >
+                    <FiCopy size={16} />
+                </button>
+                </div>
 
-            <p className="text-sm text-center text-gray-600">{getStatusMessage()}</p>
-        </motion.div>
+                <p className="text-sm text-center text-gray-600">{getStatusMessage()}</p>
+            </motion.div>
         </div>
     );
 };

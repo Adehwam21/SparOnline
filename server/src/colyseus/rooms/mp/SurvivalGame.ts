@@ -6,7 +6,7 @@ import {
     Round,
     PlayedCard,
     Moves,
-} from "../schemas/GameState";
+} from "../../schemas/GameState";
 import {
     createDeck,
     shuffleDeck,
@@ -17,8 +17,8 @@ import {
     getCardSuit,
     getCardValue,
     getCardPoints,
-} from "../utils/roomUtils";
-import { IBids } from "../../types/game";
+} from "../../utils/roomUtils";
+import { IBids } from "../../../types/game";
 
 export class SurvivalGameRoom extends Room<GameState> {
     DECK = shuffleDeck(createDeck());

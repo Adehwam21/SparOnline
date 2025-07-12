@@ -3,6 +3,7 @@ import CustomButton from "./CustomLobbyButton";
 import CreateRoomModal from "../Forms/CreateRoomModal";
 import JoinRoomModal from "../Forms/JoinRoomModal";
 import PlayComputer from "../Forms/PlayComputer";
+import Header from "../Header";
 import { FaPlusCircle, FaUsers, FaBolt, FaRobot } from "react-icons/fa";
 
 const Lobby: React.FC = () => {
@@ -20,6 +21,7 @@ const Lobby: React.FC = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-green-700">
+        <Header />
         {/* Buttons Grid */}
         <div className="flex flex-col space-y-3 p-10 pt-20  w-full sm:w-fit sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6">
           <CustomButton label="Create Room" icon={FaPlusCircle} onClick={handleOpenCreateRoomModal} />
