@@ -15,6 +15,7 @@ interface RoomContextType {
     join: (roomId: string, playerUsername: string, dispatch: AppDispatch) => Promise<void>;
     startGame: (dispatch: AppDispatch) => Promise<void>;
     playCard: (cardName: string, dispatch: AppDispatch) => Promise<void>;
+    consentedLeave: (roomId: string, playerUsername: string, dispatch: AppDispatch) => Promise<void>;
     joinError: boolean;
     state: GameState | null;
 }
@@ -26,6 +27,7 @@ export const RoomContext = createContext<RoomContextType>({
     join: async () => Promise.resolve(),
     startGame: async () => Promise.resolve(),
     playCard: async () => Promise.resolve(),
+    consentedLeave: async () => Promise.resolve(),
     joinError: false,
     state: null ,
 });
@@ -49,15 +51,15 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
 
     useEffect(() => {
         if (room && isConnected) {
-            room.onMessage("update_state", (payload) => {
-                dispatch(setGameState(payload));
-            });
+                room.onMessage("update_state", (payload) => {
+                    dispatch(setGameState(payload));
+                });
             }
         
             return () => {
-            room?.removeAllListeners(); // clean up when unmounting or reconnecting
+                room?.removeAllListeners(); // clean up when unmounting or reconnecting
             };
-        }, [room, isConnected, dispatch]);
+    }, [room, isConnected, dispatch]);
 
 
     const join = async (roomId: string, playerUsername: string) => {
@@ -141,9 +143,16 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     }
     };
 
+    const consentedLeave = async () => {
+        try {
+            room.send("leave_room", {consent: true});
+        } catch (err) {
+            console.error("Error leaving room", err)
+        }
+    }
 
     return (
-        <RoomContext.Provider value={{ isConnecting, isConnected, room, join, startGame, playCard, joinError, state }}>
+        <RoomContext.Provider value={{ isConnecting, isConnected, room, join, startGame, playCard, consentedLeave, joinError, state }}>
             {children}
         </RoomContext.Provider>
     );

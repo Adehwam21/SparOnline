@@ -20,6 +20,7 @@ export interface GameState {
   gameStatus: string; // Indicates if the game has started
   maxPoints: string; // Maximum points to win the game
   gameMode: string; // Type of game (e.g., "classic", "custom")
+  gameWinner: string; // Winner of the game
   creator: string; // Store host player username
   gameId: string; // Unique identifier for the game
   gameName: string; // Name of the game

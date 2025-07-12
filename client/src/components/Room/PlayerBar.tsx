@@ -4,41 +4,41 @@ import DraggableCard from "./DraggableCard";
 
 interface PlayerBarProps {
   username: string;
-  score: number;
+  // score: number;
   playableCards: string[];
   isTurn: boolean;
-  maxPoints: string;
+  isActive: boolean;
+  // maxPoints: string;
 }
 
 const PlayerBar: React.FC<PlayerBarProps> = ({
   username,
-  score,
+  // score,
   playableCards,
   isTurn,
-  maxPoints,
+  isActive,
 }) => (
-  <div className="min-w-72 min-h-36 max-w-4xl bg-green-900 text-white p-2 md:p-4 rounded-sm shadow-lg flex flex-col md:flex-row items-center justify-around space-y-4 md:space-y-0 md:space-x-4">
+  <div className="min-w-75 min-h-36 max-w-4xl text-white p-2 md:p-4 flex flex-col md:flex-row items-center justify-center space-y-4 md:space-y-0 md:space-x-4">
     {/* Player Info */}
-    <div className="flex items-center space-x-4">
+    <div className="flex flex-row md:flex-col md:space-y-2 justify-center md:justify-between items-center space-x-4 md:space-x-0">
       <div className="flex items-center space-x-2">
-        <FaUser size={20} className={isTurn ? "text-green-400" : "text-red-400"} />
+        <FaUser size={20} className={isActive ? "text-green-400" : "text-gray-500"} />
         <span className="font-bold text-sm md:text-base">{username}</span>
       </div>
       <div
-        className={`px-3 py-1 rounded-sm text-sm font-bold ${
+        className={`w-full flex justify-center items-center text-center md:justify-center md:items-center p-2 text-[10px] font-sm font-bold ${
           isTurn ? "bg-green-500" : "bg-red-500"
         }`}
       >
-        {isTurn ? "Your Turn" : "Waiting..."}
+        {isTurn ? "Bid" : "Hold"}
       </div>
-      <p className="text-yellow-300 text-2xl md:text-3xl font-bold ml-4">
+      {/* <div className="w-full flex justify-center text-center items-center text-yellow-400 text-3xl p-1 font-bold md:justify-center md:items-center">
         {score}
-        <span className="text-lg md:text-xl">/{maxPoints}</span>
-      </p>
+      </div> */}
     </div>
 
     {/* Hand */}
-    <div className="flex gap-2 p-2 rounded-sm w-full md:w-auto">
+    <div className="flex justify-center items-center gap-2 p-2 rounded-sm w-full md:w-auto">
       {playableCards.map((card) => (
         <DraggableCard key={card} id={card} />
       ))}

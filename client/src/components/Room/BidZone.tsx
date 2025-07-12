@@ -4,27 +4,37 @@ import Card from "./Card";
 
 interface BidZoneProps {
   bidCards: string[];
+  score: number
 }
 
-const BidZone: React.FC<BidZoneProps> = ({ bidCards }) => {
+const BidZone: React.FC<BidZoneProps> = ({ bidCards , score}) => {
   const { setNodeRef, isOver } = useDroppable({ id: "bid-zone" });
 
   return (
     <div
       ref={setNodeRef}
-      className={`h-28 min-w-72 flex flex-col items-center justify-center rounded-sm text-white text-sm font-bold p-2 transition-colors ${
-        isOver ? "bg-green-900" : "bg-green-900"
+      className={`h-28 min-w-80 flex flex-row-reverse justify-between rounded-md items-center text-center text-white border-1 border-gray-500 text-sm font-bold p-3 transition-colors ${
+        isOver ? "border-yellow-500 transform-border " : ""
       }`}
     >
-      {bidCards.length === 0 ? (
-        <span>Drop card to bid</span>
-      ) : (
-        <div className="flex gap-1">
-          {bidCards.map((card) => (
-            <Card key={card} card={card} />
-          ))}
-        </div>
-      )}
+      <div className="flex flex-col justify-start text-center items-center font-bold md:justify-center md:items-center">
+        <span className="text-sm text-gray-200">Score</span>
+        <span className="text-yellow-400 text-5xl">{score}</span>
+      </div>
+
+      <div className="flex w-full h-full justify-center items-center text-center text-gray-200">
+        {bidCards.length === 0 ? (
+          <div className="flex w-full h-full justify-center items-center text-center">
+            Drag and drop a card to bid
+          </div>
+          ):(
+            <div className="flex gap-1">
+            {
+              bidCards.map((card) => ( <Card key={card} card={card} />))
+            }
+          </div>)
+        }
+      </div>
     </div>
   );
 };
