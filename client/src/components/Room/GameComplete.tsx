@@ -21,17 +21,16 @@ export const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-lg text-black text-center">
-        <h2 className="text-2xl font-bold mb-4">🏆 Game Over</h2>
+        <h2 className="text-2xl font-bold mb-4">🏆 Game Ended</h2>
         <p className="mb-6 text-lg">Winner: <span className="font-bold text-green-600">{winner}</span></p>
 
-        <h3 className="text-lg font-semibold mb-2">Leaderboard</h3>
-        <ul className="space-y-2 text-left">
-          {sortedPlayers.map((player, index) => (
-            <li key={player.username} className="flex justify-between">
-              <span>{index + 1}. {player.username}</span>
-              <span>{player.score} pts</span>
+        <ul className="space-y-2 flex flex-col justify-center items-center text-center">
+          {sortedPlayers.map((player) => (
+            <li key={player.username} className="flex justify-around space-x-5">
+              <span>{player.username}</span>
+              <span className="font-bold">{player.score} pts</span>
             </li>
           ))}
         </ul>
@@ -44,6 +43,7 @@ export const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
             Leave
           </button>
         </div>
+        <p className="text-sm font-semibold mt-3 text-gray-700">Room will be disposed within the next 60 seconds</p>
       </div>
     </div>
   );

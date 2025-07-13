@@ -42,7 +42,7 @@ const Header: React.FC = () => {
           className="md:hidden text-yellow-300 text-2xl"
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         >
-          {isMobileMenuOpen ? <FaTimes size={40} /> : <FaBars size={40} />}
+          {isMobileMenuOpen ? <FaTimes size={30} /> : <FaBars size={30} />}
         </button>
 
         {/* Logo */}
@@ -63,7 +63,7 @@ const Header: React.FC = () => {
         {user ? (
             <UserHandle />
         ) : (
-          <Link to="/sign-in" className="flex justify-center text-lg text-center items-center text-green-800 font-bold bg-yellow-300 px-3 py-1 rounded-md hover:bg-yellow-500 transition">
+          <Link to="/sign-in" className="flex justify-center text-md text-center items-center text-green-800 font-bold bg-yellow-500 p-3 rounded-md hover:bg-yellow-300 transition">
             Sign In
           </Link>
         )}

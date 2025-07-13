@@ -42,7 +42,6 @@ const Login: React.FC<LoginSignUpProps> = () => {
       }
 
       toast.success(res.data.message, successToastOptions)
-      console.log(res.data)
       dispatch(loginSuccess({ token: res.data!.token, user: res.data!.user}));
       navigate("/")
 

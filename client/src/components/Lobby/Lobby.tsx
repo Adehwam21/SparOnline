@@ -20,7 +20,7 @@ const Lobby: React.FC = () => {
   const handleClosePlayComputer = () => setIsPlayComputerOpen(false);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-green-700">
+    <div className="flex items-center bg-transparent justify-center min-h-screen ">
         <Header />
         {/* Buttons Grid */}
         <div className="flex flex-col space-y-3 p-10 pt-20  w-full sm:w-fit sm:space-y-0 sm:grid sm:grid-cols-2 sm:gap-6">

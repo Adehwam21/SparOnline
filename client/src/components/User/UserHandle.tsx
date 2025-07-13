@@ -1,12 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../../redux/reduxStore";
-// import { logout } from "../../redux/slices/authSlice";
+import { persistor,resetApp, RootState } from "../../redux/reduxStore";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaUserCircle, FaUser, FaCog, FaSignOutAlt } from "react-icons/fa";
-import { logout } from "../../redux/slices/authSlice";
 
 const UserHandle: React.FC = () => {
   const dispatch = useDispatch();
@@ -28,14 +26,16 @@ const UserHandle: React.FC = () => {
   }, []);
 
   const handleLogout = () => {
-    dispatch(logout());
-    localStorage.removeItem("persist:auth");
-    localStorage.removeItem("persist:game");
-    localStorage.removeItem("reconnection");
-    toast.success("Logged out successfully");
-    setIsOpen(false);
-    navigate('/')
-  };
+      localStorage.removeItem("token");
+      localStorage.removeItem("reconnection");
+
+      dispatch(resetApp());
+      persistor.purge()
+      navigate("/")
+
+      toast.success("Logged out successfully");
+      setIsOpen(false);
+    };
 
   return (
     <div className="relative" ref={menuRef}>

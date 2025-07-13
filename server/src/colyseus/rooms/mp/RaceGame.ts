@@ -41,7 +41,7 @@ export class RaceGameRoom extends Room<GameState> {
     this.setMetadata(options);
 
     this.onMessage("play_card", this.handlePlayCard.bind(this));
-    this.onMessage("leave_room", this._onLeave);
+    this.onMessage("leave_room", this.onLeave);
   }
 
   override onJoin(client: Client, { playerUsername }: { playerUsername: string }) {
@@ -273,15 +273,45 @@ export class RaceGameRoom extends Room<GameState> {
 
   override async onLeave(client: Client, consented: boolean) {
     try {
-      this.state.players.get(client.sessionId)!.active = false;
+      const player = this.state.players.get(client.sessionId);
+      if (!player) return;
+
+      const leaver = player.username;
 
       if (consented) {
         this.state.players.delete(client.sessionId);
-        console.log(`Left: ${client.sessionId}`);
+        this.USER_TO_SESSION_MAP.delete(leaver);
+
+        this.broadcastGameState();
+        this.broadcast("notification", {
+          message: `${leaver} has left the room`,
+        });
+        console.log(`[Event] onLeave: ${leaver} has left with consent`);
         return;
       }
+
+      player.active = false;
+      this.broadcastGameState();
+
+      // Wait 60s for reconnection
       await this.allowReconnection(client, 60);
-      this.state.players.get(client.sessionId)!.active = true;
+
+      // If player reconnects in time, do nothing (reconnection handled in `onJoin`)
+      // But if they don’t:
+      this.clock.setTimeout(() => {
+        const stillInactive = this.state.players.get(client.sessionId)?.active === false;
+
+        if (stillInactive) {
+          this.state.players.delete(client.sessionId);
+          this.USER_TO_SESSION_MAP.delete(leaver);
+
+          this.broadcastGameState();
+          this.broadcast("notification", {
+            message: `${leaver} was removed after disconnect timeout.`,
+          });
+          console.log(`[Event] ${leaver} removed due to inactivity`);
+        }
+      }, 60 * 1000); // 60 seconds
     } catch (e) {
       console.error("[onLeave]", e);
     }

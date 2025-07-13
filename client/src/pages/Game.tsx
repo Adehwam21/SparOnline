@@ -9,7 +9,7 @@ import { useParams, useNavigate } from "react-router-dom";
 
 const GamePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { join, isConnected, isConnecting } = useRoom();
+  const { join, consentedLeave, isConnected, isConnecting } = useRoom();
   const { id: roomId } = useParams();
   const navigate = useNavigate();
 
@@ -42,22 +42,22 @@ const GamePage: React.FC = () => {
   }, [gameState]);
 
   const handleExit = () => {
-    navigate("/lobby"); // or any route you want
+    localStorage.removeItem("reconnection");
+    navigate("/");
   };
 
-  if (!gameState) {
-    return <div className="flex items-center justify-center h-screen text-white">Loading game...</div>;
+  const handleConsentedLeave = () => {
+    consentedLeave(currentUser );
+    localStorage.removeItem("reconnection");
+    navigate("/"); // Navigate to landing page
+  }
+
+  if (!gameState?.roomInfo?.players) {
+    return <div className="flex items-center bg-transparent justify-center h-screen text-white">Loading game...</div>;
   }
 
   return (
-    <div
-      className="h-screen border-2 text-white"
-      style={{
-        backgroundImage: "url('/images/game-elements/board.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
+    <div className="h-full text-white bg-transparent">
       <WaitingScreen
         isOpen={isWaitingScreenOpen}
         roomId={roomId!}
@@ -70,6 +70,7 @@ const GamePage: React.FC = () => {
         currentTurn={gameState.roomInfo?.currentTurn ?? ""}
         currentUser={currentUser}
         maxPoints={gameState.roomInfo?.maxPoints ?? "0"}
+        onLeaveRoom={handleConsentedLeave}
       />
 
       <GameCompleteModal

@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaCog, FaBell, FaPalette, FaLock } from "react-icons/fa";
 import axios from "axios";
 import { SERVER_BASE_URL } from "../../constants";
+import { FiMoreVertical } from "react-icons/fi";
 
 const SettingsMenu: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -52,10 +51,10 @@ const SettingsMenu: React.FC = () => {
     <div className="relative" ref={menuRef}>
       {/* Settings Button */}
       <button
-        className="flex items-center gap-2 p-3 rounded-lg hover:text-green-800 hover:bg-yellow-300 transition text-yellow-300"
+        className="flex items-center gap-2 p-2 rounded-lg hover:text-green-800 hover:bg-yellow-300 transition text-yellow-300"
         onClick={() => setIsOpen(!isOpen)}
       >
-        <FaCog className="w-6 h-6" />
+        <FiMoreVertical size={30} />
       </button>
 
       {/* Dropdown Menu */}
@@ -69,22 +68,6 @@ const SettingsMenu: React.FC = () => {
             className="absolute right-0 mt-3 w-56 bg-white rounded-lg text-green-900 shadow-lg"
           >
             <ul className="py-2">
-              <li>
-                <Link to="/notifications" className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 transition">
-                  <FaBell /> Notifications
-                </Link>
-              </li>
-              <li>
-                <Link to="/theme" className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 transition">
-                  <FaPalette /> Theme
-                </Link>
-              </li>
-              <li>
-                <Link to="/privacy" className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 transition">
-                  <FaLock /> Privacy
-                </Link>
-              </li>
-
               {/* Ping & Server Processing Time */}
               <li className="px-4 py-2 border-t border-gray-200">
                 <div >
