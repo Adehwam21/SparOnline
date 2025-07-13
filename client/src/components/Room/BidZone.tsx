@@ -13,22 +13,22 @@ const BidZone: React.FC<BidZoneProps> = ({ bidCards , score}) => {
   return (
     <div
       ref={setNodeRef}
-      className={`h-28 min-w-80 flex flex-row-reverse justify-between rounded-md items-center text-center text-white border-1 border-gray-500 text-sm font-bold p-3 transition-colors ${
+      className={`h-28 min-w-80 flex flex-row-reverse justify-between gap-4 rounded-md items-center text-center text-white border-1 border-gray-500 text-sm font-bold p-2 transition-colors ${
         isOver ? "border-yellow-500 transform-border " : ""
       }`}
     >
       <div className="flex flex-col justify-start text-center items-center font-bold md:justify-center md:items-center">
-        <span className="text-sm text-gray-200">Score</span>
+        <span className="text-yellow-400 text-[10px]">Points</span>
         <span className="text-yellow-400 text-5xl">{score}</span>
       </div>
 
-      <div className="flex w-full h-full justify-center items-center text-center text-gray-200">
+      <div className="flex w-full h-full justify-between items-center text-center text-gray-200">
         {bidCards.length === 0 ? (
           <div className="flex w-full h-full justify-center items-center text-center">
             Drag and drop a card to bid
           </div>
           ):(
-            <div className="flex gap-1">
+            <div className="flex gap-1 p-1 justify-start items-center">
             {
               bidCards.map((card) => ( <Card key={card} card={card} />))
             }

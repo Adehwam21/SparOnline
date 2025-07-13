@@ -46,5 +46,19 @@ export const invalidPaawordOptions = {
         primary: '#c42501',
         secondary: '#ffffff',
       },
-    duration: 6000
+    duration: 5000
+}
+
+export const inGameNotificationOptions = {
+      style: {
+        border: '4px solid #c42501',
+        padding: '10px',
+        color: '#c42501',
+        backgroundColor: '#ffffff',
+      },
+      iconTheme: {
+        primary: '#c42501',
+        secondary: '#ffffff',
+      },
+    duration: 5000
 }

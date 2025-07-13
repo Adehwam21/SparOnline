@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { configureStore } from "@reduxjs/toolkit";
 import createWebStorage from 'redux-persist/lib/storage/createWebStorage';
 import { persistReducer, persistStore } from "redux-persist";
@@ -6,6 +7,9 @@ import { TypedUseSelectorHook, useSelector, useDispatch } from "react-redux";
 import { thunk } from "redux-thunk";
 import { gameReducer } from "./slices/gameSlice" 
 import { authReducer } from "./slices/authSlice"
+import { createAction } from "@reduxjs/toolkit";
+
+export const resetApp = createAction("app/reset");
 
 const authPersistConfig = {
     key: 'auth',
@@ -25,10 +29,19 @@ const gamePersistConfig = {
     }
 };
 
-const rootReducer = combineReducers({
+
+const appReducer = combineReducers({
     auth: persistReducer(authPersistConfig, authReducer), // Persist auth state
     game: persistReducer(gamePersistConfig, gameReducer), // Persist game state
 });
+
+const rootReducer = (state: any, action: any) => {
+    if (action.type == "app/reset" ){
+        state = undefined;
+    }
+
+    return appReducer(state, action)
+}
 
 export const store = configureStore({
   reducer: rootReducer,

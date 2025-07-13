@@ -7,6 +7,8 @@ import { GameState } from '../hooks/GameState';
 import { setGameState } from '../redux/slices/gameSlice';
 import { AppDispatch } from '../redux/reduxStore';
 import { useDispatch } from 'react-redux';
+import toast from 'react-hot-toast';
+import { successToastOptions } from '../types';
 
 interface RoomContextType {
     isConnecting: boolean;
@@ -15,7 +17,7 @@ interface RoomContextType {
     join: (roomId: string, playerUsername: string, dispatch: AppDispatch) => Promise<void>;
     startGame: (dispatch: AppDispatch) => Promise<void>;
     playCard: (cardName: string, dispatch: AppDispatch) => Promise<void>;
-    consentedLeave: (roomId: string, playerUsername: string, dispatch: AppDispatch) => Promise<void>;
+    consentedLeave: (currentUser: string) => Promise<void>;
     joinError: boolean;
     state: GameState | null;
 }
@@ -54,12 +56,26 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
                 room.onMessage("update_state", (payload) => {
                     dispatch(setGameState(payload));
                 });
+
             }
         
             return () => {
                 room?.removeAllListeners(); // clean up when unmounting or reconnecting
             };
     }, [room, isConnected, dispatch]);
+
+    useEffect(() => {
+        if (room && isConnected) {
+                room.onMessage("notification", (payload) => {
+                    toast.custom(payload.message!, successToastOptions);
+                });
+            }
+        
+            return () => {
+                room?.removeAllListeners(); // clean up when unmounting or reconnecting
+            };
+    }, [room, isConnected, dispatch]);
+
 
 
     const join = async (roomId: string, playerUsername: string) => {
@@ -143,9 +159,14 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     }
     };
 
-    const consentedLeave = async () => {
+    const consentedLeave = async (currentUser: string) => {
         try {
-            room.send("leave_room", {consent: true});
+            if (confirm("Are you sure you want to leave the game?")) {
+                const hasLeft = await room.leave(); // Always true by default
+                if (hasLeft === 4000){
+                    room.send("consented_leave", {currentUser});
+                }
+            }
         } catch (err) {
             console.error("Error leaving room", err)
         }

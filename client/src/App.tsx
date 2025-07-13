@@ -4,8 +4,14 @@ import { Outlet } from "react-router-dom";
 
 const Layout = () => {
   return (
-    <div className="md:h-full bg-green-600">
-      <div>
+    <div className="h-fit"
+        style={{
+        backgroundImage: "url('/images/game-elements/board.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
+    >
+      <div className="font-poppins">
         <Outlet />
       </div>
     </div>

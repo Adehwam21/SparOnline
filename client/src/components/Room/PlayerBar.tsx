@@ -27,7 +27,7 @@ const PlayerBar: React.FC<PlayerBarProps> = ({
       </div>
       <div
         className={`w-full flex justify-center items-center text-center md:justify-center md:items-center p-2 text-[10px] font-sm font-bold ${
-          isTurn ? "bg-green-500" : "bg-red-500"
+          isTurn ? "bg-green-500 px-3" : "bg-red-500"
         }`}
       >
         {isTurn ? "Bid" : "Hold"}
