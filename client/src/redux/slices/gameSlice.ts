@@ -2,6 +2,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface Player {
   id: string; // Unique identifier for the player (session ID)
+  userId: string;
   username: string;
   score: number;
   rating: number;
@@ -10,15 +11,23 @@ interface Player {
   active: boolean; // Indicates if the player is active in the game
 }
 
+interface Chatroom {
+  messages: [{sender: string | null, content: string | null, time: string | null}] | null
+}
+
 export interface GameState {
   roomInfo: { 
     roomId: string | null; // Unique identifier for the room
+    colyseusRoomId: string | null;
     maxPlayers: number | null;
     maxPoints: string | null; // Maximum points to win the game
     creator: string | null; // Creator of the game
-    gameMode: string | null; // Type of game (e.g., "race", "custom")
     gameName: string | null;
     playerUsernames: string[] | null;
+    variant: string | null; // Type of game (e.g., "race", "custom")
+    pricePool: boolean | null;
+    entryFee: number | null;
+    roomType: number | null;
     deck: string[] | null
     bids: { playerUsername: string; cards: string[] }[]; // Bids made by players
     currentTurn: string | null;
@@ -29,6 +38,7 @@ export interface GameState {
     roundStatus: string | null;
     gameStatus: string | null;
     gameWinner: string | null;
+    chat: Chatroom | null 
   } | null,
   colyseusRoomId: string | null; // ID of the Colyseus room
   roomLink: string | null;
@@ -38,11 +48,16 @@ export interface GameState {
 const initialState: GameState = {
   roomInfo: {
     roomId: null,
-    gameMode: null,
+    colyseusRoomId: null,
     gameName: null,
     maxPlayers: null,
+    pricePool: null,
     deck: null,
     bids: [],
+    variant: null,
+    entryFee: null,
+    roomType: null,
+    chat: null,
     leadingCard: null,
     currentTurn: null,
     players: [],

@@ -6,9 +6,11 @@ import { errorToastOptions, successToastOptions } from "../types";
 type multiplayerConfig = {
     roomName: string, 
     creator:string, 
-    gameMode: string, 
+    variant: string, 
     maxPlayers: string, 
     maxPoints: string
+    roomType?: string;
+    entryFee?: number;
 }
 
 export const createMultiplayerRoom = async (config: multiplayerConfig) => {

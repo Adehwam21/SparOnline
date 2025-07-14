@@ -10,13 +10,16 @@ export interface IGameRoomModel extends Model<IGameRoomDocument> { }
 const GameRoomSchema = new Schema<IGameRoomDocument>(
   {
     roomId: { type: String, required: true, default: uuidv4, unique: true, index: true },
+    colyseusRoomId: {type: String, required: true, index: true, unique: false},
     roomName: {type: String, required: true},
-    creator: { type: String, required: true }, // Creator of the game room
+    creator: { type: String, required: true, ref: "User" }, // Creator of the game room
     players: { type: [String], required: true }, // List of players in the game
-    gameMode: { type: String, enum: ["race", "survival"], required: true }, // Type of game (e.g., "classic", "custom")
+    roomType: {type: String, enum: ["mpr", "spr"], requied: true},
+    variant: { type: String, enum: ["race", "survival"], required: false, default: "race"}, // Type of game (e.g., "classic", "custom")
     maxPlayers: { type: String, required: true }, // Maximum number of players allowed in the room
     maxPoints: { type: String, required: true }, // Maximum points to win the game
-    gameState: { type: Object, required: true },
+    gameState: { type: Object, required: false },
+    entryFee: {type: Number, required: false, default: 0},
     createdAt: { type: Date, default: Date.now()}
   },
   { timestamps: true }
