@@ -24,8 +24,9 @@ export class RaceGameRoom extends Room<GameState> {
   DECK = shuffleDeck(createDeck());
   MAX_CLIENTS = 4;
   MAX_MOVES = 5;
+  MIN_POINTS = -15
   USER_TO_SESSION_MAP = new Map<string, string>();
-
+  BANNED_USERS = new Set<string>();
   SECONDS_UNTIL_DISPOSE = 60 * 1000
 
   override onCreate(
@@ -47,6 +48,13 @@ export class RaceGameRoom extends Room<GameState> {
   override onJoin(client: Client, { playerUsername }: { playerUsername: string }) {
     try { // ⚠️ reconnect / new‑join can throw if Map ops fail
       const existing = this.USER_TO_SESSION_MAP.get(playerUsername);
+
+      if (this.BANNED_USERS.has(playerUsername)) {
+        console.warn(`[onJoin] Rejected banned player: ${playerUsername}`);
+        client.error(4030, "You have been removed from this room for rule violations.");
+        client.leave();
+        return;
+      }
 
       if (existing) {
         const prev = this.state.players.get(existing);
@@ -153,21 +161,87 @@ export class RaceGameRoom extends Room<GameState> {
       if (!round.moves.has(key)) round.moves.set(key, new Moves());
       const move = round.moves.get(key)!;
 
-      const pc = new PlayedCard();
-      pc.playerName = player.username;
-      pc.cardName = cardName;
-      pc.rank = getCardRank(cardName);
-      pc.suit = getCardSuit(cardName);
-      pc.value = getCardValue(cardName);
-      pc.point = getCardPoints(cardName);
-      pc.bidIndex = move.bids.length;
+      const newCard = new PlayedCard();
+      newCard.playerName = player.username;
+      newCard.cardName = cardName;
+      newCard.rank = getCardRank(cardName);
+      newCard.suit = getCardSuit(cardName);
+      newCard.value = getCardValue(cardName);
+      newCard.point = getCardPoints(cardName);
+      newCard.bidIndex = move.bids.length;
 
-      player.bids.push(pc.cardName);
-      move.bids.push(pc);
+      // Add card to player and move
+      player.bids.push(newCard.cardName);
+      move.bids.push(newCard);
 
+      // Remove card from hand
       const idx = player.hand.indexOf(cardName);
       if (idx !== -1) player.hand.splice(idx, 1);
 
+      // Check for violation and penalize
+      if (move.bids.length > 1) {
+        const firstSuit = move.bids[0].suit;
+        const currentSuit = newCard.suit;
+
+        // Check if player has any card of the same suit
+        const haveSomeCardOfSuit = player.hand.some(card => getCardSuit(card) === firstSuit);
+        const isSuitMismatch = currentSuit !== firstSuit;
+
+        if (isSuitMismatch && haveSomeCardOfSuit) {
+          player.score -= 3;
+
+          // Bar player from room forever. Handled in join as well
+          if (player.score <= this.MIN_POINTS) {
+            this.state.players.delete(client.sessionId);
+            this.USER_TO_SESSION_MAP.delete(player.username);
+
+            this.broadcast("notification", {
+              message: `${player.username} was removed for repeated violations (score too low).`,
+            });
+
+            this.broadcastGameState();
+
+            const activePlayers = [...this.state.players.values()].filter(p => p.active);
+            if (activePlayers.length === 1) {
+              const lastPlayer = activePlayers[0];
+              lastPlayer.score = this.state.maxPoints;
+              this.state.gameWinner = lastPlayer.username;
+              this.state.gameStatus = "complete";
+
+              this.broadcast("notification", {
+                message: `${lastPlayer.username} wins by default as all others were removed.`,
+              });
+
+              this.broadcastGameState();
+
+              this.clock.setTimeout(() => this.disconnect(), 3000);
+            }
+
+            return;
+          }
+
+          this.broadcast("notification", {
+            message: `${player.username} played a different suit and lost 3 points!`,
+          });
+
+          this.broadcastGameState();
+
+          const currentIndex = this.state.playerUsernames.indexOf(player.username);
+          const nextIndex = (currentIndex + 1) % this.state.playerUsernames.length;
+
+          this.state.nextPlayerIndex = nextIndex;
+          this.state.currentTurn = this.state.playerUsernames[nextIndex];
+
+          this.clock.setTimeout(() => {
+            this.startRound();
+            this.broadcastGameState();
+          }, 2000);
+
+          return;
+        }
+      }
+
+      // Proceed to next turn or evaluate move
       if (move.bids.length === this.state.players.size) {
         this.evaluateMove();
       } else {
@@ -176,12 +250,14 @@ export class RaceGameRoom extends Room<GameState> {
         this.state.currentTurn =
           this.state.playerUsernames[this.state.nextPlayerIndex];
       }
+
       this.broadcastGameState();
     } catch (e) {
       console.error("[handlePlayCard]", e);
       client.error(4000, `${e}`);
     }
   }
+
 
   evaluateMove() {
     try {
@@ -300,7 +376,7 @@ export class RaceGameRoom extends Room<GameState> {
           this.state.gameStatus = "complete";
 
           this.broadcast("notification", {
-            message: `${lastPlayer.username} has won by default as all others left.`,
+            message: `${lastPlayer.username} wins by default as all others left.`,
           });
 
           this.broadcastGameState();
@@ -315,9 +391,8 @@ export class RaceGameRoom extends Room<GameState> {
         return;
       }
 
-
       player.active = false;
-
+      
       // Wait 60s for reconnection
       await this.allowReconnection(client, 60);
 
