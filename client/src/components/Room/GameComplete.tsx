@@ -43,7 +43,6 @@ export const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
             Leave
           </button>
         </div>
-        <p className="text-sm font-semibold mt-3 text-gray-700">Room will be disposed within the next 60 seconds</p>
       </div>
     </div>
   );

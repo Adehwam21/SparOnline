@@ -223,7 +223,9 @@ export class RaceGameRoom extends Room<GameState> {
           this.endGame();
           return;
         }
-        this.startNextRound(moveWinner);
+        this.clock.setTimeout(() => {
+          this.startNextRound(moveWinner);
+        }, 1200)
       }
       this.broadcastGameState();
     } catch (e) {
@@ -262,7 +264,7 @@ export class RaceGameRoom extends Room<GameState> {
       this.broadcastGameState();
 
       // Dispose the room after one minute
-      setTimeout(() => {
+      this.clock.setTimeout(() => {
         this.disconnect(4000)
       }, (this.SECONDS_UNTIL_DISPOSE))
 
@@ -275,23 +277,46 @@ export class RaceGameRoom extends Room<GameState> {
     try {
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
-
       const leaver = player.username;
 
       if (consented) {
         this.state.players.delete(client.sessionId);
         this.USER_TO_SESSION_MAP.delete(leaver);
 
-        this.broadcastGameState();
         this.broadcast("notification", {
           message: `${leaver} has left the room`,
         });
+        this.broadcastGameState();
+
         console.log(`[Event] onLeave: ${leaver} has left with consent`);
+
+        // ✅ Check for only one active player left
+        const activePlayers = [...this.state.players.values()].filter(p => p.active);
+
+        if (activePlayers.length === 1) {
+          const lastPlayer = activePlayers[0];
+          lastPlayer.score = this.state.maxPoints; // Give them max score to end game
+          this.state.gameWinner = lastPlayer.username;
+          this.state.gameStatus = "complete";
+
+          this.broadcast("notification", {
+            message: `${lastPlayer.username} has won by default as all others left.`,
+          });
+
+          this.broadcastGameState();
+
+          // Dispose room after a short delay to ensure state is delivered
+          this.clock.setTimeout(() => {
+            console.log(`[Room] Auto-disposing room ${this.roomId} — last player remaining`);
+            this.disconnect();
+          }, 3000); // wait 3 seconds
+        }
+
         return;
       }
 
+
       player.active = false;
-      this.broadcastGameState();
 
       // Wait 60s for reconnection
       await this.allowReconnection(client, 60);
@@ -305,13 +330,22 @@ export class RaceGameRoom extends Room<GameState> {
           this.state.players.delete(client.sessionId);
           this.USER_TO_SESSION_MAP.delete(leaver);
 
-          this.broadcastGameState();
           this.broadcast("notification", {
             message: `${leaver} was removed after disconnect timeout.`,
           });
+          this.broadcastGameState();
+
           console.log(`[Event] ${leaver} removed due to inactivity`);
+
+          // ✅ Auto-dispose room if no active players remain
+          const activePlayers = [...this.state.players.values()].filter(p => p.active);
+          if (activePlayers.length === 0) {
+            console.log(`[Room] No active players remaining, disposing room ${this.roomId}`);
+            this.disconnect();
+          }
         }
-      }, 60 * 1000); // 60 seconds
+      }, 60 * 1000);
+
     } catch (e) {
       console.error("[onLeave]", e);
     }

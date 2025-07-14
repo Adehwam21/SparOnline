@@ -27,6 +27,7 @@ export default async function start(config: Config) {
       origin: [
       process.env.CLIENT_URL || "http://localhost:5173",
       "http://localhost:3000",
+      "http://192.168.43.241:5173",
       "http://192.168.43.48:5173",
       ],
       credentials: true

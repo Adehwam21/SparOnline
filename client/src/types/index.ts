@@ -46,7 +46,7 @@ export const invalidPaawordOptions = {
         primary: '#c42501',
         secondary: '#ffffff',
       },
-    duration: 5000
+    duration: 5000,
 }
 
 export const inGameNotificationOptions = {

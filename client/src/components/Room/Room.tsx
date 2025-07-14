@@ -40,7 +40,7 @@ const Room: React.FC<RoomProps> = ({
   };
 
   return (
-    <div className="relative h-full flex flex-col items-center justify-center text-white gap-10"
+    <div className="relative h-full bg-transparent flex flex-col items-center justify-center text-white gap-10"
       style={{
         backgroundImage: "url('/images/game-elements/board.jpg')",
         backgroundSize: "cover",

@@ -5,8 +5,7 @@ import PlayerBar from "./PlayerBar";
 import BidZone from "./BidZone";
 import Card from "./Card";
 import { useRoom } from "../../contexts/roomContext";
-import { useDispatch } from "react-redux";
-import { AppDispatch } from "../../redux/reduxStore";
+
 
 interface GameBoardProps {
   players: { id: string; username: string; score: number; hand: string[]; active: boolean; bids: string[] }[];
@@ -21,7 +20,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   currentUser,
   // maxPoints,
 }) => {
-  const dispatch = useDispatch<AppDispatch>();
+  // const dispatch = useDispatch<AppDispatch>();
   const { playCard } = useRoom();
 
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -35,7 +34,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
 
   const onDragEnd = (e: DragEndEvent) => {
     const { active, over } = e;
-    if (over?.id === "bid-zone" && isTurn) playCard(String(active.id), dispatch);
+    if (over?.id === "bid-zone" && isTurn) playCard(String(active.id));
     setActiveId(null);
   };
 
@@ -43,7 +42,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd} autoScroll={false}>
-      <div className="relative w-full h-[30rem] rounded-lg flex flex-col items-center justify-between text-white">
+      <div className="relative w-full bg-transparent h-[30rem] rounded-lg flex flex-col items-center justify-between text-white">
         <div className="flex mb-2 flex-col lg:flex-row items-center justify-center gap-4">
           {opponents.map((o, i) => (
             <div key={i} className={`w-full md:w-auto ${opponents.length === 1 ? "text-center" : ""}`}>
