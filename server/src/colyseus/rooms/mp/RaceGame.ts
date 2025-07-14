@@ -9,7 +9,7 @@ import {
 } from "../../schemas/GameState";
 import {
   createDeck,
-  shuffleDeck,
+  secureShuffleDeck,
   calculateRoundPoints,
   distributeCards,
   calculateMoveWinner,
@@ -21,7 +21,7 @@ import {
 import { IBids } from "../../../types/game";
 
 export class RaceGameRoom extends Room<GameState> {
-  DECK = shuffleDeck(createDeck());
+  DECK = secureShuffleDeck(createDeck(), 10);
   MAX_CLIENTS = 4;
   MAX_MOVES = 5;
   MIN_POINTS = -15
@@ -128,6 +128,8 @@ export class RaceGameRoom extends Room<GameState> {
 
   startRound() {
     try {
+      const newDeck = secureShuffleDeck(createDeck(), 5);
+      this.DECK = newDeck;
       const rnd = new Round();
       rnd.roundNumber = this.state.rounds.length;
       this.state.rounds.push(rnd);

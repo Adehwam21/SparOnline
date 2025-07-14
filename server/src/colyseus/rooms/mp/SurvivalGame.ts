@@ -9,7 +9,7 @@ import {
 } from "../../schemas/GameState";
 import {
     createDeck,
-    shuffleDeck,
+    secureShuffleDeck,
     calculateRoundPoints,
     distributeCards,
     calculateMoveWinner,
@@ -21,7 +21,7 @@ import {
 import { IBids } from "../../../types/game";
 
 export class SurvivalGameRoom extends Room<GameState> {
-    DECK = shuffleDeck(createDeck());
+    DECK = secureShuffleDeck(createDeck());
     MAX_CLIENTS = 4;
     MAX_MOVES = 5;
     USER_TO_SESSION_MAP = new Map<string, string>();
@@ -108,6 +108,9 @@ export class SurvivalGameRoom extends Room<GameState> {
     startRound() {
         try {
         const rnd = new Round();
+        const newDeck = secureShuffleDeck(createDeck(), 5);
+        this.DECK = newDeck;
+        this.state.deck = new ArraySchema(...newDeck);
         rnd.roundNumber = this.state.rounds.length;
         this.state.rounds.push(rnd);
         this.state.moveNumber = 0;

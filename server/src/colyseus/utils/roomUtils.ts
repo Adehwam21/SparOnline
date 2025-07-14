@@ -1,3 +1,4 @@
+import { randomInt } from "crypto";
 import { IBids, IWinningCard } from "../../types/game";
 
 interface PlayerHand {
@@ -23,10 +24,19 @@ export function createDeck(): string[] {
   );
 }
 
+export function secureShuffleDeck(originalDeck: string[], passes = 3): string[] {
+  let deck = [...originalDeck];
 
-export function shuffleDeck(deck: string[]): string[] {
-  return deck.sort(() => Math.random() - 0.5);
+  for (let p = 0; p < passes; p++) {
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = randomInt(0, i + 1); // Secure random index
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+  }
+
+  return deck;
 }
+
 
 
 export function distributeCards(
