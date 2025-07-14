@@ -6,7 +6,7 @@ import {
   Round,
   PlayedCard,
   Moves,
-} from "../../schemas/GameState";
+} from "../schemas/GameState";
 import {
   createDeck,
   shuffleDeck,
@@ -17,31 +17,34 @@ import {
   getCardSuit,
   getCardValue,
   getCardPoints,
-} from "../../utils/roomUtils";
-import { IBids } from "../../../types/game";
+} from "../utils/roomUtils";
+import { IBids } from "../../types/game";
+import { Bot, Difficulty } from "../bots/Bot";
+import { SparBot } from "../bots/SparBot";
 
-export class RaceGameRoom extends Room<GameState> {
+export class SinglePlayerRoom extends Room<GameState> {
   DECK = shuffleDeck(createDeck());
-  MAX_CLIENTS = 4;
+  BOT: SparBot | undefined;
+  MAX_CLIENTS = 1;
   MAX_MOVES = 5;
   USER_TO_SESSION_MAP = new Map<string, string>();
-
   SECONDS_UNTIL_DISPOSE = 60 * 1000
 
   override onCreate(
-    options: { roomId: string; maxPlayers: number; maxPoints: number; creator: string },
+    options: { roomId: string; maxPoints: number; creator: string, difficulty: string},
   ) {
+    this.BOT = new SparBot(options.difficulty as Difficulty);
     this.state = new GameState();
     this.state.deck = new ArraySchema(...this.DECK);
     this.state.roomId = options.roomId || this.roomId;
-    this.state.maxPlayers = Number(options.maxPlayers);
-    this.MAX_CLIENTS = this.state.maxPlayers + 1;
+    this.state.maxPlayers = 1;
+    this.MAX_CLIENTS = 2;
     this.state.maxPoints = Number(options.maxPoints);
     this.state.creator = options.creator;
     this.setMetadata(options);
 
     this.onMessage("play_card", this.handlePlayCard.bind(this));
-    this.onMessage("leave_room", this.onLeave);
+    this.onMessage("leave_room", this._onLeave);
   }
 
   override onJoin(client: Client, { playerUsername }: { playerUsername: string }) {
@@ -75,10 +78,20 @@ export class RaceGameRoom extends Room<GameState> {
       this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
       console.log(`Joined: ${playerUsername}`);
 
+      // Set the bot
       if (this.state.players.size >= this.state.maxPlayers) {
+        const botPlayer = new Player();
+        botPlayer.id = "bot";
+        botPlayer.username = this.BOT!.name;
+        botPlayer.active = true;
+
+        this.state.playerUsernames.push(this.BOT!.name);
+        this.state.players.set("bot", botPlayer);
+
         this.state.gameStatus = "ready";
         this.startGame();
       }
+
       this.broadcastGameState();
     } catch (e) {
       console.error("[onJoin] fatal", e);
@@ -205,9 +218,13 @@ export class RaceGameRoom extends Room<GameState> {
 
       /* round in progress */
       if (this.state.moveNumber < this.MAX_MOVES) {
-        this.state.nextPlayerIndex =
-          this.state.playerUsernames.indexOf(moveWinner);
+        this.state.nextPlayerIndex = this.state.playerUsernames.indexOf(moveWinner);
         this.state.currentTurn = moveWinner;
+
+        if (moveWinner === this.BOT!.name) {
+          setTimeout(() => this.botPlayCard(), 800);
+          console.log("[Bot]: Played card", )
+        }
       } else {
         /* round finished */
         round.roundWinner = moveWinner;
@@ -271,47 +288,35 @@ export class RaceGameRoom extends Room<GameState> {
     }
   }
 
+  private async botPlayCard() {
+    try {
+      const round = this.state.rounds.at(-1);
+      if (!round) return;
+
+      const botState = {
+        hand: this.state.players.get("bot")?.hand || [],
+        currentMoves: round.moves.get(String(this.state.moveNumber)),
+        // TODO: Add more states later
+      };
+
+      const { cardName } = await this.BOT!.play(botState);
+      this.handlePlayCard({ sessionId: "bot" } as Client, { cardName });
+    } catch (e) {
+      console.error("[BotPlayCard]", e);
+    }
+  }
+
   override async onLeave(client: Client, consented: boolean) {
     try {
-      const player = this.state.players.get(client.sessionId);
-      if (!player) return;
-
-      const leaver = player.username;
+      this.state.players.get(client.sessionId)!.active = false;
 
       if (consented) {
         this.state.players.delete(client.sessionId);
-        this.USER_TO_SESSION_MAP.delete(leaver);
-
-        this.broadcastGameState();
-        this.broadcast("notification", {
-          message: `${leaver} has left the room`,
-        });
-        console.log(`[Event] onLeave: ${leaver} has left with consent`);
+        console.log(`Left: ${client.sessionId}`);
         return;
       }
-
-      player.active = false;
-      this.broadcastGameState();
-
-      // Wait 60s for reconnection
       await this.allowReconnection(client, 60);
-
-      // If player reconnects in time, do nothing (reconnection handled in `onJoin`)
-      // But if they don’t:
-      this.clock.setTimeout(() => {
-        const stillInactive = this.state.players.get(client.sessionId)?.active === false;
-
-        if (stillInactive) {
-          this.state.players.delete(client.sessionId);
-          this.USER_TO_SESSION_MAP.delete(leaver);
-
-          this.broadcastGameState();
-          this.broadcast("notification", {
-            message: `${leaver} was removed after disconnect timeout.`,
-          });
-          console.log(`[Event] ${leaver} removed due to inactivity`);
-        }
-      }, 60 * 1000); // 60 seconds
+      this.state.players.get(client.sessionId)!.active = true;
     } catch (e) {
       console.error("[onLeave]", e);
     }

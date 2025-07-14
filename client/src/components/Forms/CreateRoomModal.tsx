@@ -29,10 +29,11 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
     try {
       const data = await createMultiplayerRoom({
         roomName,
+        roomType: "mpr",
         maxPlayers: String(maxPlayers),
         maxPoints: String(maxPoints),
         gameMode,
-        creator
+        creator,
       });
   
       if (!data?.colyseusRoomId) throw new Error("Room creation failed");

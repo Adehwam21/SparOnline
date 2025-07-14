@@ -9,4 +9,5 @@ export const createGameInput = Joi.object<ICreateGameInput>({
     gameMode: Joi.string(), // Type of game (e.g., "classic", "custom")
     creator: Joi.string(), // Store player data
     gameState: Joi.object(), // Store snapshot of game state
+    roomType: Joi.string(), // Room type for defining colyseus room
 });

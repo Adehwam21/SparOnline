@@ -9,6 +9,7 @@ type multiplayerConfig = {
     gameMode: string, 
     maxPlayers: string, 
     maxPoints: string
+    roomType: string,
 }
 
 export const createMultiplayerRoom = async (config: multiplayerConfig) => {

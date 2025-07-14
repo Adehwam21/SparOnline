@@ -6,7 +6,7 @@ import { matchMaker } from 'colyseus';
 
 export const createGameRoom = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { roomName, maxPlayers, maxPoints, gameMode, creator } = req.body;
+        const { roomName, maxPlayers, maxPoints, gameMode, creator, roomType } = req.body;
 
         const { error } = createGameInput.validate(req.body);
         if (error) {
@@ -14,15 +14,22 @@ export const createGameRoom = async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        // Create the Colyseus room
-        const colyseusRoom = await matchMaker.create(gameMode, {
+        const parsedMaxPlayers = Number(maxPlayers);
+        const parsedMaxPoints = Number(maxPoints);
+
+        if (isNaN(parsedMaxPlayers) || isNaN(parsedMaxPoints)) {
+            res.status(400).json({ message: 'maxPlayers and maxPoints must be numbers' });
+            return
+        }
+
+        const colyseusRoom = await matchMaker.create(roomType, {
             roomName,
-            maxPlayers,
-            maxPoints,
+            maxPlayers: parsedMaxPlayers,
+            maxPoints: parsedMaxPoints,
             gameMode,
             creator,
             players: [creator],
-            playerUsername: creator,
+            playerUsername: creator
         });
 
         if (!colyseusRoom) {

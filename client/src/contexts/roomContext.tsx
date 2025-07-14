@@ -7,8 +7,6 @@ import { GameState } from '../hooks/GameState';
 import { setGameState } from '../redux/slices/gameSlice';
 import { AppDispatch } from '../redux/reduxStore';
 import { useDispatch } from 'react-redux';
-import toast from 'react-hot-toast';
-import { successToastOptions } from '../types';
 
 interface RoomContextType {
     isConnecting: boolean;
@@ -56,26 +54,12 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
                 room.onMessage("update_state", (payload) => {
                     dispatch(setGameState(payload));
                 });
-
             }
         
             return () => {
                 room?.removeAllListeners(); // clean up when unmounting or reconnecting
             };
     }, [room, isConnected, dispatch]);
-
-    useEffect(() => {
-        if (room && isConnected) {
-                room.onMessage("notification", (payload) => {
-                    toast.custom(payload.message!, successToastOptions);
-                });
-            }
-        
-            return () => {
-                room?.removeAllListeners(); // clean up when unmounting or reconnecting
-            };
-    }, [room, isConnected, dispatch]);
-
 
 
     const join = async (roomId: string, playerUsername: string) => {

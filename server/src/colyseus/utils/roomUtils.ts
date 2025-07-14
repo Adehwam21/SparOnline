@@ -124,8 +124,6 @@ export function calculateRoundPoints(combo: IWinningCard[]): number {
   return points;       // always a number
 }
 
-
-
 export function calculateMoveWinner(bids: IBids[]) {
   if (bids.length === 0) return null;
 
@@ -167,4 +165,13 @@ export function calculateMoveWinner(bids: IBids[]) {
     moveWinner: maxCard.playerName
   };
 
+}
+
+export enum GamePhase {
+  WAITING = "waiting",
+  READY = "ready",
+  STARTED = "started",
+  ROUND = "round",
+  COMPLETE = "complete",
+  IN_PROGRESS = "in_progress"
 }

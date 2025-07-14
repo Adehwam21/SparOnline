@@ -7,6 +7,7 @@ export interface Player {
 
 export interface IGameRoom {
     roomId: string;
+    gameType?: string;
     roomName: string;
     maxPlayers: string; // Maximum number of players allowed in the room
     maxPoints: string; // Maximum points to win the game
@@ -27,6 +28,7 @@ export interface ICreateGameInput {
     players: string[]; // List of players in the game
     creator: string; // Store player data
     gameState?: any; // Store snapshot of game state
+    roomType?: string;
 }
 
 export interface IBids {
