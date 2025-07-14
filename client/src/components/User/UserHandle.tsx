@@ -84,7 +84,7 @@ const UserHandle: React.FC<UserHandleProps> = ({user}) => {
               <li>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 rounded-sm w-full text-left hover:bg-red-100 text-red-600 transition"
+                  className="flex items-center gap-2 px-4 py-2 rounded-sm w-full text-left hover:bg-red-200 text-red-600 transition"
                 >
                   <FaSignOutAlt /> Sign Out
                 </button>
