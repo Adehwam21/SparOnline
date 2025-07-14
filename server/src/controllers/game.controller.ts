@@ -6,7 +6,7 @@ import { matchMaker } from 'colyseus';
 
 export const createGameRoom = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { roomName, maxPlayers, maxPoints, gameMode, creator } = req.body;
+        const { roomName, maxPlayers, maxPoints, variant, roomType, creator } = req.body;
 
         const { error } = createGameInput.validate(req.body);
         if (error) {
@@ -15,11 +15,11 @@ export const createGameRoom = async (req: Request, res: Response): Promise<void>
         }
 
         // Create the Colyseus room
-        const colyseusRoom = await matchMaker.create(gameMode, {
+        const colyseusRoom = await matchMaker.create(roomType, {
             roomName,
-            maxPlayers,
-            maxPoints,
-            gameMode,
+            maxPlayers: Number(maxPlayers),
+            maxPoints: Number(maxPoints),
+            variant,
             creator,
             players: [creator],
             playerUsername: creator,
@@ -30,15 +30,15 @@ export const createGameRoom = async (req: Request, res: Response): Promise<void>
             return;
         }
         // Get the roomId from the Colyseus room
-        const roomId = colyseusRoom.room.roomId;
+        const colyseusRoomId = colyseusRoom.room.roomId;
 
         // Save the room to your MongoDB with the roomId
         const newGameRoom: ICreateGameInput = {
-            roomId,
+            colyseusRoomId,
             roomName,
             maxPlayers,
             maxPoints,
-            gameMode,
+            variant,
             creator,
             players: [creator],
             gameState: {}, // Add initial state if needed
@@ -50,10 +50,10 @@ export const createGameRoom = async (req: Request, res: Response): Promise<void>
             return;
         }
 
-        const link = `${req.protocol}://${req.get('host')}/game/${roomId}`;
+        const link = `${req.protocol}://${req.get('host')}/game/${colyseusRoomId}`;
         res.status(201).json({
             roomInfo: savedGameRoom,
-            colyseusRoomId: roomId,
+            colyseusRoomId,
             roomLink: link,
             message: 'Game room created successfully'
         });

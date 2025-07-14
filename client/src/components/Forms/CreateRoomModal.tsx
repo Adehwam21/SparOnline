@@ -20,7 +20,8 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
   const [roomName, setRoomName] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(2);
   const [maxPoints, setMaxPoints] = useState(5);
-  const [gameMode, setGameMode] = useState("race");
+  const [variant, setGameVariant] = useState("race");
+  const [entryFee, setEntryFee] = useState(0);
 
 
   const handleCreateRoom = async (e: React.FormEvent) => {
@@ -29,9 +30,10 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
     try {
       const data = await createMultiplayerRoom({
         roomName,
+        roomType: "mpr",
         maxPlayers: String(maxPlayers),
         maxPoints: String(maxPoints),
-        gameMode,
+        variant,
         creator
       });
   
@@ -72,21 +74,35 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
             <option value={10}>10</option>
             <option value={15}>15</option>
             <option value={20}>20</option>
+            <option value={20}>30</option>
           </select>
         </FormField>
 
         {/* Game Mode */}
         <FormField
-          label="Game Mode"
-          tooltipText="Race: Be the fastest to reach maximum points. Survival: Be the last man standing to win."
+          label="Variant"
+          tooltipText="Race: Fastest to reach maximum points wins. Survival: Last man standing wins."
         >
           <select
-            value={gameMode}
-            onChange={(e) => setGameMode(e.target.value)}
+            value={variant}
+            onChange={(e) => setGameVariant(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded"
           >
             <option value="race">Race</option>
             <option value="survival">Survival</option>
+          </select>
+        </FormField>
+
+        <FormField label="Entry fee" tooltipText="Tokens needed for room entry.">
+          <select
+            value={entryFee}
+            onChange={(e) => setEntryFee(Number(e.target.value))}
+            className="w-full p-2 border border-gray-300 rounded"
+          >
+            <option value={0}>Free</option>
+            <option value={100}>100</option>
+            <option value={500}>500</option>
+            <option value={1000}>1k</option>
           </select>
         </FormField>
 

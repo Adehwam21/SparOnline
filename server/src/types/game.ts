@@ -7,26 +7,32 @@ export interface Player {
 
 export interface IGameRoom {
     roomId: string;
+    colyseusRoomId?: string;
     roomName: string;
     maxPlayers: string; // Maximum number of players allowed in the room
     maxPoints: string; // Maximum points to win the game
-    gameMode: string; // Type of game (e.g., "classic", "custom")
+    variant: string; // Type of game (e.g., "classic", "custom")
     creator: string; // Store player data
     players: string[]; // List of players in the game
-    gameState: any; // Store snapshot of game state
+    roomType?: string,
+    entryFee?: boolean,
+    gameState?: any; // Store snapshot of game state
     createdAt: Date;
 }
 
 
 export interface ICreateGameInput {
-    roomId: string; // Unique identifier for the room
+    colyseusRoomId?: string; // Unique identifier for the room
     roomName: string;
     maxPlayers: string; // Maximum number of players allowed in the room
     maxPoints: string; // Maximum points to win the game
-    gameMode: string; // Type of game (e.g., "classic", "custom")
+    variant: string; // Type of game (e.g., "classic", "custom")
     players: string[]; // List of players in the game
-    creator: string; // Store player data
-    gameState?: any; // Store snapshot of game state
+    creator: string; // Store player id
+    roomType?: string;
+    entryFee?: number;
+    gameState: any
+    
 }
 
 export interface IBids {

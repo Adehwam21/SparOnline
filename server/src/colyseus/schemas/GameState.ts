@@ -1,6 +1,5 @@
 import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
 
-
 // PlayedCard represents a single card played in a move
 export class PlayedCard extends Schema {
   @type("string") playerName: string = "";
@@ -17,7 +16,6 @@ export class Moves extends Schema {
   @type([PlayedCard]) bids = new ArraySchema<PlayedCard>();
   @type("string") moveWinner: string = "";
 }
-
 
 export class Round extends Schema {
   @type("number") roundNumber: number = 0;
@@ -37,16 +35,29 @@ export class Player extends Schema {
   @type("boolean") active = true; // whether the player is active in the game
 }
 
+// ChatMessage 
+export class ChatMessage extends Schema {
+  @type("string") sender: string = "";
+  @type("string") content: string = "";
+  @type("string") time: string = ""
+}
+
+// ChatRoom
+export class ChatRoom extends Schema {
+  @type([ChatMessage]) messages = new ArraySchema<ChatMessage>();
+}
 
 // GameState keeps track of the entire game
 export class GameState extends Schema {
   // Add this to your room's state or as a private field
   @type("string") roomId: string = ""; // Unique identifier for the room
+  @type("string") colyseusRoomId: string = "";
   @type("number") maxPlayers: number = 4; // Maximum number of players allowed in the room
   @type("number") maxPoints: number = 40; // Maximum points to win the game
   @type("string") creator: string = ""; // Creator of the room
   @type("string") gameMode: string = ""; // Type of game (e.g., "classic", "custom")
-  @type("string") gameName: string = ""; // Name of the game
+  @type("string") roomName: string = ""; // Name of the game
+  @type("number") prizePool: number = 0;
   @type(["string"]) playerUsernames = new ArraySchema<string>(); // List of players in the game
   @type(["string"]) deck = new ArraySchema<string>();
   @type({ map: Player }) players = new MapSchema<Player>(); // Fixed
@@ -57,4 +68,5 @@ export class GameState extends Schema {
   @type("string") roundStatus: string = "pending"; 
   @type("string") gameStatus: string = "pending"; 
   @type("string") gameWinner: string = "";
+  @type(ChatRoom) chat = new ChatRoom()
 }
