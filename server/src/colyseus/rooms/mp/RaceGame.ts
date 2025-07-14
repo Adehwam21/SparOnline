@@ -27,7 +27,7 @@ export class RaceGameRoom extends Room<GameState> {
   MIN_POINTS = -15
   USER_TO_SESSION_MAP = new Map<string, string>();
   BANNED_USERS = new Set<string>();
-  SECONDS_UNTIL_DISPOSE = 60 * 1000
+  SECONDS_UNTIL_DISPOSE = 10 * 1000
 
   override onCreate(
     options: { roomId: string; maxPlayers: number; maxPoints: number; creator: string },
@@ -189,6 +189,7 @@ export class RaceGameRoom extends Room<GameState> {
         const haveSomeCardOfSuit = player.hand.some(card => getCardSuit(card) === firstSuit);
         const isSuitMismatch = currentSuit !== firstSuit;
 
+        // Check for violations an penalize
         if (isSuitMismatch && haveSomeCardOfSuit) {
           player.score -= 3;
 
@@ -260,7 +261,6 @@ export class RaceGameRoom extends Room<GameState> {
     }
   }
 
-
   evaluateMove() {
     try {
       const round = this.state.rounds.at(-1);
@@ -281,13 +281,13 @@ export class RaceGameRoom extends Room<GameState> {
 
       this.state.moveNumber++;
 
-      /* round in progress */
+      // round in progress
       if (this.state.moveNumber < this.MAX_MOVES) {
         this.state.nextPlayerIndex =
           this.state.playerUsernames.indexOf(moveWinner);
         this.state.currentTurn = moveWinner;
       } else {
-        /* round finished */
+        // round finished
         round.roundWinner = moveWinner;
 
         const sess = this.USER_TO_SESSION_MAP.get(moveWinner);
@@ -341,7 +341,7 @@ export class RaceGameRoom extends Room<GameState> {
     try {
       this.broadcastGameState();
 
-      // Dispose the room after one minute
+      // Dispose the room after 10 seconds
       this.clock.setTimeout(() => {
         this.disconnect(4000)
       }, (this.SECONDS_UNTIL_DISPOSE))
@@ -357,6 +357,7 @@ export class RaceGameRoom extends Room<GameState> {
       if (!player) return;
       const leaver = player.username;
 
+      // Handle consented leave
       if (consented) {
         this.state.players.delete(client.sessionId);
         this.USER_TO_SESSION_MAP.delete(leaver);
@@ -378,7 +379,7 @@ export class RaceGameRoom extends Room<GameState> {
           this.state.gameStatus = "complete";
 
           this.broadcast("notification", {
-            message: `${lastPlayer.username} wins by default as all others left.`,
+            message: `${lastPlayer.username} wins by default.`,
           });
 
           this.broadcastGameState();
