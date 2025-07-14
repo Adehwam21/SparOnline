@@ -14,7 +14,7 @@ const GamePage: React.FC = () => {
   const navigate = useNavigate();
 
   const gameState = useSelector((state: RootState) => state.game);
-  const currentUser = useSelector((state: RootState) => state.auth?.user?.username) || "Guest";
+  const currentUser = useSelector((state: RootState) => state.auth!.user!.username) ;
   const [isWaitingScreenOpen, setIsWaitingScreenOpen] = useState(true);
   const [gameOver, setGameOver] = useState(false);
 
@@ -22,7 +22,7 @@ const GamePage: React.FC = () => {
 
   useEffect(() => {
     if (!isConnected && !isConnecting && roomId) {
-      join(roomId, currentUser, dispatch);
+      join(roomId, currentUser);
     }
   }, [roomId, isConnected, isConnecting, dispatch, join, currentUser]);
 
@@ -43,11 +43,12 @@ const GamePage: React.FC = () => {
 
   const handleExit = () => {
     localStorage.removeItem("reconnection");
+    console.log(localStorage.getItem("reconnection"))
     navigate("/");
   };
 
   const handleConsentedLeave = () => {
-    consentedLeave(currentUser );
+    consentedLeave(currentUser);
     localStorage.removeItem("reconnection");
     navigate("/"); // Navigate to landing page
   }

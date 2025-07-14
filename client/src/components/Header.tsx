@@ -60,13 +60,17 @@ const Header: React.FC = () => {
 
       {/* Right Section: User Profile (Hidden on mobile) */}
       <div className="flex md:flex items-center justify-center gap-2">
-        {user ? (
-            <UserHandle />
+        {user && typeof user === "object" && Object.keys(user).length > 0 ? (
+          <UserHandle user={user} />
         ) : (
-          <Link to="/sign-in" className="flex justify-center text-md text-center items-center text-green-800 font-bold bg-yellow-500 p-3 rounded-md hover:bg-yellow-300 transition">
+          <Link
+            to="/sign-in"
+            className="flex justify-center text-md text-center items-center text-green-800 font-bold bg-yellow-500 p-3 rounded-md hover:bg-yellow-300 transition"
+          >
             Sign In
           </Link>
         )}
+
         <SettingsMenu/>
       </div>
 

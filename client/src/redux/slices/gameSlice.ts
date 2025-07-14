@@ -91,6 +91,11 @@ const gameSlice = createSlice({
       state.roomInfo!.bids = [];
     },
 
+    leaveRoom: (state) => {
+      state.roomInfo = null;
+      state.colyseusRoomId = null;
+      state.roomLink = null;
+    },
     logOut: (state) => {
       state.roomInfo = null;
       state.colyseusRoomId = null;
@@ -99,5 +104,5 @@ const gameSlice = createSlice({
   }
 });
 
-export const { setGameState, addBid, setCurrentTurn, updatePlayers, resetBids, updateRoomInfo, logOut} = gameSlice.actions;
+export const { setGameState, addBid, setCurrentTurn, updatePlayers, resetBids, updateRoomInfo,leaveRoom, logOut} = gameSlice.actions;
 export const gameReducer =  gameSlice.reducer;

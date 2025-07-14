@@ -69,7 +69,7 @@ const SettingsMenu: React.FC = () => {
           >
             <ul className="py-2">
               {/* Ping & Server Processing Time */}
-              <li className="px-4 py-2 border-t border-gray-200">
+              <li className="px-4 py-2">
                 <div >
                   <motion.div
                     className="flex items-center gap-2 text-sm"

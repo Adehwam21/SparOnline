@@ -1,38 +1,26 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { configureStore } from "@reduxjs/toolkit";
-import createWebStorage from 'redux-persist/lib/storage/createWebStorage';
+import storage from "redux-persist/lib/storage";
 import { persistReducer, persistStore } from "redux-persist";
 import { combineReducers } from "redux";
 import { TypedUseSelectorHook, useSelector, useDispatch } from "react-redux";
-import { thunk } from "redux-thunk";
 import { gameReducer } from "./slices/gameSlice" 
 import { authReducer } from "./slices/authSlice"
 import { createAction } from "@reduxjs/toolkit";
 
 export const resetApp = createAction("app/reset");
 
-const authPersistConfig = {
-    key: 'auth',
-    storage: typeof window !== 'undefined' ? createWebStorage('local') : {
-      getItem: () => Promise.resolve(null),
-      setItem: () => Promise.resolve(),
-      removeItem: () => Promise.resolve(),
-    }
-  };
-
-const gamePersistConfig = {
-    key: 'game',
-    storage: typeof window !== 'undefined' ? createWebStorage('local') : {
-      getItem: () => Promise.resolve(null),
-      setItem: () => Promise.resolve(),
-      removeItem: () => Promise.resolve(),
-    }
+const persistConfig = {
+    key: "root",
+    storage,
+    whitelist: ["auth"],
 };
 
-
 const appReducer = combineReducers({
-    auth: persistReducer(authPersistConfig, authReducer), // Persist auth state
-    game: persistReducer(gamePersistConfig, gameReducer), // Persist game state
+    auth: authReducer,
+    game: gameReducer,
+
+    //... add more game states
 });
 
 const rootReducer = (state: any, action: any) => {
@@ -43,12 +31,11 @@ const rootReducer = (state: any, action: any) => {
     return appReducer(state, action)
 }
 
+const persistedReducer = persistReducer(persistConfig, rootReducer);
+
 export const store = configureStore({
-  reducer: rootReducer,
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: false,
-    }).concat(thunk),
+    reducer: persistedReducer,
+    middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
 });
 
 export const persistor = persistStore(store);

@@ -1,15 +1,18 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { persistor,resetApp, RootState } from "../../redux/reduxStore";
+import { useDispatch} from "react-redux";
+import { persistor,resetApp} from "../../redux/reduxStore";
 import toast from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaUserCircle, FaUser, FaCog, FaSignOutAlt } from "react-icons/fa";
 
-const UserHandle: React.FC = () => {
+interface UserHandleProps {
+  user: { username: string; avatarUrl?: string }; // adjust type accordingly
+}
+
+const UserHandle: React.FC<UserHandleProps> = ({user}) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { username } = useSelector((state: RootState) => state.auth!.user!);
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -45,7 +48,7 @@ const UserHandle: React.FC = () => {
         onClick={() => setIsOpen(!isOpen)}
       >
         <FaUserCircle size={30} />
-        <span className="md:inline-block">{username || "Guest"}</span>
+        <span className="md:inline-block">{user.username}</span>
         
       </button>
 
@@ -59,11 +62,11 @@ const UserHandle: React.FC = () => {
             transition={{ duration: 0.3 }}
             className="absolute right-0 mt-3 w-48 bg-white text-green-900 rounded-lg shadow-lg"
           >
-            <ul className="py-2">
+            <ul className="p-1">
               <li>
                 <Link
                   to="/profile"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 transition"
+                  className="flex items-center gap-2 px-4 py-2 rounded-sm hover:bg-gray-100 transition"
                   onClick={() => setIsOpen(false)}
                 >
                   <FaUser /> Profile
@@ -72,7 +75,7 @@ const UserHandle: React.FC = () => {
               <li>
                 <Link
                   to="/preferences"
-                  className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 transition"
+                  className="flex items-center gap-2 px-4 py-2 rounded-sm hover:bg-gray-100 transition"
                   onClick={() => setIsOpen(false)}
                 >
                   <FaCog /> Preferences
@@ -81,7 +84,7 @@ const UserHandle: React.FC = () => {
               <li>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 w-full text-left hover:bg-red-100 text-red-600 transition"
+                  className="flex items-center gap-2 px-4 py-2 rounded-sm w-full text-left hover:bg-red-100 text-red-600 transition"
                 >
                   <FaSignOutAlt /> Sign Out
                 </button>

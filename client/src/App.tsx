@@ -4,7 +4,7 @@ import { Outlet } from "react-router-dom";
 
 const Layout = () => {
   return (
-    <div className="h-fit"
+    <div className="h-screen"
         style={{
         backgroundImage: "url('/images/game-elements/board.jpg')",
         backgroundSize: "cover",
