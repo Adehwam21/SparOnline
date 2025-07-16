@@ -1,4 +1,4 @@
-import { Room, Client } from "colyseus";
+import { Room, Client, Delayed } from "colyseus";
 import { ArraySchema, MapSchema } from "@colyseus/schema";
 import {
   GameState,
@@ -38,7 +38,10 @@ export class MpGameRoom extends Room<GameState> {
   ACTIVE_PLAYERS = new ArraySchema<Player>();
 
   /* ───────────────────────────────────────────────── UTILITY FUNCTIONS ─────────────────────────────────────────────────── */
-  
+
+private currentTurnTimer: Delayed | null = null;
+
+
   private dealCards(deck: string[]) {
     const legalPlayers = Array.from(this.state.players.values()).filter(p => p.active && !p.eliminated);
 
@@ -78,25 +81,89 @@ export class MpGameRoom extends Room<GameState> {
   }
 
   private skipIfCurrentTurn(leaverUsername: string) {
-    if (this.state.currentTurn !== leaverUsername) return;
+    if (this.state.currentTurn === leaverUsername) {
+      const nextIndex = this.getNextActivePlayerIndex(leaverUsername);
+      
+      if (nextIndex !== -1) {
+        const nextUsername = this.state.playerUsernames[nextIndex];
+        this.state.nextPlayerIndex = nextIndex;
+        this.state.currentTurn = nextUsername;
 
-    const nextIndex = this.getNextActivePlayerIndex(leaverUsername);
-    if (nextIndex !== -1) {
-      this.state.nextPlayerIndex = nextIndex;
-      this.state.currentTurn = this.state.playerUsernames[nextIndex];
+        this.broadcast("notification", {
+          message: `Turn skipped — ${leaverUsername} disconnected. It's now ${nextUsername}'s turn.`,
+        });
 
-      this.broadcast("notification", {
-        message: `Turn skipped. ${leaverUsername} disconnected.`,
-      });
+        this.broadcastGameState();
+      } else {
+        this.endGame();
+      }
+    }
+  }
 
-      this.broadcastGameState();
+  private assignNextMoveStarter(moveWinner: string) {
+    const winner = [...this.state.players.values()].find(p =>
+      p.username === moveWinner && p.active && !p.eliminated && p.connected
+    );
+
+    if (winner) {
+      this.state.currentTurn = moveWinner;
+      this.state.nextPlayerIndex = this.state.playerUsernames.indexOf(moveWinner);
     } else {
-      this.endGame(); // no one else left
+      const fallbackIndex = this.getNextActivePlayerIndex(moveWinner);
+      if (fallbackIndex === -1) {
+        this.endGame();
+        return;
+      }
+      this.state.nextPlayerIndex = fallbackIndex;
+      this.state.currentTurn = this.state.playerUsernames[fallbackIndex];
     }
   }
 
   private nextEliminationRank(): number {
     return ++this.state.eliminationCount;
+  }
+
+
+  private startTurnTimer(player: Player) {
+    if (this.currentTurnTimer) {
+      this.currentTurnTimer.clear();
+    }
+
+    const duration = 15; // seconds
+    const deadline = Date.now() + duration * 1000;
+
+    this.broadcast("start_turn_timer", {
+      username: player.username,
+      duration,
+      deadline,
+    });
+
+    this.currentTurnTimer = this.clock.setTimeout(() => {
+      this.autoPlayForPlayer(player);
+    }, duration * 1000);
+  }
+
+  private autoPlayForPlayer(player: Player) {
+    if (!player || !player.active || player.eliminated || !player.connected) return;
+    if (this.state.currentTurn !== player.username) return;
+
+    const round = this.state.rounds.at(-1);
+    if (!round) return;
+
+    const key = String(this.state.moveNumber);
+    const move = round.moves.get(key);
+    const firstSuit = move?.bids[0]?.suit;
+
+    let cardToPlay = player.hand.find(c => !firstSuit || getCardSuit(c) === firstSuit)
+                  || player.hand[0]; // fallback
+
+    if (!cardToPlay) return;
+
+    this.broadcast("notification", {
+      message: `${player.username} timed out. Auto-played "${cardToPlay}".`,
+    });
+
+    this.handlePlayCard({ sessionId: player.id } as Client, { cardName: cardToPlay });
   }
 
    /* ───────────────────────────────────────────────── ROOM CREATION ─────────────────────────────────────────────────── */
@@ -251,6 +318,12 @@ export class MpGameRoom extends Room<GameState> {
       rnd.winningCards = new ArraySchema<PlayedCard>();
       rnd.roundStatus = "in_progress";
 
+      // ✅ Now that currentTurn is set, start the turn timer
+      const currentPlayer = eligiblePlayers.find(p => p.username === this.state.currentTurn);
+      if (currentPlayer) {
+        this.startTurnTimer(currentPlayer);
+      }
+
       this.broadcastGameState();
     } catch (e) {
       console.error("[startRound]", e);
@@ -263,8 +336,7 @@ export class MpGameRoom extends Room<GameState> {
       if (!player || !player.active || player.eliminated || !player.connected) return;
 
       // Check it's their turn
-      const currentPlayerUsername = this.state.currentTurn;
-      if (player.username !== currentPlayerUsername) return;
+      if (player.username !== this.state.currentTurn) return;
 
       const round = this.state.rounds.at(-1);
       if (!round) return;
@@ -308,7 +380,9 @@ export class MpGameRoom extends Room<GameState> {
             });
             this.broadcastGameState();
 
-            const activePlayers = [...this.state.players.values()].filter(p => p.active && p.connected && !p.eliminated);
+            const activePlayers = [...this.state.players.values()]
+              .filter(p => p.active && p.connected && !p.eliminated);
+
             if (activePlayers.length === 1) {
               const last = activePlayers[0];
               last.score = this.state.maxPoints;
@@ -338,8 +412,13 @@ export class MpGameRoom extends Room<GameState> {
             return;
           }
 
+          const nextPlayer = [...this.state.players.values()].find(
+            p => p.username === this.state.playerUsernames[nextIndex]
+          );
+          if (!nextPlayer) return;
+
           this.state.nextPlayerIndex = nextIndex;
-          this.state.currentTurn = this.state.playerUsernames[nextIndex];
+          this.state.currentTurn = nextPlayer.username;
 
           this.clock.setTimeout(() => {
             this.startRound();
@@ -350,9 +429,15 @@ export class MpGameRoom extends Room<GameState> {
       }
 
       // ✅ Check if move complete
-      const legalPlayerCount = [...this.state.players.values()].filter(p => p.active && !p.eliminated).length;
+      const legalPlayerCount = [...this.state.players.values()]
+        .filter(p => p.active && !p.eliminated).length;
 
       if (move.bids.length >= legalPlayerCount) {
+        // stop turn timer before evaluating
+        if (this.currentTurnTimer) {
+          this.clock.clear();
+          this.currentTurnTimer = null;
+        }
         this.evaluateMove();
       } else {
         const nextIndex = this.getNextActivePlayerIndex(player.username);
@@ -360,8 +445,15 @@ export class MpGameRoom extends Room<GameState> {
           this.endGame();
           return;
         }
+
+        const nextPlayer = [...this.state.players.values()]
+          .find(p => p.username === this.state.playerUsernames[nextIndex]);
+        if (!nextPlayer) return;
+
         this.state.nextPlayerIndex = nextIndex;
-        this.state.currentTurn = this.state.playerUsernames[nextIndex];
+        this.state.currentTurn = nextPlayer.username;
+
+        this.startTurnTimer(nextPlayer);
       }
 
       this.broadcastGameState();
@@ -371,9 +463,10 @@ export class MpGameRoom extends Room<GameState> {
     }
   }
 
+
   evaluateMove() {
     try {
-      const round = this.state.rounds.at(-1);
+      const round = this.state.rounds.at(-1); // Select the very last round
       if (!round) return;
 
       const key = String(this.state.moveNumber);
@@ -389,22 +482,14 @@ export class MpGameRoom extends Room<GameState> {
       )!;
 
       move.moveWinner = moveWinner;
-
       const win = new PlayedCard();
       Object.assign(win, winningCard);
       round.winningCards.push(win);
-
       this.state.moveNumber++;
 
-      if (this.state.moveNumber < this.MAX_MOVES) {
-        const nextIndex = this.getNextActivePlayerIndex(moveWinner);
-        if (nextIndex === -1) {
-          this.endGame();
-          return;
-        }
-        this.state.nextPlayerIndex = nextIndex;
-        this.state.currentTurn = this.state.playerUsernames[nextIndex];
-      } else {
+      if (this.state.moveNumber < this.MAX_MOVES){
+        this.assignNextMoveStarter(moveWinner);
+        } else {
         round.roundWinner = moveWinner;
         this.STRATEGY.awardPoints(round, this.state.players);
         round.roundStatus = "complete";
@@ -416,7 +501,7 @@ export class MpGameRoom extends Room<GameState> {
 
         this.clock.setTimeout(() => {
           this.startNextRound(moveWinner);
-        }, 1200);
+        }, 1500);
       }
 
       this.broadcastGameState();
@@ -457,7 +542,7 @@ export class MpGameRoom extends Room<GameState> {
       return false;
     }
 
-    // Default race logic
+    // Default Race Game logic
     for (const p of this.state.players.values()) {
       if (p.score >= this.state.maxPoints) {
         this.state.gameWinner = p.username;
@@ -487,80 +572,80 @@ export class MpGameRoom extends Room<GameState> {
     try {
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
-      const leaver = player.username;
 
-      // Handle consented leave
+      const leaverSessionId = client.sessionId;
+      const leaverUsername = player.username;
+
       if (consented) {
         player.active = false;
         player.eliminated = true;
         player.rank = this.nextEliminationRank();
-        player.hand.clear()
-        player.bids.clear()
-        this.ELIMINATED_PLAYERS.add(leaver);
+        player.hand.clear();
+        player.bids.clear();
+        this.ELIMINATED_PLAYERS.add(leaverUsername);
 
         this.broadcast("notification", {
-          message: `${leaver} left the room and has been eliminated.`,
+          message: `${leaverUsername} left the room and has been eliminated.`,
         });
 
         this.broadcastGameState();
 
-        console.log(`[Event] onLeave: ${leaver} voluntarily left — marked as eliminated.`);
-
-        const remainingActivePlayers = [...this.state.players.values()].filter(p => p.active);
-        if (remainingActivePlayers.length === 1) {
-          const lastPlayer = remainingActivePlayers[0];
-          lastPlayer.score = this.state.maxPoints;
-          this.state.gameWinner = lastPlayer.username;
+        const remaining = [...this.state.players.values()].filter(p => p.active);
+        if (remaining.length === 1) {
+          const winner = remaining[0];
+          winner.score = this.state.maxPoints;
+          this.state.gameWinner = winner.username;
           this.state.gameStatus = "complete";
 
           this.broadcast("notification", {
-            message: `${lastPlayer.username} wins by default.`,
+            message: `${winner.username} wins by default.`,
           });
-
           this.broadcastGameState();
 
-          this.clock.setTimeout(() => {
-            this.disconnect();
-          }, 3000);
+          this.clock.setTimeout(() => this.disconnect(), 900);
         }
 
         return;
       }
 
-
+      // Not consented → disconnected
       player.connected = false;
-      
-      // Wait 60s for reconnection
-      await this.allowReconnection(client, 30);
 
-      // If player reconnects in time, do nothing (reconnection handled in `onJoin`)
-      // But if they don’t:
+      // Begin reconnection timeout (don't await)
+      this.allowReconnection(client, 30).catch(() => {});
+
+      // Schedule fallback if not reconnected
       this.clock.setTimeout(() => {
-        const stillOffline = this.state.players.get(client.sessionId)?.connected === false;
+        const stillOffline = this.state.players.get(leaverSessionId)?.connected === false;
+        if (!stillOffline) return;
 
-        if (stillOffline) {
-          this.state.players.delete(client.sessionId);
-          this.USER_TO_SESSION_MAP.delete(leaver);
-          this.skipIfCurrentTurn(leaver)
+        const p = this.state.players.get(leaverSessionId);
+        if (p) {
+          p.active = false;
+          p.eliminated = true;
+          p.rank = this.nextEliminationRank();
+          p.hand.clear();
+          p.bids.clear();
+          this.ELIMINATED_PLAYERS.add(leaverUsername);
+        }
 
-          this.broadcast("notification", {
-            message: `${leaver} was removed after disconnect timeout.`,
-          });
-          this.broadcastGameState();
+        this.skipIfCurrentTurn(leaverUsername);
+        this.USER_TO_SESSION_MAP.delete(leaverUsername);
 
-          console.log(`[Event] ${leaver} removed due to inactivity`);
+        this.broadcast("notification", {
+          message: `${leaverUsername} was eliminated after disconnect timeout.`,
+        });
+        this.broadcastGameState();
 
-          // Auto-dispose room if no connected players remain
-          const connectedPlayers = [...this.state.players.values()].filter(p => p.connected);
-          if (connectedPlayers.length === 0) {
-            console.log(`[Room] No connected players remaining, disposing room ${this.roomId}`);
-            this.disconnect();
-          }
+        const connected = [...this.state.players.values()].filter(p => p.connected);
+        if (connected.length === 0) {
+          console.log(`[Room] No connected players remaining, disposing room ${this.roomId}`);
+          this.disconnect();
         }
       }, 60 * 1000);
-
     } catch (e) {
       console.error("[onLeave]", e);
     }
   }
+
 }

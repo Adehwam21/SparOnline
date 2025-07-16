@@ -10,17 +10,26 @@ import { useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
 import { successToastOptions } from '../types';
 
-interface RoomContextType {
-    isConnecting: boolean;
-    isConnected: boolean;
-    room: Room<GameState> | null;
-    join: (roomId: string, playerUsername: string) => Promise<void>;
-    startGame: () => Promise<void>;
-    playCard: (cardName: string) => Promise<void>;
-    consentedLeave: (currentUser: string) => Promise<void>;
-    joinError: boolean;
-    state: GameState | null;
+interface TurnTimerType {
+  username: string;
+  duration: number;
+  deadline: number;
 }
+
+
+interface RoomContextType {
+  isConnecting: boolean;
+  isConnected: boolean;
+  room: Room<GameState> | null;
+  join: (roomId: string, playerUsername: string) => Promise<void>;
+  startGame: () => Promise<void>;
+  playCard: (cardName: string) => Promise<void>;
+  consentedLeave: (currentUser: string) => Promise<void>;
+  joinError: boolean;
+  state: GameState | null;
+  turnTimer: TurnTimerType | null;
+}
+
 
 export const RoomContext = createContext<RoomContextType>({
     isConnecting: false,
@@ -30,12 +39,13 @@ export const RoomContext = createContext<RoomContextType>({
     startGame: async () => {},
     playCard: async () => {},
     consentedLeave: async () => {},
+    turnTimer: null,
     joinError: false,
     state: null,
+
 });
 
 export const useRoom = () => useContext(RoomContext);
-
 // Initialize client
 const client = new Client(COLYSEUS_WS_URL);
 let hasActiveJoinRequest = false;
@@ -47,6 +57,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     const [isConnected, setIsConnected] = useState(false);
     const [state, setState] = useState<GameState | null>(null);
     const [room, setRoom] = useState<Room<GameState> | null>(null);
+    const [turnTimer, setTurnTimer] = useState<TurnTimerType | null>(null);
 
     useEffect(() => {
         if (!room || !isConnected) return;
@@ -54,22 +65,26 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         const handleStateChange = (state: GameState) => setState(state);
         const handleLeave = () => setIsConnected(false);
         const handleUpdate = (payload: any) => dispatch(setGameState(payload));
-        const handleNotification = (payload: any) => toast.success(payload.message, successToastOptions);
+        const handleNotification = (payload: any) =>
+            toast.success(payload.message, successToastOptions);
 
         room.onStateChange(handleStateChange);
         room.onLeave(handleLeave);
-        room.onMessage('update_state', handleUpdate);
-        room.onMessage('notification', handleNotification);
+        room.onMessage("update_state", handleUpdate);
+        room.onMessage("notification", handleNotification);
+        room.onMessage("start_turn_timer", ({ username, duration, deadline }) => {
+            setTurnTimer({ username, duration, deadline });
+        });
 
         return () => {
-        room.removeAllListeners();
+            room.removeAllListeners();
         };
-    }, [room, isConnected, dispatch]);
+        }, [room, isConnected, dispatch]);
 
-    const join = async (roomId: string, playerUsername: string) => {
-        if (hasActiveJoinRequest) return;
-        hasActiveJoinRequest = true;
-        setIsConnecting(true);
+        const join = async (roomId: string, playerUsername: string) => {
+            if (hasActiveJoinRequest) return;
+            hasActiveJoinRequest = true;
+            setIsConnecting(true);
 
         try {
         const joinedRoom = await client.joinById<GameState>(roomId, { playerUsername });
@@ -139,6 +154,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
             consentedLeave,
             joinError,
             state,
+            turnTimer
         }}
         >
         {children}
