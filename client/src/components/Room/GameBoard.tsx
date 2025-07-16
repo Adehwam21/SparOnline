@@ -8,7 +8,7 @@ import { useRoom } from "../../contexts/roomContext";
 
 
 interface GameBoardProps {
-  players: { id: string; username: string; score: number; hand: string[]; active: boolean; bids: string[] }[];
+  players: { id: string; username: string; score: number; hand: string[]; active: boolean; connected:boolean, eliminated: boolean, bids: string[] }[];
   currentTurn: string;
   currentUser: string;
   maxPoints: string;
@@ -26,7 +26,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const player = players.find(p => p.username === currentUser);
-  const opponents = players.filter(p => p.username !== currentUser);
+  const opponents = players.filter(p => p.username !== currentUser && p.connected && p.active && !p.eliminated);
   const isTurn = player?.username === currentTurn;
   const bidCards = player?.bids || [];
 

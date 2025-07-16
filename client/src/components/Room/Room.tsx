@@ -11,6 +11,8 @@ interface RoomProps {
     hand: string[];
     bids: string[];
     active: boolean;
+    eliminated: boolean;
+    connected: boolean;
   }[];
   currentTurn: string;
   currentUser: string;

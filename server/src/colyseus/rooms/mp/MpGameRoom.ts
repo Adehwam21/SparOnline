@@ -36,11 +36,9 @@ export class MpGameRoom extends Room<GameState> {
   VIOLATORS = new Set<string>();
   ELIMINATED_PLAYERS = new Set<string>();
   ACTIVE_PLAYERS = new ArraySchema<Player>();
+  TURN_TIMER: Delayed | null = null;
 
   /* ───────────────────────────────────────────────── UTILITY FUNCTIONS ─────────────────────────────────────────────────── */
-
-private currentTurnTimer: Delayed | null = null;
-
 
   private dealCards(deck: string[]) {
     const legalPlayers = Array.from(this.state.players.values()).filter(p => p.active && !p.eliminated);
@@ -90,10 +88,23 @@ private currentTurnTimer: Delayed | null = null;
         this.state.currentTurn = nextUsername;
 
         this.broadcast("notification", {
-          message: `Turn skipped — ${leaverUsername} disconnected. It's now ${nextUsername}'s turn.`,
+          message: `Turn skipped — ${leaverUsername} left. It's now ${nextUsername}'s turn.`,
         });
 
         this.broadcastGameState();
+
+        // ADD: start timer for the new player
+        const nextPlayer = [...this.state.players.values()]
+          .find(p => p.username === nextUsername);
+
+        if (nextPlayer) {
+          this.startTurnTimer(nextPlayer);
+
+          // ✅ auto-play if disconnected
+          if (!nextPlayer.connected) {
+            this.autoPlayForPlayer(nextPlayer);
+          }
+        }
       } else {
         this.endGame();
       }
@@ -123,10 +134,9 @@ private currentTurnTimer: Delayed | null = null;
     return ++this.state.eliminationCount;
   }
 
-
   private startTurnTimer(player: Player) {
-    if (this.currentTurnTimer) {
-      this.currentTurnTimer.clear();
+    if (this.TURN_TIMER) {
+      this.TURN_TIMER.clear();
     }
 
     const duration = 15; // seconds
@@ -138,13 +148,13 @@ private currentTurnTimer: Delayed | null = null;
       deadline,
     });
 
-    this.currentTurnTimer = this.clock.setTimeout(() => {
+    this.TURN_TIMER = this.clock.setTimeout(() => {
       this.autoPlayForPlayer(player);
     }, duration * 1000);
   }
 
   private autoPlayForPlayer(player: Player) {
-    if (!player || !player.active || player.eliminated || !player.connected) return;
+    if (!player || !player.active || player.eliminated) return;
     if (this.state.currentTurn !== player.username) return;
 
     const round = this.state.rounds.at(-1);
@@ -155,13 +165,9 @@ private currentTurnTimer: Delayed | null = null;
     const firstSuit = move?.bids[0]?.suit;
 
     let cardToPlay = player.hand.find(c => !firstSuit || getCardSuit(c) === firstSuit)
-                  || player.hand[0]; // fallback
+                  || player.hand[0];
 
     if (!cardToPlay) return;
-
-    this.broadcast("notification", {
-      message: `${player.username} timed out. Auto-played "${cardToPlay}".`,
-    });
 
     this.handlePlayCard({ sessionId: player.id } as Client, { cardName: cardToPlay });
   }
@@ -180,7 +186,7 @@ private currentTurnTimer: Delayed | null = null;
     this.state.roomId = options.roomId;
     this.state.colyseusRoomId = options.coluserusRoomId || this.roomId;
     this.state.maxPlayers = Number(options.maxPlayers);
-    this.max_clients = this.state.maxPlayers + 1;
+    this.max_clients = this.state.maxPlayers;
     this.state.maxPoints = this.VARIANT === "survival" ? 0 : options.maxPoints;
     this.state.creator = options.creator;
     this.state.eliminationCount = -1
@@ -190,7 +196,7 @@ private currentTurnTimer: Delayed | null = null;
     this.onMessage("leave_room", this.onLeave);
   }
 
-    private broadcastGameState() {
+  private broadcastGameState() {
     this.broadcast("update_state", { roomInfo: this.state  }, {afterNextPatch: true});
   }
 
@@ -297,7 +303,7 @@ private currentTurnTimer: Delayed | null = null;
       this.dealCards(this.DECK);
 
       const nextUsername = this.state.playerUsernames[this.state.nextPlayerIndex];
-      const nextPlayer = eligiblePlayers.find(p => p.username === nextUsername);
+      let nextPlayer = eligiblePlayers.find(p => p.username === nextUsername);
 
       if (!nextPlayer) {
         // Fallback: pick first available active player
@@ -310,6 +316,7 @@ private currentTurnTimer: Delayed | null = null;
 
         this.state.nextPlayerIndex = fallbackIndex;
         this.state.currentTurn = this.state.playerUsernames[fallbackIndex];
+        nextPlayer = eligiblePlayers.find(p => p.username === this.state.currentTurn);
       } else {
         this.state.currentTurn = nextUsername;
       }
@@ -318,10 +325,14 @@ private currentTurnTimer: Delayed | null = null;
       rnd.winningCards = new ArraySchema<PlayedCard>();
       rnd.roundStatus = "in_progress";
 
-      // ✅ Now that currentTurn is set, start the turn timer
-      const currentPlayer = eligiblePlayers.find(p => p.username === this.state.currentTurn);
-      if (currentPlayer) {
-        this.startTurnTimer(currentPlayer);
+      // ✅ Start timer for current player
+      if (nextPlayer) {
+        this.startTurnTimer(nextPlayer);
+
+        // ✅ Immediately auto-play if the player is disconnected
+        if (!nextPlayer.connected) {
+          this.autoPlayForPlayer(nextPlayer);
+        }
       }
 
       this.broadcastGameState();
@@ -360,7 +371,7 @@ private currentTurnTimer: Delayed | null = null;
       const idx = player.hand.indexOf(cardName);
       if (idx !== -1) player.hand.splice(idx, 1);
 
-      // 🔴 Penalty Check
+      // Penalty Check
       if (move.bids.length > 1) {
         const firstSuit = move.bids[0].suit;
         const currentSuit = newCard.suit;
@@ -434,9 +445,9 @@ private currentTurnTimer: Delayed | null = null;
 
       if (move.bids.length >= legalPlayerCount) {
         // stop turn timer before evaluating
-        if (this.currentTurnTimer) {
+        if (this.TURN_TIMER) {
           this.clock.clear();
-          this.currentTurnTimer = null;
+          this.TURN_TIMER = null;
         }
         this.evaluateMove();
       } else {
@@ -453,7 +464,17 @@ private currentTurnTimer: Delayed | null = null;
         this.state.nextPlayerIndex = nextIndex;
         this.state.currentTurn = nextPlayer.username;
 
+        if (this.TURN_TIMER) {
+          this.TURN_TIMER.clear();
+          this.TURN_TIMER = null;
+        }
+
         this.startTurnTimer(nextPlayer);
+
+        // ✅ Auto-play immediately if disconnected
+        if (!nextPlayer.connected) {
+          this.autoPlayForPlayer(nextPlayer);
+        }
       }
 
       this.broadcastGameState();
@@ -463,10 +484,9 @@ private currentTurnTimer: Delayed | null = null;
     }
   }
 
-
   evaluateMove() {
     try {
-      const round = this.state.rounds.at(-1); // Select the very last round
+      const round = this.state.rounds.at(-1);
       if (!round) return;
 
       const key = String(this.state.moveNumber);
@@ -487,9 +507,23 @@ private currentTurnTimer: Delayed | null = null;
       round.winningCards.push(win);
       this.state.moveNumber++;
 
-      if (this.state.moveNumber < this.MAX_MOVES){
+      if (this.state.moveNumber < this.MAX_MOVES) {
         this.assignNextMoveStarter(moveWinner);
-        } else {
+
+        // ✅ ADD THIS BLOCK
+        const currentPlayer = [...this.state.players.values()]
+          .find(p => p.username === this.state.currentTurn);
+
+        if (currentPlayer) {
+          this.startTurnTimer(currentPlayer);
+
+          if (!currentPlayer.connected) {
+            this.autoPlayForPlayer(currentPlayer);
+          }
+        }
+        // ✅ END BLOCK
+
+      } else {
         round.roundWinner = moveWinner;
         this.STRATEGY.awardPoints(round, this.state.players);
         round.roundStatus = "complete";
@@ -509,6 +543,7 @@ private currentTurnTimer: Delayed | null = null;
       console.error("[evaluateMove]", e);
     }
   }
+
 
   startNextRound(roundWinner: string) {
     try {
@@ -588,6 +623,9 @@ private currentTurnTimer: Delayed | null = null;
           message: `${leaverUsername} left the room and has been eliminated.`,
         });
 
+        // ✅ Skip turn if it was their turn
+        this.skipIfCurrentTurn(leaverUsername);
+
         this.broadcastGameState();
 
         const remaining = [...this.state.players.values()].filter(p => p.active);
@@ -611,10 +649,10 @@ private currentTurnTimer: Delayed | null = null;
       // Not consented → disconnected
       player.connected = false;
 
-      // Begin reconnection timeout (don't await)
+      // Allow reconnection (non-blocking)
       this.allowReconnection(client, 30).catch(() => {});
 
-      // Schedule fallback if not reconnected
+      // Schedule fallback if not reconnected in time
       this.clock.setTimeout(() => {
         const stillOffline = this.state.players.get(leaverSessionId)?.connected === false;
         if (!stillOffline) return;
@@ -630,11 +668,23 @@ private currentTurnTimer: Delayed | null = null;
         }
 
         this.skipIfCurrentTurn(leaverUsername);
+
+        const currentPlayer = [...this.state.players.values()]
+          .find(p => p.username === this.state.currentTurn);
+
+        if (currentPlayer) {
+          this.startTurnTimer(currentPlayer);
+          if (!currentPlayer.connected) {
+            this.autoPlayForPlayer(currentPlayer);
+          }
+        }
+
         this.USER_TO_SESSION_MAP.delete(leaverUsername);
 
         this.broadcast("notification", {
           message: `${leaverUsername} was eliminated after disconnect timeout.`,
         });
+
         this.broadcastGameState();
 
         const connected = [...this.state.players.values()].filter(p => p.connected);
