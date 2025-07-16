@@ -32,7 +32,10 @@ export class Player extends Schema {
   @type(["string"]) hand = new ArraySchema<string>(); // Fixed
   @type("number") score: number = 0;
   @type(["string"]) bids = new ArraySchema<string>(); // store the card names
-  @type("boolean") active = true; // whether the player is active in the game
+  @type("boolean") active: boolean = true; // whether the player is active in the game
+  @type("boolean") eliminated: boolean = false;
+  @type("boolean") connected: boolean = true;
+  @type("number") rank: number = -1; 
 }
 
 // ChatMessage 
@@ -58,6 +61,7 @@ export class GameState extends Schema {
   @type("string") gameMode: string = ""; // Type of game (e.g., "classic", "custom")
   @type("string") roomName: string = ""; // Name of the game
   @type("number") prizePool: number = 0;
+  @type("number") eliminationCount: number = -1;
   @type(["string"]) playerUsernames = new ArraySchema<string>(); // List of players in the game
   @type(["string"]) deck = new ArraySchema<string>();
   @type({ map: Player }) players = new MapSchema<Player>(); // Fixed

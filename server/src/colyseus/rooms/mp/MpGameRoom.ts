@@ -24,79 +24,155 @@ import { IGameModeStrategy } from "../strategy/IGameModeStrategy";
 
 export class MpGameRoom extends Room<GameState> {
   DECK = secureShuffleDeck(createDeck(), 10);
-  MAX_CLIENTS = 4;
+  max_clients = 4;
   MAX_MOVES = 5;
-  BASE_POINTS!: number;
-  MIN_POINTS = -15
+  PENALTY = -3;
+  BASE_POINT!: number;
+  MIN_POINTS = -9
   STRATEGY!: IGameModeStrategy;
   USER_TO_SESSION_MAP = new Map<string, string>();
-  BANNED_USERS = new Set<string>();
-  SECONDS_UNTIL_DISPOSE = 10 * 1000;
+  SECONDS_UNTIL_DISPOSE = 5000;
   VARIANT = "race";
+  VIOLATORS = new Set<string>();
+  ELIMINATED_PLAYERS = new Set<string>();
+  ACTIVE_PLAYERS = new ArraySchema<Player>();
 
+  /* ───────────────────────────────────────────────── UTILITY FUNCTIONS ─────────────────────────────────────────────────── */
+  
+  private dealCards(deck: string[]) {
+    const legalPlayers = Array.from(this.state.players.values()).filter(p => p.active && !p.eliminated);
+
+    const hands = distributeCards(
+      legalPlayers.map(p => ({ playerName: p.username, hand: [] })),
+      deck
+    );
+
+    for (const p of legalPlayers) {
+      const h = hands.find(h => h.playerName === p.username);
+      p.hand = new ArraySchema(...(h?.hand || []));
+      p.bids = new ArraySchema();
+    }
+  }
+
+  
+  private getNextActivePlayerIndex(afterUsername: string): number {
+    const total = this.state.playerUsernames.length;
+    const currentIndex = this.state.playerUsernames.indexOf(afterUsername);
+
+    for (let i = 1; i <= total; i++) {
+      const nextIndex = (currentIndex + i) % total;
+      const username = this.state.playerUsernames[nextIndex];
+      const player = [...this.state.players.values()].find(p => p.username === username);
+
+      if (player?.active && !player.eliminated && player.connected) {
+        return nextIndex;
+      }
+    }
+
+    return -1; // No active player found
+  }
+
+  private skipIfCurrentTurn(leaverUsername: string) {
+    if (this.state.currentTurn !== leaverUsername) return;
+
+    const nextIndex = this.getNextActivePlayerIndex(leaverUsername);
+    if (nextIndex !== -1) {
+      this.state.nextPlayerIndex = nextIndex;
+      this.state.currentTurn = this.state.playerUsernames[nextIndex];
+
+      this.broadcast("notification", {
+        message: `Turn skipped. ${leaverUsername} disconnected.`,
+      });
+
+      this.broadcastGameState();
+    } else {
+      this.endGame(); // no one else left
+    }
+  }
+
+  private nextEliminationRank(): number {
+    return ++this.state.eliminationCount;
+  }
+
+   /* ───────────────────────────────────────────────── ROOM CREATION ─────────────────────────────────────────────────── */
   override onCreate(
     options: {roomId: string, coluserusRoomId: string; maxPlayers: number; maxPoints: number; creator: string, variant: string },
   ) {
+
     this.VARIANT = options.variant ?? "race";
     this.STRATEGY = this.VARIANT === "survival" ? new SurvivalModeStrategy() : new RaceModeStrategy();
-    this.BASE_POINTS = this.VARIANT === "survival"? options.maxPoints : 0;
+    this.BASE_POINT = this.VARIANT === "survival" ? options.maxPoints : 0;
+    this.MIN_POINTS = this.VARIANT === "survival" ? 0 : -9
     this.state = new GameState();
     this.state.deck = new ArraySchema(...this.DECK);
     this.state.roomId = options.roomId;
     this.state.colyseusRoomId = options.coluserusRoomId || this.roomId;
     this.state.maxPlayers = Number(options.maxPlayers);
-    this.MAX_CLIENTS = this.state.maxPlayers + 1;
+    this.max_clients = this.state.maxPlayers + 1;
     this.state.maxPoints = this.VARIANT === "survival" ? 0 : options.maxPoints;
     this.state.creator = options.creator;
+    this.state.eliminationCount = -1
     this.setMetadata(options);
 
     this.onMessage("play_card", this.handlePlayCard.bind(this));
     this.onMessage("leave_room", this.onLeave);
   }
 
-  override onJoin(client: Client, { playerUsername }: { playerUsername: string }) {
-    try { // ⚠️ reconnect / new‑join can throw if Map ops fail
-      const existing = this.USER_TO_SESSION_MAP.get(playerUsername);
+    private broadcastGameState() {
+    this.broadcast("update_state", { roomInfo: this.state  }, {afterNextPatch: true});
+  }
 
-      if (this.BANNED_USERS.has(playerUsername)) {
-        console.warn(`[onJoin] Rejected banned player: ${playerUsername}`);
+  /* ───────────────────────────────────────────────── JOINING ROOM ─────────────────────────────────────────────────── 
+  * Starts game automatically when the room is full.
+  */
+
+  override onJoin(client: Client, { playerUsername }: { playerUsername: string }) {
+    try {
+      const existingSessionId = this.USER_TO_SESSION_MAP.get(playerUsername);
+
+      if (this.VIOLATORS.has(playerUsername)) {
         client.error(4030, "You have been removed from this room for rule violations.");
         client.leave();
         return;
       }
 
-      if (existing) {
-        const prev = this.state.players.get(existing);
+      // Reconnecting
+      if (existingSessionId) {
+        const prev = this.state.players.get(existingSessionId);
         if (prev) {
-          this.state.players.delete(existing);
+          this.state.players.delete(existingSessionId);
           prev.id = client.sessionId;
-          prev.active = true;
+          prev.connected = true;
           this.state.players.set(client.sessionId, prev);
           this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
+
           console.log(`Reconnected: ${playerUsername}`);
           this.broadcastGameState();
           return;
         }
       }
 
-      /* new player */
-      const p = new Player();
-      p.id = client.sessionId;
-      p.username = playerUsername;
-      p.active = true;
-      p.score = this.BASE_POINTS;
+      // New player
+      const newPlayer = new Player();
+      newPlayer.id = client.sessionId;
+      newPlayer.username = playerUsername;
+      newPlayer.connected = true;
+      newPlayer.active = true;
+      newPlayer.eliminated = false;
+      newPlayer.score = this.BASE_POINT;
+
+      this.state.players.set(client.sessionId, newPlayer);
+      this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
 
       if (!this.state.playerUsernames.includes(playerUsername)) {
         this.state.playerUsernames.push(playerUsername);
       }
-      this.state.players.set(client.sessionId, p);
-      this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
-      console.log(`Joined: ${playerUsername}`);
 
       if (this.state.players.size >= this.state.maxPlayers) {
         this.state.gameStatus = "ready";
         this.startGame();
       }
+
       this.broadcastGameState();
     } catch (e) {
       console.error("[onJoin] fatal", e);
@@ -104,26 +180,7 @@ export class MpGameRoom extends Room<GameState> {
     }
   }
 
-  private broadcastGameState() {
-    this.broadcast("update_state", { roomInfo: this.state  }, {afterNextPatch: true});
-  }
-
-  /* ───────── GAME FLOW ───────── */
-
-  private dealCards(deck: string[]) {
-    const playersArr = Array.from(this.state.players.values());
-
-    const hands = distributeCards(
-      playersArr.map(p => ({ playerName: p.username, hand: [] })),
-      deck
-    );
-
-    for (const p of playersArr) {
-      const h = hands.find(h => h.playerName === p.username);
-      p.hand = new ArraySchema(...(h?.hand || []));
-      p.bids = new ArraySchema();
-    }
-  }
+  /* ───────────────────────────────────────────────── GAME FLOW ─────────────────────────────────────────────────── */
 
   startGame() {
     try {
@@ -148,8 +205,20 @@ export class MpGameRoom extends Room<GameState> {
       /* deal */
       this.dealCards(this.DECK)
       
-      this.state.currentTurn =
-        this.state.playerUsernames[this.state.nextPlayerIndex];
+      const currentPlayer = this.state.playerUsernames[this.state.nextPlayerIndex];
+      const p = [...this.state.players.values()].find(p => p.username === currentPlayer);
+
+      if (!p || p.eliminated || !p.active || !p.connected) {
+        const newIndex = this.getNextActivePlayerIndex(currentPlayer);
+        if (newIndex === -1) {
+          this.endGame();
+          return;
+        }
+        this.state.nextPlayerIndex = newIndex;
+      }
+
+      this.state.currentTurn = this.state.playerUsernames[this.state.nextPlayerIndex];
+
 
       rnd.moves = new MapSchema<Moves>();
       rnd.winningCards = new ArraySchema<PlayedCard>();
@@ -199,24 +268,32 @@ export class MpGameRoom extends Room<GameState> {
         const haveSomeCardOfSuit = player.hand.some(card => getCardSuit(card) === firstSuit);
         const isSuitMismatch = currentSuit !== firstSuit;
 
-        // Check for violations an penalize
         if (isSuitMismatch && haveSomeCardOfSuit) {
-          player.score -= 3;
+          const penaltyApplied = this.STRATEGY.applyPenalty(
+            player,
+            {
+              minPoints: this.MIN_POINTS,
+              nextEliminationRank: () => this.nextEliminationRank(),
+              bannedUsers: this.VIOLATORS,
+              eliminatedPlayers: this.ELIMINATED_PLAYERS,
+            }
+          );
 
-          // Bar player from room forever. Handled in join as well
-          if (player.score <= this.MIN_POINTS) {
-            this.state.players.delete(client.sessionId);
-            this.USER_TO_SESSION_MAP.delete(player.username);
-
+          // Ban player from room forever. Handled in reconnection check ins handled 
+          if (penaltyApplied) {
             this.broadcast("notification", {
               message: `${player.username} was removed for repeated violations (score too low).`,
             });
 
             this.broadcastGameState();
 
-            const activePlayers = [...this.state.players.values()].filter(p => p.active);
-            if (activePlayers.length === 1) {
-              const lastPlayer = activePlayers[0];
+            /*
+            * Force end the game if only one active player remains in the room
+            * The last player becomes the winner by default
+            */
+            const activePlayersOnline = [...this.state.players.values()].filter(p => p.connected && p.active);
+            if (activePlayersOnline.length === 1) {
+              const lastPlayer = activePlayersOnline[0];
               lastPlayer.score = this.state.maxPoints;
               this.state.gameWinner = lastPlayer.username;
               this.state.gameStatus = "complete";
@@ -239,9 +316,11 @@ export class MpGameRoom extends Room<GameState> {
 
           this.broadcastGameState();
 
-          const currentIndex = this.state.playerUsernames.indexOf(player.username);
-          const nextIndex = (currentIndex + 1) % this.state.playerUsernames.length;
-
+          const nextIndex = this.getNextActivePlayerIndex(player.username);
+          if (nextIndex === -1) {
+            this.endGame();
+            return;
+          }
           this.state.nextPlayerIndex = nextIndex;
           this.state.currentTurn = this.state.playerUsernames[nextIndex];
 
@@ -278,7 +357,9 @@ export class MpGameRoom extends Room<GameState> {
 
       const key = String(this.state.moveNumber);
       const move = round.moves.get(key);
-      if (!move || move.bids.length < this.state.players.size) return;
+      const expectedMoveCount = [...this.state.players.values()].filter(p => p.active && !p.eliminated).length;
+      if (!move || move.bids.length < expectedMoveCount) return;
+
 
       const { winningCard, moveWinner } = calculateMoveWinner(
         move.bids as unknown as IBids[],
@@ -316,15 +397,16 @@ export class MpGameRoom extends Room<GameState> {
     }
   }
 
-  advanceTurn(winnerName: string): number {
-    const i = this.state.playerUsernames.indexOf(winnerName);
-    return i === -1 ? this.state.nextPlayerIndex : (i + 1) % this.state.playerUsernames.length;
-  }
-
   startNextRound(roundWinner: string) {
     try {
-      
-      this.state.nextPlayerIndex = this.advanceTurn(roundWinner);
+
+      const nextIndex = this.getNextActivePlayerIndex(roundWinner);
+      if (nextIndex === -1) {
+        this.endGame();
+        return;
+      }
+      this.state.nextPlayerIndex = nextIndex;
+
       this.startRound();
     } catch (e) {
       console.error("[startNextRound]", e);
@@ -333,7 +415,9 @@ export class MpGameRoom extends Room<GameState> {
 
   checkGameOver(): boolean {
     if (this.VARIANT === "survival") {
-      const alivePlayers = [...this.state.players.values()].filter(p => p.score > 0);
+      const alivePlayers = [...this.state.players.values()].filter(
+        p => p.active && !p.eliminated && p.connected && p.score > this.MIN_POINTS
+      );
 
       if (alivePlayers.length === 1) {
         const lastStanding = alivePlayers[0];
@@ -357,7 +441,6 @@ export class MpGameRoom extends Room<GameState> {
     return false;
   }
 
-
   endGame() {
     try {
       this.broadcastGameState();
@@ -380,22 +463,25 @@ export class MpGameRoom extends Room<GameState> {
 
       // Handle consented leave
       if (consented) {
-        this.state.players.delete(client.sessionId);
-        this.USER_TO_SESSION_MAP.delete(leaver);
+        player.active = false;
+        player.eliminated = true;
+        player.rank = this.nextEliminationRank();
+        player.hand.clear()
+        player.bids.clear()
+        this.ELIMINATED_PLAYERS.add(leaver);
 
         this.broadcast("notification", {
-          message: `${leaver} has left the room`,
+          message: `${leaver} left the room and has been eliminated.`,
         });
+
         this.broadcastGameState();
 
-        console.log(`[Event] onLeave: ${leaver} has left with consent`);
+        console.log(`[Event] onLeave: ${leaver} voluntarily left — marked as eliminated.`);
 
-        // ✅ Check for only one active player left
-        const activePlayers = [...this.state.players.values()].filter(p => p.active);
-
-        if (activePlayers.length === 1) {
-          const lastPlayer = activePlayers[0];
-          lastPlayer.score = this.state.maxPoints; // Give them max score to end game
+        const remainingActivePlayers = [...this.state.players.values()].filter(p => p.active);
+        if (remainingActivePlayers.length === 1) {
+          const lastPlayer = remainingActivePlayers[0];
+          lastPlayer.score = this.state.maxPoints;
           this.state.gameWinner = lastPlayer.username;
           this.state.gameStatus = "complete";
 
@@ -405,27 +491,26 @@ export class MpGameRoom extends Room<GameState> {
 
           this.broadcastGameState();
 
-          // Dispose room after a short delay to ensure state is delivered
           this.clock.setTimeout(() => {
-            console.log(`[Room] Auto-disposing room ${this.roomId} — last player remaining`);
             this.disconnect();
-          }, 3000); // wait 3 seconds
+          }, 3000);
         }
 
         return;
       }
 
-      player.active = false;
+
+      player.connected = false;
       
       // Wait 60s for reconnection
-      await this.allowReconnection(client, 60);
+      await this.allowReconnection(client, 30);
 
       // If player reconnects in time, do nothing (reconnection handled in `onJoin`)
       // But if they don’t:
       this.clock.setTimeout(() => {
-        const stillInactive = this.state.players.get(client.sessionId)?.active === false;
+        const stillOffline = this.state.players.get(client.sessionId)?.connected === false;
 
-        if (stillInactive) {
+        if (stillOffline) {
           this.state.players.delete(client.sessionId);
           this.USER_TO_SESSION_MAP.delete(leaver);
 
@@ -436,10 +521,10 @@ export class MpGameRoom extends Room<GameState> {
 
           console.log(`[Event] ${leaver} removed due to inactivity`);
 
-          // ✅ Auto-dispose room if no active players remain
-          const activePlayers = [...this.state.players.values()].filter(p => p.active);
-          if (activePlayers.length === 0) {
-            console.log(`[Room] No active players remaining, disposing room ${this.roomId}`);
+          // Auto-dispose room if no connected players remain
+          const connectedPlayers = [...this.state.players.values()].filter(p => p.connected);
+          if (connectedPlayers.length === 0) {
+            console.log(`[Room] No connected players remaining, disposing room ${this.roomId}`);
             this.disconnect();
           }
         }

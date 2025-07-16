@@ -15,7 +15,7 @@ export const createGameRoom = async (req: Request, res: Response): Promise<void>
         }
 
         // Create the Colyseus room
-        const colyseusRoom = await matchMaker.create(roomType, {
+        const colyseusRoom = await matchMaker.create(`${roomType}`, {
             roomName,
             maxPlayers: Number(maxPlayers),
             maxPoints: Number(maxPoints),
