@@ -38,7 +38,6 @@ export function secureShuffleDeck(originalDeck: string[], passes = 3): string[] 
 }
 
 
-
 export function distributeCards(
   playerHands: PlayerHand[],
   deck: string[]
@@ -71,7 +70,6 @@ export function distributeCards(
 
   return playerHands;
 }
-
 
 
 export function getCardSuit(cardName: string): string {

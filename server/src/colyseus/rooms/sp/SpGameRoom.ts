@@ -9,7 +9,7 @@ import {
 } from "../../schemas/GameState";
 import {
   createDeck,
-  shuffleDeck,
+  secureShuffleDeck,
   calculateRoundPoints,
   distributeCards,
   calculateMoveWinner,
@@ -19,37 +19,42 @@ import {
   getCardPoints,
 } from "../../utils/roomUtils";
 import { IBids } from "../../../types/game";
-import { Bot, Difficulty } from "../../bots/Bot";
-import { SparBot } from "../../bots/SparBot";
 
-export class SinglePlayerRoom extends Room<GameState> {
-  DECK = shuffleDeck(createDeck());
-  BOT: SparBot | undefined;
-  MAX_CLIENTS = 1;
+export class SpGameRoom extends Room<GameState> {
+  DECK = secureShuffleDeck(createDeck(), 10);
+  MAX_CLIENTS = 4;
   MAX_MOVES = 5;
+  MIN_POINTS = -15
   USER_TO_SESSION_MAP = new Map<string, string>();
-  SECONDS_UNTIL_DISPOSE = 60 * 1000
+  BANNED_USERS = new Set<string>();
+  SECONDS_UNTIL_DISPOSE = 10 * 1000
 
   override onCreate(
-    options: { roomId: string; maxPoints: number; creator: string, difficulty: string},
+    options: { roomId: string; maxPlayers: number; maxPoints: number; creator: string },
   ) {
-    this.BOT = new SparBot(options.difficulty as Difficulty);
     this.state = new GameState();
     this.state.deck = new ArraySchema(...this.DECK);
     this.state.roomId = options.roomId || this.roomId;
-    this.state.maxPlayers = 1;
-    this.MAX_CLIENTS = 2;
+    this.state.maxPlayers = Number(options.maxPlayers);
+    this.MAX_CLIENTS = this.state.maxPlayers + 1;
     this.state.maxPoints = Number(options.maxPoints);
     this.state.creator = options.creator;
     this.setMetadata(options);
 
     this.onMessage("play_card", this.handlePlayCard.bind(this));
-    this.onMessage("leave_room", this._onLeave);
+    this.onMessage("leave_room", this.onLeave);
   }
 
   override onJoin(client: Client, { playerUsername }: { playerUsername: string }) {
     try { // ⚠️ reconnect / new‑join can throw if Map ops fail
       const existing = this.USER_TO_SESSION_MAP.get(playerUsername);
+
+      if (this.BANNED_USERS.has(playerUsername)) {
+        console.warn(`[onJoin] Rejected banned player: ${playerUsername}`);
+        client.error(4030, "You have been removed from this room for rule violations.");
+        client.leave();
+        return;
+      }
 
       if (existing) {
         const prev = this.state.players.get(existing);
@@ -78,20 +83,10 @@ export class SinglePlayerRoom extends Room<GameState> {
       this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
       console.log(`Joined: ${playerUsername}`);
 
-      // Set the bot
       if (this.state.players.size >= this.state.maxPlayers) {
-        const botPlayer = new Player();
-        botPlayer.id = "bot";
-        botPlayer.username = this.BOT!.name;
-        botPlayer.active = true;
-
-        this.state.playerUsernames.push(this.BOT!.name);
-        this.state.players.set("bot", botPlayer);
-
         this.state.gameStatus = "ready";
         this.startGame();
       }
-
       this.broadcastGameState();
     } catch (e) {
       console.error("[onJoin] fatal", e);
@@ -133,6 +128,8 @@ export class SinglePlayerRoom extends Room<GameState> {
 
   startRound() {
     try {
+      const newDeck = secureShuffleDeck(createDeck(), 5);
+      this.DECK = newDeck;
       const rnd = new Round();
       rnd.roundNumber = this.state.rounds.length;
       this.state.rounds.push(rnd);
@@ -166,21 +163,88 @@ export class SinglePlayerRoom extends Room<GameState> {
       if (!round.moves.has(key)) round.moves.set(key, new Moves());
       const move = round.moves.get(key)!;
 
-      const pc = new PlayedCard();
-      pc.playerName = player.username;
-      pc.cardName = cardName;
-      pc.rank = getCardRank(cardName);
-      pc.suit = getCardSuit(cardName);
-      pc.value = getCardValue(cardName);
-      pc.point = getCardPoints(cardName);
-      pc.bidIndex = move.bids.length;
+      const newCard = new PlayedCard();
+      newCard.playerName = player.username;
+      newCard.cardName = cardName;
+      newCard.rank = getCardRank(cardName);
+      newCard.suit = getCardSuit(cardName);
+      newCard.value = getCardValue(cardName);
+      newCard.point = getCardPoints(cardName);
+      newCard.bidIndex = move.bids.length;
 
-      player.bids.push(pc.cardName);
-      move.bids.push(pc);
+      // Add card to player and move
+      player.bids.push(newCard.cardName);
+      move.bids.push(newCard);
 
+      // Remove card from hand
       const idx = player.hand.indexOf(cardName);
       if (idx !== -1) player.hand.splice(idx, 1);
 
+      // Check for violation and penalize
+      if (move.bids.length > 1) {
+        const firstSuit = move.bids[0].suit;
+        const currentSuit = newCard.suit;
+
+        // Check if player has any card of the same suit
+        const haveSomeCardOfSuit = player.hand.some(card => getCardSuit(card) === firstSuit);
+        const isSuitMismatch = currentSuit !== firstSuit;
+
+        // Check for violations an penalize
+        if (isSuitMismatch && haveSomeCardOfSuit) {
+          player.score -= 3;
+
+          // Bar player from room forever. Handled in join as well
+          if (player.score <= this.MIN_POINTS) {
+            this.state.players.delete(client.sessionId);
+            this.USER_TO_SESSION_MAP.delete(player.username);
+
+            this.broadcast("notification", {
+              message: `${player.username} was removed for repeated violations (score too low).`,
+            });
+
+            this.broadcastGameState();
+
+            const activePlayers = [...this.state.players.values()].filter(p => p.active);
+            if (activePlayers.length === 1) {
+              const lastPlayer = activePlayers[0];
+              lastPlayer.score = this.state.maxPoints;
+              this.state.gameWinner = lastPlayer.username;
+              this.state.gameStatus = "complete";
+
+              this.broadcast("notification", {
+                message: `${lastPlayer.username} wins by default as all others were removed.`,
+              });
+
+              this.broadcastGameState();
+
+              this.clock.setTimeout(() => this.disconnect(), 3000);
+            }
+
+            return;
+          }
+
+          this.broadcast("notification", {
+            message: `${player.username} played a different suit and lost 3 points!`,
+          });
+
+          this.broadcastGameState();
+
+          const currentIndex = this.state.playerUsernames.indexOf(player.username);
+          const nextIndex = (currentIndex + 1) % this.state.playerUsernames.length;
+
+          this.state.nextPlayerIndex = nextIndex;
+          this.state.currentTurn = this.state.playerUsernames[nextIndex];
+
+          this.clock.setTimeout(() => {
+            this.startRound();
+            this.broadcastGameState();
+          }, 2000);
+
+          return;
+        }
+      }
+
+      // Proceed to next turn or evaluate move
       if (move.bids.length === this.state.players.size) {
         this.evaluateMove();
       } else {
@@ -189,6 +253,7 @@ export class SinglePlayerRoom extends Room<GameState> {
         this.state.currentTurn =
           this.state.playerUsernames[this.state.nextPlayerIndex];
       }
+
       this.broadcastGameState();
     } catch (e) {
       console.error("[handlePlayCard]", e);
@@ -216,17 +281,13 @@ export class SinglePlayerRoom extends Room<GameState> {
 
       this.state.moveNumber++;
 
-      /* round in progress */
+      // round in progress
       if (this.state.moveNumber < this.MAX_MOVES) {
-        this.state.nextPlayerIndex = this.state.playerUsernames.indexOf(moveWinner);
+        this.state.nextPlayerIndex =
+          this.state.playerUsernames.indexOf(moveWinner);
         this.state.currentTurn = moveWinner;
-
-        if (moveWinner === this.BOT!.name) {
-          setTimeout(() => this.botPlayCard(), 800);
-          console.log("[Bot]: Played card", )
-        }
       } else {
-        /* round finished */
+        // round finished
         round.roundWinner = moveWinner;
 
         const sess = this.USER_TO_SESSION_MAP.get(moveWinner);
@@ -240,7 +301,9 @@ export class SinglePlayerRoom extends Room<GameState> {
           this.endGame();
           return;
         }
-        this.startNextRound(moveWinner);
+        this.clock.setTimeout(() => {
+          this.startNextRound(moveWinner);
+        }, 1200)
       }
       this.broadcastGameState();
     } catch (e) {
@@ -278,8 +341,8 @@ export class SinglePlayerRoom extends Room<GameState> {
     try {
       this.broadcastGameState();
 
-      // Dispose the room after one minute
-      setTimeout(() => {
+      // Dispose the room after 10 seconds
+      this.clock.setTimeout(() => {
         this.disconnect(4000)
       }, (this.SECONDS_UNTIL_DISPOSE))
 
@@ -288,35 +351,79 @@ export class SinglePlayerRoom extends Room<GameState> {
     }
   }
 
-  private async botPlayCard() {
-    try {
-      const round = this.state.rounds.at(-1);
-      if (!round) return;
-
-      const botState = {
-        hand: this.state.players.get("bot")?.hand || [],
-        currentMoves: round.moves.get(String(this.state.moveNumber)),
-        // TODO: Add more states later
-      };
-
-      const { cardName } = await this.BOT!.play(botState);
-      this.handlePlayCard({ sessionId: "bot" } as Client, { cardName });
-    } catch (e) {
-      console.error("[BotPlayCard]", e);
-    }
-  }
-
   override async onLeave(client: Client, consented: boolean) {
     try {
-      this.state.players.get(client.sessionId)!.active = false;
+      const player = this.state.players.get(client.sessionId);
+      if (!player) return;
+      const leaver = player.username;
 
+      // Handle consented leave
       if (consented) {
         this.state.players.delete(client.sessionId);
-        console.log(`Left: ${client.sessionId}`);
+        this.USER_TO_SESSION_MAP.delete(leaver);
+
+        this.broadcast("notification", {
+          message: `${leaver} has left the room`,
+        });
+        this.broadcastGameState();
+
+        console.log(`[Event] onLeave: ${leaver} has left with consent`);
+
+        // ✅ Check for only one active player left
+        const activePlayers = [...this.state.players.values()].filter(p => p.active);
+
+        if (activePlayers.length === 1) {
+          const lastPlayer = activePlayers[0];
+          lastPlayer.score = this.state.maxPoints; // Give them max score to end game
+          this.state.gameWinner = lastPlayer.username;
+          this.state.gameStatus = "complete";
+
+          this.broadcast("notification", {
+            message: `${lastPlayer.username} wins by default.`,
+          });
+
+          this.broadcastGameState();
+
+          // Dispose room after a short delay to ensure state is delivered
+          this.clock.setTimeout(() => {
+            console.log(`[Room] Auto-disposing room ${this.roomId} — last player remaining`);
+            this.disconnect();
+          }, 3000); // wait 3 seconds
+        }
+
         return;
       }
+
+      player.active = false;
+      
+      // Wait 60s for reconnection
       await this.allowReconnection(client, 60);
-      this.state.players.get(client.sessionId)!.active = true;
+
+      // If player reconnects in time, do nothing (reconnection handled in `onJoin`)
+      // But if they don’t:
+      this.clock.setTimeout(() => {
+        const stillInactive = this.state.players.get(client.sessionId)?.active === false;
+
+        if (stillInactive) {
+          this.state.players.delete(client.sessionId);
+          this.USER_TO_SESSION_MAP.delete(leaver);
+
+          this.broadcast("notification", {
+            message: `${leaver} was removed after disconnect timeout.`,
+          });
+          this.broadcastGameState();
+
+          console.log(`[Event] ${leaver} removed due to inactivity`);
+
+          // ✅ Auto-dispose room if no active players remain
+          const activePlayers = [...this.state.players.values()].filter(p => p.active);
+          if (activePlayers.length === 0) {
+            console.log(`[Room] No active players remaining, disposing room ${this.roomId}`);
+            this.disconnect();
+          }
+        }
+      }, 60 * 1000);
+
     } catch (e) {
       console.error("[onLeave]", e);
     }
