@@ -54,22 +54,27 @@ export class MpGameRoom extends Room<GameState> {
     }
   }
 
-  
   private getNextActivePlayerIndex(afterUsername: string): number {
     const total = this.state.playerUsernames.length;
-    const currentIndex = this.state.playerUsernames.indexOf(afterUsername);
+    const startIndex = afterUsername
+      ? this.state.playerUsernames.indexOf(afterUsername)
+      : -1;
 
     for (let i = 1; i <= total; i++) {
-      const nextIndex = (currentIndex + i) % total;
+      const nextIndex = (startIndex + i) % total;
       const username = this.state.playerUsernames[nextIndex];
       const player = [...this.state.players.values()].find(p => p.username === username);
 
-      if (player?.active && !player.eliminated && player.connected) {
+      if (player && player.active && !player.eliminated && player.connected) {
         return nextIndex;
       }
     }
 
-    return -1; // No active player found
+    return -1;
+  }
+
+  private getNextActivePlayerIndexFromStart(): number {
+    return this.getNextActivePlayerIndex("");
   }
 
   private skipIfCurrentTurn(leaverUsername: string) {
@@ -185,8 +190,17 @@ export class MpGameRoom extends Room<GameState> {
   startGame() {
     try {
       this.state.gameStatus = "started";
-      this.state.nextPlayerIndex = 0;
+      
+      const firstPlayerIndex = this.getNextActivePlayerIndexFromStart(); // "" → start from 0
+      if (firstPlayerIndex === -1) {
+        console.warn("[startGame] No eligible player to start");
+        this.endGame();
+        return;
+      }
+
+      this.state.nextPlayerIndex = firstPlayerIndex;
       this.state.roundStatus = "in_progress";
+
       this.startRound();
     } catch (e) {
       console.error("[startGame]", e);
@@ -195,30 +209,43 @@ export class MpGameRoom extends Room<GameState> {
 
   startRound() {
     try {
+      const eligiblePlayers = [...this.state.players.values()].filter(
+        p => p.active && !p.eliminated && p.connected
+      );
+
+      if (eligiblePlayers.length === 0) {
+        console.warn("[startRound] No eligible players to start round");
+        this.endGame();
+        return;
+      }
+
       const newDeck = secureShuffleDeck(createDeck(), 5);
       this.DECK = newDeck;
+
       const rnd = new Round();
       rnd.roundNumber = this.state.rounds.length;
       this.state.rounds.push(rnd);
       this.state.moveNumber = 0;
 
-      /* deal */
-      this.dealCards(this.DECK)
-      
-      const currentPlayer = this.state.playerUsernames[this.state.nextPlayerIndex];
-      const p = [...this.state.players.values()].find(p => p.username === currentPlayer);
+      this.dealCards(this.DECK);
 
-      if (!p || p.eliminated || !p.active || !p.connected) {
-        const newIndex = this.getNextActivePlayerIndex(currentPlayer);
-        if (newIndex === -1) {
+      const nextUsername = this.state.playerUsernames[this.state.nextPlayerIndex];
+      const nextPlayer = eligiblePlayers.find(p => p.username === nextUsername);
+
+      if (!nextPlayer) {
+        // Fallback: pick first available active player
+        const fallbackIndex = this.getNextActivePlayerIndexFromStart();
+        if (fallbackIndex === -1) {
+          console.warn("[startRound] No valid player for turn");
           this.endGame();
           return;
         }
-        this.state.nextPlayerIndex = newIndex;
+
+        this.state.nextPlayerIndex = fallbackIndex;
+        this.state.currentTurn = this.state.playerUsernames[fallbackIndex];
+      } else {
+        this.state.currentTurn = nextUsername;
       }
-
-      this.state.currentTurn = this.state.playerUsernames[this.state.nextPlayerIndex];
-
 
       rnd.moves = new MapSchema<Moves>();
       rnd.winningCards = new ArraySchema<PlayedCard>();
@@ -233,7 +260,11 @@ export class MpGameRoom extends Room<GameState> {
   handlePlayCard(client: Client, { cardName }: { cardName: string }) {
     try {
       const player = this.state.players.get(client.sessionId);
-      if (!player || player.username !== this.state.currentTurn) return;
+      if (!player || !player.active || player.eliminated || !player.connected) return;
+
+      // Check it's their turn
+      const currentPlayerUsername = this.state.currentTurn;
+      if (player.username !== currentPlayerUsername) return;
 
       const round = this.state.rounds.at(-1);
       if (!round) return;
@@ -251,59 +282,44 @@ export class MpGameRoom extends Room<GameState> {
       newCard.point = getCardPoints(cardName);
       newCard.bidIndex = move.bids.length;
 
-      // Add card to player and move
       player.bids.push(newCard.cardName);
       move.bids.push(newCard);
 
-      // Remove card from hand
       const idx = player.hand.indexOf(cardName);
       if (idx !== -1) player.hand.splice(idx, 1);
 
-      // Check for violation and penalize
+      // 🔴 Penalty Check
       if (move.bids.length > 1) {
         const firstSuit = move.bids[0].suit;
         const currentSuit = newCard.suit;
+        const hasSuit = player.hand.some(card => getCardSuit(card) === firstSuit);
 
-        // Check if player has any card of the same suit
-        const haveSomeCardOfSuit = player.hand.some(card => getCardSuit(card) === firstSuit);
-        const isSuitMismatch = currentSuit !== firstSuit;
+        if (currentSuit !== firstSuit && hasSuit) {
+          const penaltyApplied = this.STRATEGY.applyPenalty(player, {
+            minPoints: this.MIN_POINTS,
+            nextEliminationRank: () => this.nextEliminationRank(),
+            bannedUsers: this.VIOLATORS,
+            eliminatedPlayers: this.ELIMINATED_PLAYERS,
+          });
 
-        if (isSuitMismatch && haveSomeCardOfSuit) {
-          const penaltyApplied = this.STRATEGY.applyPenalty(
-            player,
-            {
-              minPoints: this.MIN_POINTS,
-              nextEliminationRank: () => this.nextEliminationRank(),
-              bannedUsers: this.VIOLATORS,
-              eliminatedPlayers: this.ELIMINATED_PLAYERS,
-            }
-          );
-
-          // Ban player from room forever. Handled in reconnection check ins handled 
           if (penaltyApplied) {
             this.broadcast("notification", {
-              message: `${player.username} was removed for repeated violations (score too low).`,
+              message: `${player.username} was removed for repeated violations.`,
             });
-
             this.broadcastGameState();
 
-            /*
-            * Force end the game if only one active player remains in the room
-            * The last player becomes the winner by default
-            */
-            const activePlayersOnline = [...this.state.players.values()].filter(p => p.connected && p.active);
-            if (activePlayersOnline.length === 1) {
-              const lastPlayer = activePlayersOnline[0];
-              lastPlayer.score = this.state.maxPoints;
-              this.state.gameWinner = lastPlayer.username;
+            const activePlayers = [...this.state.players.values()].filter(p => p.active && p.connected && !p.eliminated);
+            if (activePlayers.length === 1) {
+              const last = activePlayers[0];
+              last.score = this.state.maxPoints;
+              this.state.gameWinner = last.username;
               this.state.gameStatus = "complete";
 
               this.broadcast("notification", {
-                message: `${lastPlayer.username} wins by default as all others were removed.`,
+                message: `${last.username} wins by default.`,
               });
 
               this.broadcastGameState();
-
               this.clock.setTimeout(() => this.disconnect(), 3000);
             }
 
@@ -311,7 +327,7 @@ export class MpGameRoom extends Room<GameState> {
           }
 
           this.broadcast("notification", {
-            message: `${player.username} played a different suit and lost 3 points!`,
+            message: `${player.username} played the wrong suit and lost 3 points.`,
           });
 
           this.broadcastGameState();
@@ -321,26 +337,31 @@ export class MpGameRoom extends Room<GameState> {
             this.endGame();
             return;
           }
+
           this.state.nextPlayerIndex = nextIndex;
           this.state.currentTurn = this.state.playerUsernames[nextIndex];
 
           this.clock.setTimeout(() => {
             this.startRound();
-            this.broadcastGameState();
           }, 2000);
 
           return;
         }
       }
 
-      // Proceed to next turn or evaluate move
-      if (move.bids.length === this.state.players.size) {
+      // ✅ Check if move complete
+      const legalPlayerCount = [...this.state.players.values()].filter(p => p.active && !p.eliminated).length;
+
+      if (move.bids.length >= legalPlayerCount) {
         this.evaluateMove();
       } else {
-        this.state.nextPlayerIndex =
-          (this.state.nextPlayerIndex + 1) % this.state.players.size;
-        this.state.currentTurn =
-          this.state.playerUsernames[this.state.nextPlayerIndex];
+        const nextIndex = this.getNextActivePlayerIndex(player.username);
+        if (nextIndex === -1) {
+          this.endGame();
+          return;
+        }
+        this.state.nextPlayerIndex = nextIndex;
+        this.state.currentTurn = this.state.playerUsernames[nextIndex];
       }
 
       this.broadcastGameState();
@@ -357,13 +378,16 @@ export class MpGameRoom extends Room<GameState> {
 
       const key = String(this.state.moveNumber);
       const move = round.moves.get(key);
-      const expectedMoveCount = [...this.state.players.values()].filter(p => p.active && !p.eliminated).length;
+
+      const expectedMoveCount = [...this.state.players.values()]
+        .filter(p => p.active && !p.eliminated).length;
+
       if (!move || move.bids.length < expectedMoveCount) return;
 
-
       const { winningCard, moveWinner } = calculateMoveWinner(
-        move.bids as unknown as IBids[],
+        move.bids as unknown as IBids[]
       )!;
+
       move.moveWinner = moveWinner;
 
       const win = new PlayedCard();
@@ -372,13 +396,15 @@ export class MpGameRoom extends Room<GameState> {
 
       this.state.moveNumber++;
 
-      // round in progress
       if (this.state.moveNumber < this.MAX_MOVES) {
-        this.state.nextPlayerIndex =
-          this.state.playerUsernames.indexOf(moveWinner);
-        this.state.currentTurn = moveWinner;
+        const nextIndex = this.getNextActivePlayerIndex(moveWinner);
+        if (nextIndex === -1) {
+          this.endGame();
+          return;
+        }
+        this.state.nextPlayerIndex = nextIndex;
+        this.state.currentTurn = this.state.playerUsernames[nextIndex];
       } else {
-        // round finished
         round.roundWinner = moveWinner;
         this.STRATEGY.awardPoints(round, this.state.players);
         round.roundStatus = "complete";
@@ -387,10 +413,12 @@ export class MpGameRoom extends Room<GameState> {
           this.endGame();
           return;
         }
+
         this.clock.setTimeout(() => {
           this.startNextRound(moveWinner);
-        }, 1200)
+        }, 1200);
       }
+
       this.broadcastGameState();
     } catch (e) {
       console.error("[evaluateMove]", e);
@@ -513,6 +541,7 @@ export class MpGameRoom extends Room<GameState> {
         if (stillOffline) {
           this.state.players.delete(client.sessionId);
           this.USER_TO_SESSION_MAP.delete(leaver);
+          this.skipIfCurrentTurn(leaver)
 
           this.broadcast("notification", {
             message: `${leaver} was removed after disconnect timeout.`,
