@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Room, Client } from 'colyseus.js';
 import { COLYSEUS_WS_URL } from '../constants';
 import { GameState } from '../hooks/GameState';
-import { leaveRoom, setGameState } from '../redux/slices/gameSlice';
+import { leaveRoom, setGameState, updateChatRoom } from '../redux/slices/gameSlice';
 import { AppDispatch } from '../redux/reduxStore';
 import { useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
@@ -25,6 +25,7 @@ interface RoomContextType {
   startGame: () => Promise<void>;
   playCard: (cardName: string) => Promise<void>;
   consentedLeave: (currentUser: string) => Promise<void>;
+  sendMessagesInChat: (sender: string, message: string, time: string) => Promise<void>;
   joinError: boolean;
   state: GameState | null;
   turnTimer: TurnTimerType | null;
@@ -39,6 +40,7 @@ export const RoomContext = createContext<RoomContextType>({
     startGame: async () => {},
     playCard: async () => {},
     consentedLeave: async () => {},
+    sendMessagesInChat: async () => {},
     turnTimer: null,
     joinError: false,
     state: null,
@@ -65,8 +67,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         const handleStateChange = (state: GameState) => setState(state);
         const handleLeave = () => setIsConnected(false);
         const handleUpdate = (payload: any) => dispatch(setGameState(payload));
-        const handleNotification = (payload: any) =>
-            toast.success(payload.message, successToastOptions);
+        const handleNotification = (payload: any) => toast.success(payload.message, successToastOptions);
 
         room.onStateChange(handleStateChange);
         room.onLeave(handleLeave);
@@ -74,6 +75,9 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         room.onMessage("notification", handleNotification);
         room.onMessage("start_turn_timer", ({ username, duration, deadline }) => {
             setTurnTimer({ username, duration, deadline });
+        });
+        room.onMessage("chat_message", ({sender, content, time}) => {
+            dispatch(updateChatRoom({sender, content, time}));
         });
 
         return () => {
@@ -124,9 +128,9 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         if (!room || !isConnected || hasActiveJoinRequest) return;
 
         try {
-        room.send('play_card', { cardName });
+            room.send('play_card', { cardName });
         } catch (err) {
-        console.error('Error playing card:', err);
+            console.error('Error playing card:', err);
         }
     };
 
@@ -138,9 +142,18 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
                 dispatch(leaveRoom());
             }
         } catch (err) {
-        console.error('Error leaving room', err);
+            console.error('Error leaving room', err);
         }
     };
+
+    const sendMessagesInChat = async (sender:string, content:string, time:string) => {
+        if (!room || !isConnected || hasActiveJoinRequest) return;
+        try {
+            room.send('send_chat_message', { sender, content, time });
+        } catch (err) {
+            console.error('Error leaving room', err)
+        }
+    }
 
     return (
         <RoomContext.Provider
@@ -152,6 +165,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
             startGame,
             playCard,
             consentedLeave,
+            sendMessagesInChat,
             joinError,
             state,
             turnTimer

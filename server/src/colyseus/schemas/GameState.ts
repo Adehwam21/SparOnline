@@ -1,4 +1,5 @@
-import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
+import { Schema, type, MapSchema, ArraySchema, Encoder } from "@colyseus/schema";
+Encoder.BUFFER_SIZE = 128 * 1024; // 128 KB
 
 // PlayedCard represents a single card played in a move
 export class PlayedCard extends Schema {

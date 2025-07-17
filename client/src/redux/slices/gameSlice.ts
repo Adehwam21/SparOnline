@@ -9,8 +9,15 @@ interface Player {
   hand: string[]; // Each player's hand (cards)
   bids: string[];
   active: boolean; // Indicates if the player is active in the game
+  eliminated: boolean;
+  connected:boolean;
 }
 
+interface Message {
+  sender: string | null, 
+  content: string | null, 
+  time: string | null
+}
 interface Chatroom {
   messages: [{sender: string | null, content: string | null, time: string | null}] | null
 }
@@ -106,11 +113,16 @@ const gameSlice = createSlice({
       state.roomInfo!.bids = [];
     },
 
+    updateChatRoom: (state, action: PayloadAction<Message>) => {
+      state.roomInfo!.chat?.messages?.push(action.payload)
+    },
+
     leaveRoom: (state) => {
       state.roomInfo = null;
       state.colyseusRoomId = null;
       state.roomLink = null;
     },
+
     logOut: (state) => {
       state.roomInfo = null;
       state.colyseusRoomId = null;
@@ -119,5 +131,9 @@ const gameSlice = createSlice({
   }
 });
 
-export const { setGameState, addBid, setCurrentTurn, updatePlayers, resetBids, updateRoomInfo,leaveRoom, logOut} = gameSlice.actions;
+export const { 
+    setGameState, addBid, setCurrentTurn, updatePlayers, 
+    resetBids, updateRoomInfo,leaveRoom, logOut, updateChatRoom
+  } = gameSlice.actions;
+  
 export const gameReducer =  gameSlice.reducer;

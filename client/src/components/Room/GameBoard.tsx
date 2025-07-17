@@ -8,7 +8,16 @@ import { useRoom } from "../../contexts/roomContext";
 
 
 interface GameBoardProps {
-  players: { id: string; username: string; score: number; hand: string[]; active: boolean; connected:boolean, eliminated: boolean, bids: string[] }[];
+  players: { 
+    id: string; 
+    username: string; 
+    score: number; 
+    hand: string[]; 
+    active: boolean; 
+    connected:boolean, 
+    eliminated: boolean, 
+    bids: string[]
+  }[];
   currentTurn: string;
   currentUser: string;
   maxPoints: string;
@@ -21,7 +30,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   // maxPoints,
 }) => {
   // const dispatch = useDispatch<AppDispatch>();
-  const { playCard } = useRoom();
+  const { playCard, turnTimer } = useRoom();
 
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -42,17 +51,21 @@ const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd} autoScroll={false}>
-      <div className="relative w-full bg-transparent h-[30rem] rounded-lg flex flex-col items-center justify-between text-white">
+      <div className="relative h-full md:w-full md:h-full bg-transparent rounded-lg flex flex-col items-center justify-between gap-5 text-white">
         <div className="flex mb-2 flex-col lg:flex-row items-center justify-center gap-4">
-          {opponents.map((o, i) => (
-            <div key={i} className={`w-full md:w-auto ${opponents.length === 1 ? "text-center" : ""}`}>
-              <Opponent {...o} />
-            </div>
-          ))}
+          {opponents.map((o, i) => {
+            const isTurn = turnTimer?.username === o.username; // Fix: boolean per opponent
+            return (
+              <div key={i} className={`w-full md:w-auto ${opponents.length === 1 ? "text-center" : ""}`}>
+                <Opponent {...o} isOpponentTurn={isTurn} />
+              </div>
+            );
+          })}
         </div>
 
+
         <div className="relative flex flex-col justify-center space-y-1 items-center w-full">
-          <BidZone bidCards={bidCards} score={player.score} />
+          <BidZone bidCards={bidCards} score={player.score} isTurn={isTurn} />
           <PlayerBar
             username={player.username}
             // score={player.score}

@@ -1,43 +1,39 @@
 import React, { useEffect, useRef, useState } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "../../redux/reduxStore"; // adjust path if needed
 
-// Message type
 interface Message {
-  id: number;
-  sender: string;
-  content: string;
+  sender: string | null;
+  content: string | null;
+  time: string | null;
 }
-
-const initialMessages: Message[] = [
-  { id: 1, sender: "Alice", content: "Hey there!" },
-  { id: 2, sender: "Bob", content: "Hi Alice!" },
-];
 
 interface ChatProps {
   currentUser: string;
-  messages?: Message[];
-  onSendMessage?: (message: string) => void;
-  onClose?: () => void; // NEW: Callback to close the chat
+  sendMessage: (sender:string, content:string, time:string) => Promise<void>;
+  onClose?: () => void;
 }
 
-const Chat: React.FC<ChatProps> = ({
-  currentUser,
-  messages = initialMessages,
-  onSendMessage,
-  onClose, // NEW
-}) => {
-  const [chatMessages, setChatMessages] = useState<Message[]>(messages);
-  const [newMessage, setNewMessage] = useState("");
+const Chat: React.FC<ChatProps> = ({ currentUser, sendMessage, onClose }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const chatBoxRef = useRef<HTMLDivElement>(null); // NEW
+  const chatBoxRef = useRef<HTMLDivElement>(null);
 
-  // Scroll to bottom on new messages
+  // Local input state
+  const [newMessage, setNewMessage] = useState("");
+
+  // Select messages from Redux
+  const chatMessages: Message[] = useSelector(
+    (state: RootState) => state.game.roomInfo?.chat?.messages || []
+  );
+
+  // Scroll to bottom when messages change
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [chatMessages]);
 
-  // Click outside to close
+  // Close on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -47,23 +43,18 @@ const Chat: React.FC<ChatProps> = ({
         if (onClose) onClose();
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
+  // Send message to server
   const handleSend = () => {
     if (!newMessage.trim()) return;
 
-    const newMsg: Message = {
-      id: chatMessages.length + 1,
-      sender: currentUser,
-      content: newMessage,
-    };
+    const time = new Date().toLocaleTimeString();
+    sendMessage(currentUser, newMessage, time);
 
-    setChatMessages([...chatMessages, newMsg]);
-    if (onSendMessage) onSendMessage(newMessage);
-    setNewMessage("");
+    setNewMessage(""); // reset input
   };
 
   return (
@@ -71,26 +62,17 @@ const Chat: React.FC<ChatProps> = ({
       ref={chatBoxRef}
       className="flex flex-col w-full max-w-sm h-[500px] text-black bg-gray-100 rounded shadow-lg p-2"
     >
-      <h2 className="text-md font-semibold  mb-2">Chat</h2>
+      <h2 className="text-md font-semibold mb-2">Chat</h2>
 
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto bg-white p-4 rounded shadow-inner space-y-3"
       >
-        {chatMessages.map((msg) => {
+        {chatMessages.map((msg, index) => {
           const isCurrentUser = msg.sender === currentUser;
           return (
-            <div
-              key={msg.id}
-              className={`flex flex-col ${
-                isCurrentUser ? "items-end" : "items-start"
-              }`}
-            >
-              <p
-                className={`text-xs font-semibold mb-1 ${
-                  isCurrentUser ? "text-green-700" : "text-blue-700"
-                }`}
-              >
+            <div key={index} className={`flex flex-col ${isCurrentUser ? "items-end" : "items-start"}`}>
+              <p className={`text-xs font-semibold mb-1 ${isCurrentUser ? "text-green-700" : "text-blue-700"}`}>
                 {isCurrentUser ? "You" : msg.sender}
               </p>
               <p
@@ -110,7 +92,7 @@ const Chat: React.FC<ChatProps> = ({
       <div className="flex mt-2">
         <input
           type="text"
-          className="flex-1 px-3 py-2 border  border-gray-500 rounded-l focus:outline-none"
+          className="flex-1 px-3 py-2 border border-gray-500 rounded-l focus:outline-none"
           placeholder="Type your message..."
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}

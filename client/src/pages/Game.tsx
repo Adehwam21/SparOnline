@@ -9,12 +9,13 @@ import { useParams, useNavigate } from "react-router-dom";
 
 const GamePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { join, consentedLeave, isConnected, isConnecting } = useRoom();
+  const { join, consentedLeave, sendMessagesInChat, isConnected, isConnecting } = useRoom();
   const { id: roomId } = useParams();
   const navigate = useNavigate();
 
   const gameState = useSelector((state: RootState) => state.game);
-  const currentUser = useSelector((state: RootState) => state.auth!.user!.username) ;
+  const currentUser = useSelector((state: RootState) => state.auth!.user!.username);
+  const variant = gameState?.roomInfo?.variant
   const [isWaitingScreenOpen, setIsWaitingScreenOpen] = useState(true);
   const [gameOver, setGameOver] = useState(false);
 
@@ -58,7 +59,7 @@ const GamePage: React.FC = () => {
   }
 
   return (
-    <div className="h-full text-white bg-transparent">
+    <div className="text-white h-full bg-transparent">
       <WaitingScreen
         isOpen={isWaitingScreenOpen}
         roomId={roomId!}
@@ -70,8 +71,10 @@ const GamePage: React.FC = () => {
         players={Object.values(gameState.roomInfo?.players || {})}
         currentTurn={gameState.roomInfo?.currentTurn ?? ""}
         currentUser={currentUser}
+        variant={variant!}
         maxPoints={gameState.roomInfo?.maxPoints ?? "0"}
         onLeaveRoom={handleConsentedLeave}
+        onSendMessageInChat={sendMessagesInChat}
       />
 
       <GameCompleteModal
