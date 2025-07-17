@@ -37,7 +37,7 @@ import { IGameModeStrategy } from "../strategy/IGameModeStrategy";
 
 export class MpGameRoom extends Room<GameState> {
   DECK = secureShuffleDeck(createDeck(), 10);
-  max_clients = 4;
+  MAX_CLIENTS = 4;
   MAX_MOVES = 5;
   PENALTY = -3;
   BASE_POINT!: number;
@@ -45,7 +45,6 @@ export class MpGameRoom extends Room<GameState> {
   STRATEGY!: IGameModeStrategy;
   USER_TO_SESSION_MAP = new Map<string, string>();
   SECONDS_UNTIL_DISPOSE = 5000;
-  VARIANT = "race";
   VIOLATORS = new Set<string>();
   ELIMINATED_PLAYERS = new Set<string>();
   ACTIVE_PLAYERS = new ArraySchema<Player>();
@@ -208,32 +207,31 @@ export class MpGameRoom extends Room<GameState> {
 
     this.state.chat.messages.push(message);
 
-    this.broadcast("chat_message", message); // inform all clients
+    this.broadcast("receive_chat_message", message); // inform all clients
   }
 
   /* ───────────────────────────────────────────────── ROOM CREATION ─────────────────────────────────────────────────── */
   override onCreate(
     options: {roomId: string, coluserusRoomId: string; maxPlayers: number; maxPoints: number; creator: string, variant: string },
   ) {
-
-    this.VARIANT = options.variant ?? "race";
-    this.STRATEGY = this.VARIANT === "survival" ? new SurvivalModeStrategy() : new RaceModeStrategy();
-    this.BASE_POINT = this.VARIANT === "survival" ? options.maxPoints : 0;
-    this.MIN_POINTS = this.VARIANT === "survival" ? 0 : -9
     this.state = new GameState();
+    this.state.variant = options.variant ?? "race";
+    this.STRATEGY = this.state.variant === "survival" ? new SurvivalModeStrategy() : new RaceModeStrategy();
+    this.BASE_POINT = this.state.variant === "survival" ? options.maxPoints : 0;
+    this.MIN_POINTS = this.state.variant === "survival" ? 0 : -9
     this.state.deck = new ArraySchema(...this.DECK);
     this.state.roomId = options.roomId;
     this.state.colyseusRoomId = options.coluserusRoomId || this.roomId;
     this.state.maxPlayers = Number(options.maxPlayers);
-    this.max_clients = this.state.maxPlayers;
-    this.state.maxPoints = this.VARIANT === "survival" ? 0 : options.maxPoints;
+    this.MAX_CLIENTS = this.state.maxPlayers;
+    this.state.maxPoints = this.state.variant === "survival" ? 0 : options.maxPoints;
     this.state.creator = options.creator;
     this.state.eliminationCount = -1
     this.state.chat = new ChatRoom();
     this.setMetadata(options);
 
     this.onMessage("play_card", this.handlePlayCard.bind(this));
-    this.onMessage("chat_message", this.handleSendMessagesInChat.bind(this));
+    this.onMessage("send_chat_message", this.handleSendMessagesInChat.bind(this));
     this.onMessage("leave_room", this.onLeave);
   }
 
@@ -243,17 +241,52 @@ export class MpGameRoom extends Room<GameState> {
 
   override onJoin(client: Client, { playerUsername }: { playerUsername: string }) {
     try {
-      const existingSessionId = this.USER_TO_SESSION_MAP.get(playerUsername);
+      // Validate username
+      if (!playerUsername || typeof playerUsername !== "string" || playerUsername.trim().length === 0) {
+        client.error(4001, "Invalid username");
+        client.leave();
+        return;
+      }
 
+      const existingSessionId = this.USER_TO_SESSION_MAP.get(playerUsername);
+      const connectedPlayers = [...this.state.players.values()].filter(p => p.connected);
+
+      // Prevent duplicate usernames unless reconnecting
+      const usernameTaken = [...this.state.players.values()].find(
+        p => p.username === playerUsername && p.connected && client.sessionId !== p.id
+      );
+      if (usernameTaken && !existingSessionId) {
+        client.error(4002, "Username already taken.");
+        client.leave();
+        return;
+      }
+
+      // Room full check based on connected players
+      if (connectedPlayers.length >= this.MAX_CLIENTS && !existingSessionId) {
+        client.error(4010, "Room is full");
+        client.leave();
+        return;
+      }
+
+      // Banned or violating user
       if (this.VIOLATORS.has(playerUsername)) {
         client.error(4030, "You have been removed from this room for rule violations.");
         client.leave();
         return;
       }
 
-      // Reconnecting
+      // Reconnection logic
       if (existingSessionId) {
         const prev = this.state.players.get(existingSessionId);
+
+        if (!prev || typeof prev.username !== "string") {
+            console.warn(`[onJoin] Invalid reconnection object for ${playerUsername}`, prev);
+            this.USER_TO_SESSION_MAP.delete(playerUsername);
+            client.error(4003, "Could not reconnect. Please refresh and try again.");
+            client.leave();
+            return;
+          }
+
         if (prev) {
           this.state.players.delete(existingSessionId);
           prev.id = client.sessionId;
@@ -261,13 +294,13 @@ export class MpGameRoom extends Room<GameState> {
           this.state.players.set(client.sessionId, prev);
           this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
 
-          console.log(`Reconnected: ${playerUsername}`);
+          console.log(`Reconnected: ${prev.username || playerUsername} (${client.sessionId})`);
           this.broadcastGameState();
           return;
         }
       }
 
-      // New player
+      // New player logic
       const newPlayer = new Player();
       newPlayer.id = client.sessionId;
       newPlayer.username = playerUsername;
@@ -283,7 +316,8 @@ export class MpGameRoom extends Room<GameState> {
         this.state.playerUsernames.push(playerUsername);
       }
 
-      if (this.state.players.size >= this.state.maxPlayers) {
+      // Auto-start game if full
+      if ([...this.state.players.values()].filter(p => p.connected).length >= this.MAX_CLIENTS) {
         this.state.gameStatus = "ready";
         this.startGame();
       }
@@ -292,6 +326,7 @@ export class MpGameRoom extends Room<GameState> {
     } catch (e) {
       console.error("[onJoin] fatal", e);
       client.error(2000, `${e}`);
+      client.leave();
     }
   }
 
@@ -598,7 +633,7 @@ export class MpGameRoom extends Room<GameState> {
   }
 
   checkGameOver(): boolean {
-    if (this.VARIANT === "survival") {
+    if (this.state.variant=== "survival") {
       const alivePlayers = [...this.state.players.values()].filter(
         p => p.active && !p.eliminated && p.connected && p.score > this.MIN_POINTS
       );

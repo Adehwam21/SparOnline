@@ -11,5 +11,9 @@ import { Schema, type } from '@colyseus/schema';
 export class PlayedCard extends Schema {
     @type("string") public playerName!: string;
     @type("string") public cardName!: string;
-    @type("string") public moveIndex!: string;
+    @type("string") public rank!: string;
+    @type("string") public suit!: string;
+    @type("number") public value!: number;
+    @type("number") public point!: number;
+    @type("number") public bidIndex!: number;
 }

@@ -75,7 +75,6 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
             <option value={10}>10</option>
             <option value={15}>15</option>
             <option value={20}>20</option>
-            <option value={20}>30</option>
           </select>
         </FormField>
 
@@ -101,9 +100,9 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
             className="w-full p-2 border border-gray-300 rounded"
           >
             <option value={0}>Free</option>
-            <option value={100}>100</option>
+            {/* <option value={100}>100</option>
             <option value={500}>500</option>
-            <option value={1000}>1k</option>
+            <option value={1000}>1k</option> */}
           </select>
         </FormField>
 

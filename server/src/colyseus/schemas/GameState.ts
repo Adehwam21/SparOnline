@@ -57,11 +57,12 @@ export class GameState extends Schema {
   @type("string") roomId: string = ""; // Unique identifier for the room
   @type("string") colyseusRoomId: string = "";
   @type("number") maxPlayers: number = 4; // Maximum number of players allowed in the room
-  @type("number") maxPoints: number = 40; // Maximum points to win the game
+  @type("number") maxPoints: number = 20; // Maximum points to win the game
   @type("string") creator: string = ""; // Creator of the room
-  @type("string") gameMode: string = ""; // Type of game (e.g., "classic", "custom")
   @type("string") roomName: string = ""; // Name of the game
+  @type("string") roomType: string = ""; // Type of room (e.g. multiplayer, singleplayer)
   @type("number") prizePool: number = 0;
+  @type("string") variant: string = ""; // Variant (e.g. Race, Survival)
   @type("number") eliminationCount: number = -1;
   @type(["string"]) playerUsernames = new ArraySchema<string>(); // List of players in the game
   @type(["string"]) deck = new ArraySchema<string>();
