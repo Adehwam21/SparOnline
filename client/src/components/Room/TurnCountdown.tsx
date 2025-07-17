@@ -26,9 +26,9 @@ export const TurnCountdown: React.FC = () => {
   if (!turnTimer || secondsLeft === null) return null;
 
   return (
-    <div className="flex justify-center item-center space-x-3 text-center text-white">
-      <p className="text-md font-bold">Turn: {turnTimer.username}</p>
-      <p className="text-md font-bold">⏳: {secondsLeft}s left</p>
+    <div className="flex justify-center item-center gap-2 text-center text-white">
+      <span className="p-2 text-md font-bold">Turn: {turnTimer.username}</span>
+      <span className="p-2 text-md font-bold">⏳: {secondsLeft}s</span>
     </div>
   );
 };

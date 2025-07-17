@@ -1,11 +1,15 @@
 import { Room, Client, Delayed } from "colyseus";
 import { ArraySchema, MapSchema } from "@colyseus/schema";
+import { Encoder } from "@colyseus/schema";
+
 import {
   GameState,
   Player,
   Round,
   PlayedCard,
   Moves,
+  ChatRoom,
+  ChatMessage,
 } from "../../schemas/GameState";
 import {
   createDeck,
@@ -21,6 +25,15 @@ import { IBids } from "../../../types/game";
 import { SurvivalModeStrategy } from "../strategy/SurvivalModeStrategy";
 import { RaceModeStrategy } from "../strategy/RaceModeStrategy";
 import { IGameModeStrategy } from "../strategy/IGameModeStrategy";
+
+/* ───────────────────────────────────────────────── MULTIPLAYER ROOM ─────────────────────────────────────────────────── 
+*
+* This Colyseus room class handles both Race and Survival game modes, by injecting the game mode interfaces.
+* It checks and validates turns and penalizes violators as well.
+* Players who are eliminated or violators are kept in state as BANNED_USERS order for them to spectate.
+* Price distribution, which is yet to be implemented, shall be done based on player ranks
+* 
+*/
 
 export class MpGameRoom extends Room<GameState> {
   DECK = secureShuffleDeck(createDeck(), 10);
@@ -172,7 +185,33 @@ export class MpGameRoom extends Room<GameState> {
     this.handlePlayCard({ sessionId: player.id } as Client, { cardName: cardToPlay });
   }
 
-   /* ───────────────────────────────────────────────── ROOM CREATION ─────────────────────────────────────────────────── */
+  private broadcastGameState(){
+    this.broadcast("update_state", { roomInfo: this.state  }, {afterNextPatch: true});
+  }
+
+  private handleSendMessagesInChat(
+    client: Client,
+    { sender, content, time }: { sender: string; content: string; time: string }
+  ) {
+    const player = this.state.players.get(client.sessionId);
+    if (!player || !player.connected || player.eliminated) return;
+
+    const message = new ChatMessage();
+    message.sender = sender;
+    message.content = content;
+    message.time = time;
+
+    // Optional: keep chat history to last 50 messages
+    if (this.state.chat.messages.length >= 50) {
+      this.state.chat.messages.shift(); // remove oldest
+    }
+
+    this.state.chat.messages.push(message);
+
+    this.broadcast("chat_message", message); // inform all clients
+  }
+
+  /* ───────────────────────────────────────────────── ROOM CREATION ─────────────────────────────────────────────────── */
   override onCreate(
     options: {roomId: string, coluserusRoomId: string; maxPlayers: number; maxPoints: number; creator: string, variant: string },
   ) {
@@ -190,14 +229,12 @@ export class MpGameRoom extends Room<GameState> {
     this.state.maxPoints = this.VARIANT === "survival" ? 0 : options.maxPoints;
     this.state.creator = options.creator;
     this.state.eliminationCount = -1
+    this.state.chat = new ChatRoom();
     this.setMetadata(options);
 
     this.onMessage("play_card", this.handlePlayCard.bind(this));
+    this.onMessage("chat_message", this.handleSendMessagesInChat.bind(this));
     this.onMessage("leave_room", this.onLeave);
-  }
-
-  private broadcastGameState() {
-    this.broadcast("update_state", { roomInfo: this.state  }, {afterNextPatch: true});
   }
 
   /* ───────────────────────────────────────────────── JOINING ROOM ─────────────────────────────────────────────────── 
@@ -544,7 +581,6 @@ export class MpGameRoom extends Room<GameState> {
     }
   }
 
-
   startNextRound(roundWinner: string) {
     try {
 
@@ -603,6 +639,7 @@ export class MpGameRoom extends Room<GameState> {
     }
   }
 
+  /* ───────────────────────────────────── DISCONNECTIONS AND VOLUNTARY LEAVES ──────────────────────────────────────────── */
   override async onLeave(client: Client, consented: boolean) {
     try {
       const player = this.state.players.get(client.sessionId);
@@ -697,5 +734,4 @@ export class MpGameRoom extends Room<GameState> {
       console.error("[onLeave]", e);
     }
   }
-
 }

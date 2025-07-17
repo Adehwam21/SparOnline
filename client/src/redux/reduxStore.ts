@@ -13,7 +13,7 @@ export const resetApp = createAction("app/reset");
 const persistConfig = {
     key: "root",
     storage,
-    whitelist: ["auth", "game"],
+    whitelist: ["auth"],
 };
 
 const appReducer = combineReducers({

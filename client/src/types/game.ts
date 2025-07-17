@@ -4,7 +4,10 @@ export interface Player {
   score: number;
   rating: number;
   hand: string[]; // Cards in hand (hidden from other players)
+  bids: string[]
   active: boolean; // Indicates if the player is active in the game
+  connected:boolean;
+  eliminated: boolean;
 }
 
 export interface PlayedCard {

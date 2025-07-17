@@ -3,7 +3,7 @@ import Header from "../components/Header";
 
 const LearnPage: React.FC = () => {
   return (
-    <div className=" min-h-screen flex flex-col p-6 bg-transparent text-white">
+    <div className="h-full flex flex-col p-6 bg-transparent text-white">
       <Header />
       
       <div className="max-w-3xl pt-15">
