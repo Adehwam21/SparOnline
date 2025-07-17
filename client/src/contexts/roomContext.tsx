@@ -76,7 +76,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         room.onMessage("start_turn_timer", ({ username, duration, deadline }) => {
             setTurnTimer({ username, duration, deadline });
         });
-        room.onMessage("chat_message", ({sender, content, time}) => {
+        room.onMessage("receive_chat_message", ({sender, content, time}) => {
             dispatch(updateChatRoom({sender, content, time}));
         });
 

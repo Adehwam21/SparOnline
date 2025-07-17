@@ -39,6 +39,8 @@ const GamePage: React.FC = () => {
 
     if (gameState?.roomInfo?.gameStatus === "complete") {
       setGameOver(true);
+    } else {
+      setGameOver(false);
     }
   }, [gameState]);
 
@@ -69,6 +71,7 @@ const GamePage: React.FC = () => {
 
       <Room
         players={Object.values(gameState.roomInfo?.players || {})}
+        deckCount={gameState.roomInfo?.deck?.length || 40}
         currentTurn={gameState.roomInfo?.currentTurn ?? ""}
         currentUser={currentUser}
         variant={variant!}

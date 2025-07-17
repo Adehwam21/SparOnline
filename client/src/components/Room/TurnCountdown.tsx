@@ -26,9 +26,9 @@ export const TurnCountdown: React.FC = () => {
   if (!turnTimer || secondsLeft === null) return null;
 
   return (
-    <div className="flex justify-center item-center gap-2 text-center text-white">
-      <span className="p-2 text-md font-bold">Turn: {turnTimer.username}</span>
-      <span className="p-2 text-md font-bold">⏳: {secondsLeft}s</span>
+    <div className="flex justify-center items-center text-center text-white">
+      <img className="h-6 w-6" src="/images/game-elements/stopwatch.png" alt="Game variant icon" />
+      <span className="p-2 text-md font-bold">{secondsLeft +1}s</span>
     </div>
   );
 };

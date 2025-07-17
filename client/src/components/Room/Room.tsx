@@ -5,6 +5,7 @@ import Chat from "./Chat";
 import { Player } from "../../types/game";
 
 interface RoomProps {
+  deckCount: number;
   players: Player[];
   currentTurn: string;
   currentUser: string;
@@ -15,6 +16,7 @@ interface RoomProps {
 }
 
 const Room: React.FC<RoomProps> = ({
+  deckCount,
   players,
   currentTurn,
   currentUser,
@@ -26,6 +28,8 @@ const Room: React.FC<RoomProps> = ({
   const [isMuted, setIsMuted] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const activeConnectedPlayers = players.filter((p) => p.active && p.connected && !p.eliminated)
+  const newDeckCount = deckCount - (activeConnectedPlayers.length*5)
 
   const handleToggleChat = () => {
     setShowChat((prev) => !prev);
@@ -42,7 +46,7 @@ const Room: React.FC<RoomProps> = ({
     <div className="relative flex flex-col items-center justify-evenly text-white gap-10">
       {/* Room HUD */}
       <RoomHUD
-        deckCount={20}
+        deckCount={newDeckCount}
         pot={100}
         maxPoints={maxPoints}
         variant={variant}
