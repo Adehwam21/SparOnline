@@ -14,6 +14,7 @@ export class GameState extends Schema {
     @type("number") public maxPlayers!: number;
     @type("number") public maxPoints!: number;
     @type("string") public creator!: string;
+    @type("string") public variant!: string;
     @type("string") public gameMode!: string;
     @type("string") public gameName!: string;
     @type([ "string" ]) public playerUsernames: ArraySchema<string> = new ArraySchema<string>();
