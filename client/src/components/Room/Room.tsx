@@ -31,6 +31,7 @@ const Room: React.FC<RoomProps> = ({
     setShowChat((prev) => !prev);
     setMenuOpen(false);
   };
+  console.log(variant)
 
   const handleMenuToggle = () => {
     setMenuOpen((prev) => !prev);
