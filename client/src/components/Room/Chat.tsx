@@ -68,6 +68,7 @@ const Chat: React.FC<ChatProps> = ({ currentUser, sendMessage, onClose }) => {
         ref={scrollRef}
         className="flex-1 overflow-y-auto bg-white p-4 rounded shadow-inner space-y-3"
       >
+        <p className="text-sm font-semibold text-center text-gray-500 mb-2">Please be nice.</p>
         {chatMessages.map((msg, index) => {
           const isCurrentUser = msg.sender === currentUser;
           return (
