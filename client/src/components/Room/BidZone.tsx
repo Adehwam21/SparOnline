@@ -18,7 +18,7 @@ const BidZone: React.FC<BidZoneProps> = ({ bidCards , score, isTurn}) => {
       <div
         ref={setNodeRef}
         className={`h-28 min-w-64 flex flex-row-reverse justify-between gap-4 rounded-md items-center text-center text-white border-1 border-gray-500 text-sm font-bold p-2 transition-colors ${
-          isOver || !isTurn ? "" : "border-yellow-500 transform-border"
+          isOver || !isTurn ? "" : "border-yellow-500 border-2 transform-border"
         }`}
       >
         <div className="flex flex-col justify-start text-center items-center font-bold md:justify-center md:items-center">

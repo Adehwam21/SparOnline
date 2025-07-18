@@ -52,7 +52,7 @@ const Opponent: React.FC<OpponentProps> = ({
         {bids.length > 0 ? (
           <CardPile bids={bids} />
         ) : (
-          <p className="text-white font-bold text-sm">No bids yet!</p>
+          <p className="text-gray-500 font-bold text-sm">No bids yet!</p>
         )}
       </div>
     </div>
