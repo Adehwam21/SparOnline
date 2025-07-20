@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import { UserModel, IUserModel } from './models/user.model';
 import { GameRoomModel, IGameRoomModel } from './models/game.model';
 import { Config } from './types/config';
+import { TransactionModel, ITransactionModel } from './models/transaction.model';
 
 
 
@@ -11,6 +12,7 @@ dotenv.config();
 export interface IDb {
     UserModel: IUserModel;
     GameRoomModel: IGameRoomModel;
+    TransactionModel: ITransactionModel;
     
 }
 
@@ -20,12 +22,14 @@ export default async function InitDB(config: Config["db"]): Promise<IDb> {
         console.log("Database connected");
 
         await UserModel.createCollection();
-        await GameRoomModel.createCollection()
+        await GameRoomModel.createCollection();
+        await TransactionModel.createCollection();
 
 
         return {
             UserModel,
-            GameRoomModel
+            GameRoomModel,
+            TransactionModel
         };
     } catch (e) {
         throw e;

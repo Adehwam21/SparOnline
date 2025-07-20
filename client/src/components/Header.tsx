@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSelector} from "react-redux";
-import { RootState } from "../redux/reduxStore";
+import { AppDispatch, RootState } from "../redux/reduxStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaBars, FaTimes } from "react-icons/fa";
 import UserHandle from "./User/UserHandle";
 import SettingsMenu from "./User/SettingsMenu";
+import { formatNumber } from "../utils/helpers";
+import { useDispatch } from "react-redux";
+import { fetchUserRelatedContent } from "../services/content";
+import { updateUserBalance } from "../redux/slices/contentSlice";
 
 const Header: React.FC = () => {
+  const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+  const balance = useSelector((state: RootState)=> state.content!.profile?.balance) || 0
   const [isVisible, setIsVisible] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -28,6 +34,16 @@ const Header: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const handleFetchUserWalletBalance = async () => {
+      const data = await fetchUserRelatedContent();
+      dispatch(updateUserBalance(data));
+    };
+
+    handleFetchUserWalletBalance();
+  }, [dispatch]);
+
+
   return (
     <motion.header
       initial={{ y: -100, opacity: 0 }}
@@ -36,7 +52,7 @@ const Header: React.FC = () => {
       className= "fixed top-0 left-0 w-full h-16 bg-green-900 text-white px-4 flex items-center justify-between shadow-md z-50 shadow-2xll"
     >
       {/* Left Section: Mobile Menu Button & Logo */}
-      <div className="flex items-center gap-4">
+      <div className="flex justify-center items-center text-center gap-10">
         {/* Mobile Menu Button */}
         <button
           className="md:hidden text-yellow-300 text-2xl"
@@ -49,19 +65,20 @@ const Header: React.FC = () => {
         <Link to="/" className="text-xl font-bold text-yellow-300">
           SparOnline
         </Link>
-      </div>
 
-      {/* Middle Section: Navigation (Hidden on mobile) */}
-      <nav className="hidden md:flex gap-6 text-lg">
-        <Link to="/" className="hover:text-yellow-300 transition">Play</Link>
-        <Link to="/learn" className="hover:text-yellow-300 transition">Learn</Link>
-        <Link to="/watch" className="hover:text-yellow-300 transition">Leaderboard</Link>
-      </nav>
+        {/* Middle Section: Navigation (Hidden on mobile) */}
+        <nav className="hidden md:flex gap-6 text-lg">
+          <Link to="/" className="hover:text-yellow-300 transition">Play</Link>
+          <Link to="/learn" className="hover:text-yellow-300 transition">Learn</Link>
+          <Link to="/watch" className="hover:text-yellow-300 transition">Leaderboard</Link>
+          <Link to="/watch" className="hover:text-yellow-300 transition">Store</Link>
+        </nav>
+      </div>
 
       {/* Right Section: User Profile (Hidden on mobile) */}
       <div className="flex md:flex items-center justify-center gap-2">
         {user && typeof user === "object" && Object.keys(user).length > 0 ? (
-          <UserHandle user={user} />
+          <UserHandle user={user} coins={formatNumber(balance)} />
         ) : (
           <Link
             to="/sign-in"
@@ -92,6 +109,9 @@ const Header: React.FC = () => {
             </Link>
             <Link to="/watch" className="hover:text-yellow-400 transition" onClick={() => setIsMobileMenuOpen(false)}>
               Leaderboard
+            </Link>
+            <Link to="/watch" className="hover:text-yellow-400 transition" onClick={() => setIsMobileMenuOpen(false)}>
+              Store
             </Link>
           </motion.div>
         )}
