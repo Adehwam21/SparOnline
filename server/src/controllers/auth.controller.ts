@@ -30,6 +30,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
             username,
             email,
             password: hashedPassword,
+            balance: 250
         });
 
         res.status(201).json({ message: 'User registered successfully' });
@@ -72,9 +73,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
                 userID: user!.userID,
                 username: user!.username,
                 email: user!.email, 
-                role: user!.role
+                role: user!.role,
+                balance: user!.balance
             },
-            config.auth!.secret!, 
+            config.auth!.secret!,
             { expiresIn: '7d'} 
         );
 
@@ -85,28 +87,10 @@ export const login = async (req: Request, res: Response): Promise<void> => {
                 userID: user!.userID,
                 email: user!.email,
                 username: user!.username,
-                role: user!.role
+                role: user!.role,
+                balance: user!.balance
             },
             message: 'Logged in successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Internal server error' });
-        return;
-    }
-};
-
-// Get User Profile
-export const getUserProfile = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const user = req.user;
-
-        const _user = await req.context!.services!.user!.getOne({ username: user!.username });
-        if (!_user) {
-            res.status(404).json({ message: 'User not found' });
-            return;
-        }
-
-        res.status(200).json({ user: _user });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Internal server error' });

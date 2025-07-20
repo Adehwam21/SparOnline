@@ -4,7 +4,8 @@ export interface IRegisterUserInput {
   username: string;
   email: string;
   password: string;
-  role?: string | undefined; 
+  role?: string | undefined;
+  balance?: number | undefined;
 }
 
 export interface _User {
@@ -13,6 +14,8 @@ export interface _User {
   email: string;
   username: string;
   role: string;
+  balance: number;
+  
 }
 
 export interface IUser {
@@ -21,6 +24,7 @@ export interface IUser {
   email: string;
   password: string;
   role: string;
+  balance: number;
 }
 
 export interface IGuest {

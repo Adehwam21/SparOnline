@@ -30,7 +30,7 @@ const rootReducer = (state: any, action: any) => {
         state = undefined;
     }
 
-    return appReducer(state, action)
+    return appReducer(state, action);
 }
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
