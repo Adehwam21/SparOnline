@@ -17,3 +17,19 @@ export const fetchUserRelatedContent = async () => {
         console.error("Error fetching app content: ", error)
     }
 }
+
+export const fetchUserProfile = async () => {
+    try {
+        const response = await axiosInstance.get('/user/profile');
+
+        if(response.status !== 200){
+            toast.error('Failed to fetch user profile', errorToastOptions);
+            throw new Error('Failed to fetch profile')
+        }
+        const data = response.data;
+        toast.success(data!.message, successToastOptions)
+        return data;
+    } catch (error) {
+        console.error("Error fetching user profile: ", error)
+    }
+}

@@ -39,6 +39,12 @@ const authSlice = createSlice({
         state.user.username = action.payload.username;
       }
     },
+    updateBalance(state, action: PayloadAction<{ balance: number}>) {
+      if (state.user) {
+        state.user.balance = action.payload.balance;
+      }
+    },
+    
     loginFailure(state, action: PayloadAction<string>) {
       state.loading = false;
       state.successMessage = null;

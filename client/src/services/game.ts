@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import toast from "react-hot-toast";
 import axiosInstance from "../config/axiosConfig";
 import { errorToastOptions, successToastOptions } from "../types";

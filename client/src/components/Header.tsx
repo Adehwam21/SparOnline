@@ -1,20 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useSelector} from "react-redux";
-import { AppDispatch, RootState } from "../redux/reduxStore";
+import { RootState } from "../redux/reduxStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaBars, FaTimes } from "react-icons/fa";
 import UserHandle from "./User/UserHandle";
 import SettingsMenu from "./User/SettingsMenu";
 import { formatNumber } from "../utils/helpers";
-import { useDispatch } from "react-redux";
-import { fetchUserRelatedContent } from "../services/content";
-import { updateUserBalance } from "../redux/slices/contentSlice";
 
 const Header: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
-  const balance = useSelector((state: RootState)=> state.content!.profile?.balance) || 0
   const [isVisible, setIsVisible] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -33,16 +28,6 @@ const Header: React.FC = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  useEffect(() => {
-    const handleFetchUserWalletBalance = async () => {
-      const data = await fetchUserRelatedContent();
-      dispatch(updateUserBalance(data));
-    };
-
-    handleFetchUserWalletBalance();
-  }, [dispatch]);
-
 
   return (
     <motion.header
@@ -78,7 +63,7 @@ const Header: React.FC = () => {
       {/* Right Section: User Profile (Hidden on mobile) */}
       <div className="flex md:flex items-center justify-center gap-2">
         {user && typeof user === "object" && Object.keys(user).length > 0 ? (
-          <UserHandle user={user} coins={formatNumber(balance)} />
+          <UserHandle user={user} coins={formatNumber(user.balance!)} />
         ) : (
           <Link
             to="/sign-in"

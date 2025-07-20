@@ -40,8 +40,10 @@ const Login: React.FC<LoginSignUpProps> = () => {
       if (res.status !== 200){
         toast.error(res.data.message, errorToastOptions)
       }
+      console.log(res.data)
+      localStorage.setItem("token", res.data!.token);
 
-      toast.success(res.data.message, successToastOptions)
+      toast.success(res.data.message, successToastOptions);
       dispatch(loginSuccess({ token: res.data!.token, user: res.data!.user}));
       navigate("/")
 

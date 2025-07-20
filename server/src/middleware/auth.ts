@@ -29,7 +29,7 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
 
     const token = authHeader!.split(' ')[1];
 
-    jwt.verify(token, config.auth.secret, (err, decoded) => {
+    jwt.verify(token, config.auth!.secret!, (err, decoded) => {
         if (err) {
             res.status(403).json({ status: false, message: 'Forbidden - Invalid Token' });
             return

@@ -1,7 +1,12 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface UserProfile {
-  balance: number
+  _id: string; 
+  userID: string; 
+  username: string; 
+  email: string; 
+  role: string;
+  balance: number;
 }
 
 export interface ContentState {
@@ -16,7 +21,6 @@ const contentSlice = createSlice({
   name: "content",
   initialState,
   reducers: {
-
     setContent : (state, action: PayloadAction<ContentState>) => {
       state.profile = action.payload.profile
     },
