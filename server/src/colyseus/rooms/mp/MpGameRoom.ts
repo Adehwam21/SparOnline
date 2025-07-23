@@ -25,6 +25,10 @@ import { IBids } from "../../../types/game";
 import { SurvivalModeStrategy } from "../strategy/SurvivalModeStrategy";
 import { RaceModeStrategy } from "../strategy/RaceModeStrategy";
 import { IGameModeStrategy } from "../strategy/IGameModeStrategy";
+import RoomMaster from "../services/RoomMaster";
+import TransactionService from "../../../services/transaction.service";
+import { appContext } from "../../../start";
+import GameService from "../../../services/game.service";
 
 /* ───────────────────────────────────────────────── MULTIPLAYER ROOM ─────────────────────────────────────────────────── 
 *
@@ -36,21 +40,22 @@ import { IGameModeStrategy } from "../strategy/IGameModeStrategy";
 */
 
 export class MpGameRoom extends Room<GameState> {
-  DECK = secureShuffleDeck(createDeck(), 10);
   MAX_CLIENTS = 4;
   MAX_MOVES = 5;
   PENALTY = -3;
+  MIN_POINTS = -9;
+  DISPOSE_AFTER = 5000;
   BASE_POINT!: number;
-  MIN_POINTS = -9
   STRATEGY!: IGameModeStrategy;
+  ROOM_MASTER!: RoomMaster;
   USER_TO_SESSION_MAP = new Map<string, string>();
-  SECONDS_UNTIL_DISPOSE = 5000;
   VIOLATORS = new Set<string>();
   ELIMINATED_PLAYERS = new Set<string>();
   ACTIVE_PLAYERS = new ArraySchema<Player>();
   TURN_TIMER: Delayed | null = null;
+  DECK = secureShuffleDeck(createDeck(), 10);
 
-  /* ───────────────────────────────────────────────── UTILITY FUNCTIONS ─────────────────────────────────────────────────── */
+  /* ──────────────────────────────────────────────────────────────────── UTILITY FUNCTIONS ─────────────────────────────────────────────────────────────────── */
 
   private dealCards(deck: string[]) {
     const legalPlayers = Array.from(this.state.players.values()).filter(p => p.active && !p.eliminated);
@@ -214,9 +219,13 @@ export class MpGameRoom extends Room<GameState> {
   override onCreate(
     options: {roomId: string, coluserusRoomId: string; maxPlayers: number; maxPoints: number; creator: string, variant: string },
   ) {
+    const transactionService = new TransactionService(appContext);
+    const gameService = new GameService(appContext);
+
     this.state = new GameState();
     this.state.variant = options.variant ?? "race";
     this.STRATEGY = this.state.variant === "survival" ? new SurvivalModeStrategy() : new RaceModeStrategy();
+    this.ROOM_MASTER = new RoomMaster(transactionService, gameService);
     this.BASE_POINT = this.state.variant === "survival" ? options.maxPoints : 0;
     this.MIN_POINTS = this.state.variant === "survival" ? 0 : -9
     this.state.deck = new ArraySchema(...this.DECK);
@@ -239,7 +248,7 @@ export class MpGameRoom extends Room<GameState> {
   * Starts game automatically when the room is full.
   */
 
-  override onJoin(client: Client, { playerUsername }: { playerUsername: string }) {
+  override onJoin(client: Client, { userId, playerUsername }: { userId: string, playerUsername: string }) {
     try {
       // Validate username
       if (!playerUsername || typeof playerUsername !== "string" || playerUsername.trim().length === 0) {
@@ -302,6 +311,7 @@ export class MpGameRoom extends Room<GameState> {
 
       // New player logic
       const newPlayer = new Player();
+      newPlayer._id = userId;
       newPlayer.id = client.sessionId;
       newPlayer.username = playerUsername;
       newPlayer.connected = true;
@@ -331,7 +341,6 @@ export class MpGameRoom extends Room<GameState> {
   }
 
   /* ───────────────────────────────────────────────── GAME FLOW ─────────────────────────────────────────────────── */
-
   startGame() {
     try {
       this.state.gameStatus = "started";
@@ -667,7 +676,7 @@ export class MpGameRoom extends Room<GameState> {
       // Dispose the room after 10 seconds
       this.clock.setTimeout(() => {
         this.disconnect(4000)
-      }, (this.SECONDS_UNTIL_DISPOSE))
+      }, (this.DISPOSE_AFTER))
 
     } catch (e) {
       console.error("[endGame]", e);

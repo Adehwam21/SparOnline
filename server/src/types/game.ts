@@ -16,6 +16,7 @@ export interface IGameRoom {
     players: string[]; // List of players in the game
     roomType?: string,
     entryFee?: boolean,
+    bettingEnabled?: boolean;
     gameState?: any; // Store snapshot of game state
     createdAt: Date;
 }
@@ -31,6 +32,7 @@ export interface ICreateGameInput {
     creator: string; // Store player id
     roomType?: string;
     entryFee?: number;
+    bettingEnabled?: boolean;
     gameState: any
     
 }

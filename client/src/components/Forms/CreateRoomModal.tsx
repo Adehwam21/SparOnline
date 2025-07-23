@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BaseModal from "./BaseModal";
 import FormField from "./FormField";
@@ -22,6 +22,13 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
   const [maxPoints, setMaxPoints] = useState(5);
   const [variant, setGameVariant] = useState("race");
   const [entryFee, setEntryFee] = useState(0);
+  const [bettingEnabled, setBettingEnabled] = useState(false);
+
+  useEffect(() => {
+    if (entryFee > 0){
+      setBettingEnabled(true);
+    }
+  }, [entryFee, setEntryFee])
 
 
   const handleCreateRoom = async (e: React.FormEvent) => {
@@ -34,7 +41,8 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
         maxPlayers: String(maxPlayers),
         maxPoints: String(maxPoints),
         variant,
-        creator
+        creator,
+        bettingEnabled,
       });
   
       if (!data?.colyseusRoomId) throw new Error("Room creation failed");
@@ -100,9 +108,9 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
             className="w-full p-2 border border-gray-300 rounded"
           >
             <option value={0}>Free</option>
-            {/* <option value={100}>100</option>
+            <option value={100}>100</option>
             <option value={500}>500</option>
-            <option value={1000}>1k</option> */}
+            <option value={10000}>10k</option>
           </select>
         </FormField>
 
@@ -110,7 +118,9 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
         <FormField label="Number of Players" tooltipText="Choose how many players can join this room.">
           <select
             value={maxPlayers}
-            onChange={(e) => setMaxPlayers(Number(e.target.value))}
+            onChange={(e, ) => setMaxPlayers(
+              Number(e.target.value)
+            )}
             className="w-full p-2 border border-gray-300 rounded"
           >
             <option value={2}>2 Players</option>

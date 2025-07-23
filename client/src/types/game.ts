@@ -1,4 +1,5 @@
 export interface Player {
+  _id: string; // Uniques db identifier
   id: string; // Unique identifier for the player (session ID)
   username: string;
   score: number;

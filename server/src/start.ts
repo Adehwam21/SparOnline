@@ -15,11 +15,13 @@ import routes from "./routes/rotues";
 import { createGameServer } from "./colyseus/gameServer";
 import { playground } from "@colyseus/playground";
 
+// Global AppContext for game rooms.
+export const appContext: IAppContext =  {};
+
 
 export default async function start(config: Config) {
   try {
     // initialize server and services
-    const appContext: IAppContext = {};
     appContext.db = await InitDB(config.db);
     appContext.services = await initServices(appContext);
     const app = express();

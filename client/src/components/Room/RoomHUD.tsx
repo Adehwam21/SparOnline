@@ -69,7 +69,7 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
           className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded shadow"
         >
           <FiMessageSquare size={16} />
-          {/* <span className="text-sm">Chat</span> */}
+          <span className="text-sm">Chat</span>
         </button>
 
         <button

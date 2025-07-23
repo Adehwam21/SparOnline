@@ -11,24 +11,24 @@ import toast from 'react-hot-toast';
 import { successToastOptions } from '../types';
 
 interface TurnTimerType {
-  username: string;
-  duration: number;
-  deadline: number;
+    username: string;
+    duration: number;
+    deadline: number;
 }
 
 
 interface RoomContextType {
-  isConnecting: boolean;
-  isConnected: boolean;
-  room: Room<GameState> | null;
-  join: (roomId: string, playerUsername: string) => Promise<void>;
-  startGame: () => Promise<void>;
-  playCard: (cardName: string) => Promise<void>;
-  consentedLeave: (currentUser: string) => Promise<void>;
-  sendMessagesInChat: (sender: string, message: string, time: string) => Promise<void>;
-  joinError: boolean;
-  state: GameState | null;
-  turnTimer: TurnTimerType | null;
+    isConnecting: boolean;
+    isConnected: boolean;
+    room: Room<GameState> | null;
+    join: (roomId: string, userId: string, playerUsername: string) => Promise<void>;
+    startGame: () => Promise<void>;
+    playCard: (cardName: string) => Promise<void>;
+    consentedLeave: (currentUser: string) => Promise<void>;
+    sendMessagesInChat: (sender: string, message: string, time: string) => Promise<void>;
+    joinError: boolean;
+    state: GameState | null;
+    turnTimer: TurnTimerType | null;
 }
 
 
@@ -85,13 +85,13 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         };
         }, [room, isConnected, dispatch]);
 
-        const join = async (roomId: string, playerUsername: string) => {
+        const join = async (roomId: string, userId: string, playerUsername: string) => {
             if (hasActiveJoinRequest) return;
             hasActiveJoinRequest = true;
             setIsConnecting(true);
 
         try {
-        const joinedRoom = await client.joinById<GameState>(roomId, { playerUsername });
+        const joinedRoom = await client.joinById<GameState>(roomId, {userId, playerUsername });
 
         setRoom(joinedRoom);
         setIsConnected(true);

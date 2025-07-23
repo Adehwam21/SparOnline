@@ -6,7 +6,7 @@ import { matchMaker } from 'colyseus';
 
 export const createGameRoom = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { roomName, maxPlayers, maxPoints, variant, roomType, creator } = req.body;
+        const { roomName, maxPlayers, maxPoints, variant, roomType, creator, entryFee, bettingEnabled} = req.body;
 
         const { error } = createGameInput.validate(req.body);
         if (error) {
@@ -23,6 +23,8 @@ export const createGameRoom = async (req: Request, res: Response): Promise<void>
             creator,
             players: [creator],
             playerUsername: creator,
+            entryFee, 
+            bettingEnabled,
         });
 
         if (!colyseusRoom) {
