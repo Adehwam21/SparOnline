@@ -1,6 +1,5 @@
 import { Room, Client, Delayed } from "colyseus";
 import { ArraySchema, MapSchema } from "@colyseus/schema";
-import { Encoder } from "@colyseus/schema";
 
 import {
   GameState,
@@ -29,6 +28,7 @@ import RoomMaster from "../services/RoomMaster";
 import TransactionService from "../../../services/transaction.service";
 import { appContext } from "../../../start";
 import GameService from "../../../services/game.service";
+import { options } from "joi";
 
 /* ───────────────────────────────────────────────── MULTIPLAYER ROOM ─────────────────────────────────────────────────── 
 *
@@ -215,14 +215,31 @@ export class MpGameRoom extends Room<GameState> {
     this.broadcast("receive_chat_message", message); // inform all clients
   }
 
-  /* ───────────────────────────────────────────────── ROOM CREATION ─────────────────────────────────────────────────── */
+  private async deductEntryFee():Promise<{ status: boolean; message: string }> 
+  {
+    const players = Array.from(this.state.players.values());
+    const entryFee = this.state.entryFee;
+    const roomId = this.state.roomId
+    const metadata = {roomId};
+
+    const result = await this.ROOM_MASTER.deductEntryFee(players, entryFee, roomId, metadata);
+    return result;
+  }
+
+  /* ────────────────────────────────────────────────────────────────────── ROOM CREATION ────────────────────────────────────────────────────────────────────────── */
   override onCreate(
-    options: {roomId: string, coluserusRoomId: string; maxPlayers: number; maxPoints: number; creator: string, variant: string },
+    options: {
+      roomId: string, coluserusRoomId: string; maxPlayers: number; maxPoints: number; 
+      creator: string, variant: string, entryFee: number, bettingEnabled: boolean },
   ) {
     const transactionService = new TransactionService(appContext);
     const gameService = new GameService(appContext);
 
     this.state = new GameState();
+    this.state.roomId = options.roomId;
+    this.state.entryFee = options.entryFee;
+    this.state.prizePool = options.entryFee * options.maxPlayers;
+    this.state.bettingEnabled = options.bettingEnabled;
     this.state.variant = options.variant ?? "race";
     this.STRATEGY = this.state.variant === "survival" ? new SurvivalModeStrategy() : new RaceModeStrategy();
     this.ROOM_MASTER = new RoomMaster(transactionService, gameService);
@@ -244,7 +261,7 @@ export class MpGameRoom extends Room<GameState> {
     this.onMessage("leave_room", this.onLeave);
   }
 
-  /* ───────────────────────────────────────────────── JOINING ROOM ─────────────────────────────────────────────────── 
+  /* ────────────────────────────────────────────────────────────────────── JOINING ROOM ─────────────────────────────────────────────────────────────────────────── 
   * Starts game automatically when the room is full.
   */
 
@@ -311,13 +328,15 @@ export class MpGameRoom extends Room<GameState> {
 
       // New player logic
       const newPlayer = new Player();
-      newPlayer._id = userId;
+      newPlayer.mongoId = userId;
       newPlayer.id = client.sessionId;
       newPlayer.username = playerUsername;
       newPlayer.connected = true;
       newPlayer.active = true;
       newPlayer.eliminated = false;
       newPlayer.score = this.BASE_POINT;
+
+      console.log("Joined player",newPlayer.mongoId, newPlayer.username)
 
       this.state.players.set(client.sessionId, newPlayer);
       this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
@@ -340,11 +359,19 @@ export class MpGameRoom extends Room<GameState> {
     }
   }
 
-  /* ───────────────────────────────────────────────── GAME FLOW ─────────────────────────────────────────────────── */
-  startGame() {
+  /* ───────────────────────────────────────────────────────────────────────── GAME FLOW ─────────────────────────────────────────────────────────────────────────── */
+  async startGame() {
     try {
+      // Deduct from player wallets if betting is enabled
+      if (this.state.bettingEnabled){
+        const {status, message} = await this.deductEntryFee();
+        if(status === false){
+          this.broadcast('notification', {message})
+          return;
+        }
+      }
+
       this.state.gameStatus = "started";
-      
       const firstPlayerIndex = this.getNextActivePlayerIndexFromStart(); // "" → start from 0
       if (firstPlayerIndex === -1) {
         console.warn("[startGame] No eligible player to start");
@@ -590,8 +617,6 @@ export class MpGameRoom extends Room<GameState> {
 
       if (this.state.moveNumber < this.MAX_MOVES) {
         this.assignNextMoveStarter(moveWinner);
-
-        // ✅ ADD THIS BLOCK
         const currentPlayer = [...this.state.players.values()]
           .find(p => p.username === this.state.currentTurn);
 
@@ -602,13 +627,10 @@ export class MpGameRoom extends Room<GameState> {
             this.autoPlayForPlayer(currentPlayer);
           }
         }
-        // ✅ END BLOCK
-
       } else {
         round.roundWinner = moveWinner;
         this.STRATEGY.awardPoints(round, this.state.players);
         round.roundStatus = "complete";
-
         if (this.checkGameOver()) {
           this.endGame();
           return;
@@ -627,14 +649,12 @@ export class MpGameRoom extends Room<GameState> {
 
   startNextRound(roundWinner: string) {
     try {
-
       const nextIndex = this.getNextActivePlayerIndex(roundWinner);
       if (nextIndex === -1) {
         this.endGame();
         return;
       }
       this.state.nextPlayerIndex = nextIndex;
-
       this.startRound();
     } catch (e) {
       console.error("[startNextRound]", e);
@@ -683,7 +703,7 @@ export class MpGameRoom extends Room<GameState> {
     }
   }
 
-  /* ───────────────────────────────────── DISCONNECTIONS AND VOLUNTARY LEAVES ──────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────── DISCONNECTIONS AND VOLUNTARY LEAVES ──────────────────────────────────────────────────────── */
   override async onLeave(client: Client, consented: boolean) {
     try {
       const player = this.state.players.get(client.sessionId);
