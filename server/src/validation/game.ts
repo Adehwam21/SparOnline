@@ -8,7 +8,7 @@ export const createGameInput = Joi.object<ICreateGameInput>({
     maxPoints: Joi.string().required(), // Maximum points to win the game
     variant: Joi.string().required(), // Type of game (e.g., "classic", "custom")
     creator: Joi.string(), // Store player data
-    entryFee: Joi.string().optional(),
+    entryFee: Joi.number().optional(),
     bettingEnabled: Joi.boolean().optional(),
     roomType: Joi.string(),
     gameState: Joi.object(), // Store snapshot of game state
