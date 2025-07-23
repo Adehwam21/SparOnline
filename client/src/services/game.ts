@@ -10,6 +10,7 @@ type multiplayerConfig = {
     maxPoints: string
     roomType?: string;
     entryFee?: number;
+    bettingEnabled?: boolean;
 }
 
 export const createMultiplayerRoom = async (config: multiplayerConfig) => {

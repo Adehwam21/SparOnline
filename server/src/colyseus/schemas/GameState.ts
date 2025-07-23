@@ -28,6 +28,7 @@ export class Round extends Schema {
 
 // Player stores individual player data
 export class Player extends Schema {
+  @type("string") _id: string = "";
   @type("string") id: string = ""; 
   @type("string") username: string = "";
   @type(["string"]) hand = new ArraySchema<string>(); // Fixed

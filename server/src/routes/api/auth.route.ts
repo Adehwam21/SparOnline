@@ -10,7 +10,7 @@ authRouter.route("/register")
 authRouter.route("/login")
     .post(login);
 
-authRouter.route("/guest")
-    .post(login)
+// authRouter.route("/guest")
+//     .post(login)
 
 
