@@ -44,7 +44,6 @@ export const RoomContext = createContext<RoomContextType>({
     turnTimer: null,
     joinError: false,
     state: null,
-
 });
 
 export const useRoom = () => useContext(RoomContext);
@@ -85,25 +84,25 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         };
         }, [room, isConnected, dispatch]);
 
-        const join = async (roomId: string, userId: string, playerUsername: string) => {
-            if (hasActiveJoinRequest) return;
-            hasActiveJoinRequest = true;
-            setIsConnecting(true);
+    const join = async (roomId: string, userId: string, playerUsername: string) => {
+        if (hasActiveJoinRequest) return;
+        hasActiveJoinRequest = true;
+        setIsConnecting(true);
 
         try {
-        const joinedRoom = await client.joinById<GameState>(roomId, {userId, playerUsername });
+            const joinedRoom = await client.joinById<GameState>(roomId, {userId, playerUsername });
 
-        setRoom(joinedRoom);
-        setIsConnected(true);
+            setRoom(joinedRoom);
+            setIsConnected(true);
 
-        // For reconnection
-        localStorage.setItem(
-            'reconnection',
-            JSON.stringify({
-            token: joinedRoom.reconnectionToken,
-            roomId: joinedRoom.roomId,
-            })
-        );
+            // For reconnection
+            localStorage.setItem(
+                'reconnection',
+                JSON.stringify({
+                token: joinedRoom.reconnectionToken,
+                roomId: joinedRoom.roomId,
+                })
+            );
         } catch (e) {
         console.error('Join room failed:', e);
         setJoinError(true);
@@ -157,21 +156,21 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
 
     return (
         <RoomContext.Provider
-        value={{
-            isConnecting,
-            isConnected,
-            room,
-            join,
-            startGame,
-            playCard,
-            consentedLeave,
-            sendMessagesInChat,
-            joinError,
-            state,
-            turnTimer
-        }}
+            value={{
+                isConnecting,
+                isConnected,
+                room,
+                join,
+                startGame,
+                playCard,
+                consentedLeave,
+                sendMessagesInChat,
+                joinError,
+                state,
+                turnTimer
+            }}
         >
-        {children}
+            {children}
         </RoomContext.Provider>
     );
 }

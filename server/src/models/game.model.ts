@@ -19,7 +19,7 @@ const GameRoomSchema = new Schema<IGameRoomDocument>(
     maxPlayers: { type: String, required: true }, // Maximum number of players allowed in the room
     maxPoints: { type: String, required: true }, // Maximum points to win the game
     gameState: { type: Object, required: false },
-    entryFee: {type: Number, required: false, default: 0},
+    entryFee: {type: Number, required: false},
     createdAt: { type: Date, default: Date.now()}
   },
   { timestamps: true }

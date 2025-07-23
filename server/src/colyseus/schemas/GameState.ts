@@ -28,7 +28,7 @@ export class Round extends Schema {
 
 // Player stores individual player data
 export class Player extends Schema {
-  @type("string") _id: string = "";
+  @type("string") mongoId: string = "";
   @type("string") id: string = ""; 
   @type("string") username: string = "";
   @type(["string"]) hand = new ArraySchema<string>(); // Fixed
@@ -62,6 +62,8 @@ export class GameState extends Schema {
   @type("string") creator: string = ""; // Creator of the room
   @type("string") roomName: string = ""; // Name of the game
   @type("string") roomType: string = ""; // Type of room (e.g. multiplayer, singleplayer)
+  @type("boolean") bettingEnabled: boolean = false;
+  @type("number") entryFee: number = 0;
   @type("number") prizePool: number = 0;
   @type("string") variant: string = ""; // Variant (e.g. Race, Survival)
   @type("number") eliminationCount: number = -1;

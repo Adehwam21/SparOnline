@@ -14,6 +14,7 @@ const GamePage: React.FC = () => {
   const navigate = useNavigate();
 
   const gameState = useSelector((state: RootState) => state.game);
+  const userId = useSelector((state: RootState) => state.auth!.user!._id)
   const currentUser = useSelector((state: RootState) => state.auth!.user!.username);
   const variant = gameState?.roomInfo?.variant
   const [isWaitingScreenOpen, setIsWaitingScreenOpen] = useState(true);
@@ -23,9 +24,9 @@ const GamePage: React.FC = () => {
 
   useEffect(() => {
     if (!isConnected && !isConnecting && roomId) {
-      join(roomId, currentUser);
+      join(roomId, userId,  currentUser);
     }
-  }, [roomId, isConnected, isConnecting, dispatch, join, currentUser]);
+  }, [roomId, isConnected, isConnecting, dispatch, join, userId, currentUser]);
 
 
   useEffect(() => {
@@ -72,6 +73,7 @@ const GamePage: React.FC = () => {
       <Room
         players={Object.values(gameState.roomInfo?.players || {})}
         deckCount={gameState.roomInfo?.deck?.length || 40}
+        prizePool={gameState.roomInfo?.prizePool || 0}
         currentTurn={gameState.roomInfo?.currentTurn ?? ""}
         currentUser={currentUser}
         variant={variant!}

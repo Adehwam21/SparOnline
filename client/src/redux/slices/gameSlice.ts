@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface Player {
+  mongoId: string;
   id: string; // Unique identifier for the player (session ID)
   userId: string;
   username: string;
@@ -32,7 +33,7 @@ export interface GameState {
     gameName: string | null;
     playerUsernames: string[] | null;
     variant: string | null; // Type of game (e.g., "race", "custom")
-    pricePool: boolean | null;
+    prizePool: number| null;
     entryFee: number | null;
     roomType: number | null;
     deck: string[] | null
@@ -58,7 +59,7 @@ const initialState: GameState = {
     colyseusRoomId: null,
     gameName: null,
     maxPlayers: null,
-    pricePool: null,
+    prizePool: null,
     deck: null,
     bids: [],
     variant: null,
