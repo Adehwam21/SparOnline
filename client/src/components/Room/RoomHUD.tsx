@@ -7,6 +7,7 @@ import {
   FiFlag,
   FiLogOut,
 } from "react-icons/fi";
+import { formatNumber } from "../../utils/helpers";
 
 interface RoomHUDProps {
   deckCount: number;
@@ -24,7 +25,7 @@ interface RoomHUDProps {
 
 const RoomHUD: React.FC<RoomHUDProps> = ({
   deckCount,
-  // pot,
+  pot,
   maxPoints,
   variant,
   onToggleChat,
@@ -45,10 +46,10 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
           <img className="h-6 w-6" src="/images/game-elements/deck-of-card.png" alt="Deck icon" />
           {deckCount}
         </div>
-        {/* <div className="flex justify-center items-center text-center text-lg gap-2">
+        <div className="flex justify-center items-center text-center text-lg gap-2">
           <img className="h-6 w-6" src="/images/game-elements/money-bag.png" alt="Money bag" />
-          {pot}
-        </div> */}
+          {formatNumber(pot)}
+        </div>
         <div className="flex justify-center items-center text-center gap-2 text-yellow-400">
           <img className="h-6 w-6" src={imageUrl} alt="Game variant icon" />
           <span className="font-bold text-md text-white">{maxPoints}</span>

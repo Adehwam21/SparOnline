@@ -42,6 +42,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
         maxPoints: String(maxPoints),
         variant,
         creator,
+        entryFee,
         bettingEnabled,
       });
   
@@ -110,7 +111,10 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
             <option value={0}>Free</option>
             <option value={100}>100</option>
             <option value={500}>500</option>
+            <option value={1000}>1k</option>
+            <option value={5000}>5k</option>
             <option value={10000}>10k</option>
+            <option value={1000000}>1M</option>
           </select>
         </FormField>
 

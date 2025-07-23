@@ -40,6 +40,8 @@ export const createGameRoom = async (req: Request, res: Response): Promise<void>
             roomName,
             maxPlayers,
             maxPoints,
+            entryFee,
+            bettingEnabled,
             variant,
             creator,
             players: [creator],

@@ -5,8 +5,6 @@ import { _User } from '../types/user';
 export const getUserProfile = async (req: Request, res: Response): Promise<void> => {
     try {
         const user = req.user;
-        console.log(user)
-
         if (!user._id){
           res.status(401).json({message: "Unauthorized"})
           return;

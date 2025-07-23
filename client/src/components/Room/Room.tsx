@@ -6,6 +6,7 @@ import { Player } from "../../types/game";
 
 interface RoomProps {
   deckCount: number;
+  prizePool: number;
   players: Player[];
   currentTurn: string;
   currentUser: string;
@@ -17,6 +18,7 @@ interface RoomProps {
 
 const Room: React.FC<RoomProps> = ({
   deckCount,
+  prizePool, 
   players,
   currentTurn,
   currentUser,
@@ -47,7 +49,7 @@ const Room: React.FC<RoomProps> = ({
       {/* Room HUD */}
       <RoomHUD
         deckCount={newDeckCount}
-        pot={100}
+        pot={prizePool}
         maxPoints={maxPoints}
         variant={variant}
         isMuted={isMuted}

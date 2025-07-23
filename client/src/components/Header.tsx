@@ -7,11 +7,18 @@ import { FaBars, FaTimes } from "react-icons/fa";
 import UserHandle from "./User/UserHandle";
 import SettingsMenu from "./User/SettingsMenu";
 import { formatNumber } from "../utils/helpers";
+import { fetchUpdatedUserBalance } from "../services/auth";
 
 const Header: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const [isVisible, setIsVisible] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(()=>{
+    if (user){
+      fetchUpdatedUserBalance();
+    }
+  }, [user])
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
