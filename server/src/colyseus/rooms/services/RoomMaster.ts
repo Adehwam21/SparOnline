@@ -1,7 +1,7 @@
 import GameService from "../../../services/game.service";
 import TransactionService from "../../../services/transaction.service";
-import { IGameRoom } from "../../../types/game";
-import { Player } from "../../schemas/GameState";
+import { IGameRoom, Payout } from "../../../types/game";
+import { Payouts, Player } from "../../schemas/GameState";
 
 
 export default class RoomMaster {
@@ -40,6 +40,14 @@ export default class RoomMaster {
     metadata?: Record<string, any>
   ): Promise<{ status: boolean; message: string }> {
     return await this.transactionService.deductEntryFee(players, entryFee, roomId, metadata)
+  }
+
+  async distributePrizePool(
+    payouts: Payouts[],
+    roomId: string,
+    metadata?: Record<string, any>
+  ):Promise<{status:boolean, message:string}>{
+    return await this.transactionService.distributePrizePool(roomId, payouts, metadata)
   }
 
   async updateWithFinalGameState (

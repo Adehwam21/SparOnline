@@ -1,4 +1,3 @@
-import { Types } from 'mongoose';
 export interface Player {
     username: string; // Player's username 
     score: number; // Player's score
@@ -51,4 +50,14 @@ export interface IWinningCard {
     point: number;
     playerName: string;
     bidIndex: number;
+}
+
+export interface PlayerHand {
+    playerName: string;
+    hand: string[];
+}
+
+export interface Payout {
+    userId: string;
+    amount: number;
 }

@@ -1,5 +1,7 @@
 import { Player } from "../colyseus/schemas/GameState";
+import { calculatePrizeDistribution } from "../colyseus/utils/roomUtils";
 import { IAppContext, IService } from "../types/app";
+import { Payout } from "../types/game";
 
 export default class TransactionService extends IService{
   constructor(props: IAppContext){
@@ -117,13 +119,60 @@ export default class TransactionService extends IService{
     }
   }
 
-  async distributePricePool(){
+  async distributePrizePool(
+    roomId: string,
+    payouts: Payout[],
+    metadata?: Record<string, any>
+  ) {
     const session = await this.db.connection.startSession();
+
     try {
-      session.startTransaction()
-      
+      session.startTransaction();
+      if (payouts.length === 0) {
+        throw new Error("No valid winners for prize pool distribution.");
+      }
+
+      const userIds = payouts.map(p => p.userId);
+      await this.db.UserModel.find(
+        { _id: { $in: userIds } },
+        null,
+        { session }
+      );
+
+      for (const payout of payouts) {
+        await this.db.UserModel.updateOne(
+          { _id: payout.userId },
+          { $inc: { balance: payout.amount } },
+          { session }
+        );
+
+        await this.db.TransactionModel.create(
+          [{
+            userId: payout.userId,
+            direction: "credit",
+            amount: payout.amount,
+            transactionType: "game_win",
+            reason: `Winnings from room ${roomId}`,
+            metadata: { roomId, ...metadata },
+          }],
+          { session }
+        );
+      }
+
+      await session.commitTransaction();
+
+      return {
+        status: true,
+        message: "Prize pool distributed successfully",
+      };
     } catch (error) {
-      
+      await session.abortTransaction();
+      console.error("Error distributing prize pool:", error);
+      return {
+        status: false,
+        message: "Failed to distribute prize pool",
+        error: error instanceof Error ? error.message : String(error),
+      };
     } finally {
       await session.endSession();
     }

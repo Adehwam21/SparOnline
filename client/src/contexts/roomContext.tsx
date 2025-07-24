@@ -3,12 +3,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Room, Client } from 'colyseus.js';
 import { COLYSEUS_WS_URL } from '../constants';
-import { GameState } from '../hooks/GameState';
+import { GameState } from '../colyseusSchemas/GameState';
 import { leaveRoom, setGameState, updateChatRoom } from '../redux/slices/gameSlice';
 import { AppDispatch } from '../redux/reduxStore';
 import { useDispatch } from 'react-redux';
 import toast from 'react-hot-toast';
 import { successToastOptions } from '../types';
+// import { Payouts } from '../colyseusSchemas/Payouts';
 
 interface TurnTimerType {
     username: string;
@@ -66,11 +67,13 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         const handleStateChange = (state: GameState) => setState(state);
         const handleLeave = () => setIsConnected(false);
         const handleUpdate = (payload: any) => dispatch(setGameState(payload));
+        // const handleSetPayouts = (payload: Payouts[]) => dispatch(setPayouts(payload));
         const handleNotification = (payload: any) => toast.success(payload.message, successToastOptions);
 
         room.onStateChange(handleStateChange);
         room.onLeave(handleLeave);
         room.onMessage("update_state", handleUpdate);
+        // room.onMessage("prize_distribution_data", handleSetPayouts)
         room.onMessage("notification", handleNotification);
         room.onMessage("start_turn_timer", ({ username, duration, deadline }) => {
             setTurnTimer({ username, duration, deadline });
@@ -116,7 +119,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         if (!room || !isConnected) return;
 
         try {
-        room.send('start_game'); // This sends a message to trigger startGame in server (you must handle this)
+        room.send('start_game'); // This sends a message to trigger startGame in server
         } catch (error) {
         console.error('Error starting game:', error);
         setJoinError(true);

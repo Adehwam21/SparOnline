@@ -9,6 +9,7 @@ import {
   Moves,
   ChatRoom,
   ChatMessage,
+  Payouts,
 } from "../../schemas/GameState";
 import {
   createDeck,
@@ -19,6 +20,7 @@ import {
   getCardSuit,
   getCardValue,
   getCardPoints,
+  calculatePrizeDistribution,
 } from "../../utils/roomUtils";
 import { IBids } from "../../../types/game";
 import { SurvivalModeStrategy } from "../strategy/SurvivalModeStrategy";
@@ -28,7 +30,6 @@ import RoomMaster from "../services/RoomMaster";
 import TransactionService from "../../../services/transaction.service";
 import { appContext } from "../../../start";
 import GameService from "../../../services/game.service";
-import { options } from "joi";
 
 /* ───────────────────────────────────────────────── MULTIPLAYER ROOM ─────────────────────────────────────────────────── 
 *
@@ -190,8 +191,18 @@ export class MpGameRoom extends Room<GameState> {
   }
 
   private broadcastGameState(){
-    this.broadcast("update_state", { roomInfo: this.state  }, {afterNextPatch: true});
+    this.broadcast("update_state", { roomInfo: this.state.toJSON() }, {afterNextPatch: true});
   }
+
+  // private broadcastPayouts() {
+  //   const payouts = this.state.payouts.map(p => ({
+  //     userId: p.userId,
+  //     amount: p.amount
+  //   }));
+
+  //   console.log("payout: ",payouts);
+  //   this.broadcast("prize_distribution_data", { payouts }, { afterNextPatch: true });
+  // }
 
   private handleSendMessagesInChat(
     client: Client,
@@ -254,6 +265,7 @@ export class MpGameRoom extends Room<GameState> {
     this.state.creator = options.creator;
     this.state.eliminationCount = -1
     this.state.chat = new ChatRoom();
+    this.state.payouts = new ArraySchema<Payouts>();
     this.setMetadata(options);
 
     this.onMessage("play_card", this.handlePlayCard.bind(this));
@@ -689,19 +701,38 @@ export class MpGameRoom extends Room<GameState> {
     return false;
   }
 
-  endGame() {
+  async endGame() {
     try {
-      this.broadcastGameState();
+      if (this.state.bettingEnabled) {
+        const players = Array.from(this.state.players.values());
+        const prizePool = this.state.prizePool;
+        const roomId = this.state.roomId;
 
-      // Dispose the room after 10 seconds
+        const payouts = calculatePrizeDistribution(players, prizePool);
+        this.state.payouts.clear();
+        this.state.payouts = new ArraySchema<Payouts>(...payouts);
+
+        const { status, message } = await this.ROOM_MASTER.distributePrizePool(payouts, roomId);
+        if (status === false) {
+          this.broadcast('notification', { message });
+          return;
+        }
+      }
+
+      this.broadcastGameState();
+      // this.broadcastPayouts();
+
+
+      // Dispose room after timeout
       this.clock.setTimeout(() => {
-        this.disconnect(4000)
-      }, (this.DISPOSE_AFTER))
+        this.disconnect(4000);
+      }, this.DISPOSE_AFTER);
 
     } catch (e) {
       console.error("[endGame]", e);
     }
   }
+
 
   /* ─────────────────────────────────────────────────────────── DISCONNECTIONS AND VOLUNTARY LEAVES ──────────────────────────────────────────────────────── */
   override async onLeave(client: Client, consented: boolean) {
