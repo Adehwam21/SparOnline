@@ -6,7 +6,10 @@ export const createGameInput = Joi.object<ICreateGameInput>({
     roomName: Joi.string().required(),
     maxPlayers: Joi.string().required(), // Maximum number of players allowed in the room
     maxPoints: Joi.string().required(), // Maximum points to win the game
-    gameMode: Joi.string(), // Type of game (e.g., "classic", "custom")
+    variant: Joi.string().required(), // Type of game (e.g., "classic", "custom")
     creator: Joi.string(), // Store player data
+    entryFee: Joi.number().optional(),
+    bettingEnabled: Joi.boolean().optional(),
+    roomType: Joi.string(),
     gameState: Joi.object(), // Store snapshot of game state
 });

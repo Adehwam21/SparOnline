@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { store } from '../redux/reduxStore';
+import { logout } from '../redux/slices/authSlice';
 
 // Get API base URL from environment variables
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -16,7 +18,7 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   (config) => {
     // Get token from localStorage
-    const token = localStorage.getItem('token');
+    const token = store.getState().auth.token || localStorage.getItem("token");
     
     // If token exists, add Authorization header
     if (token) {
@@ -37,8 +39,10 @@ axiosInstance.interceptors.response.use(
     if (error.response) {
       // Handle specific HTTP error codes (e.g., 401 Unauthorized)
       if (error.response.status === 401) {
-        localStorage.removeItem('token'); // Clear token if unauthorized
-        window.location.href = '/login'; // Redirect to login page
+        // Clear auth state
+        store.dispatch(logout());
+        localStorage.removeItem('token');
+        window.location.href = '/';
       }
     }
     return Promise.reject(error);

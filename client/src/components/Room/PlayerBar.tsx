@@ -12,7 +12,7 @@ interface PlayerBarProps {
 }
 
 const PlayerBar: React.FC<PlayerBarProps> = ({
-  username,
+  // username,
   // score,
   playableCards,
   isTurn,
@@ -23,7 +23,7 @@ const PlayerBar: React.FC<PlayerBarProps> = ({
     <div className="flex flex-row md:flex-col md:space-y-2 justify-center md:justify-between items-center space-x-4 md:space-x-0">
       <div className="flex items-center space-x-2">
         <FaUser size={20} className={isActive ? "text-green-400" : "text-gray-500"} />
-        <span className="font-bold text-sm md:text-base">{username}</span>
+        <span className="font-bold text-sm md:text-base">{"You"}</span>
       </div>
       <div
         className={`w-full flex justify-center items-center text-center md:justify-center md:items-center p-2 text-[10px] font-sm font-bold ${

@@ -1,10 +1,6 @@
 import { randomInt } from "crypto";
-import { IBids, IWinningCard } from "../../types/game";
-
-interface PlayerHand {
-  playerName: string;
-  hand: string[];
-}
+import { IBids, IWinningCard, Payout, PlayerHand} from "../../types/game";
+import { Payouts, Player } from "../schemas/GameState";
 
 const suits = ["H", "D", "C", "S"];
 const ranks = [
@@ -36,8 +32,6 @@ export function secureShuffleDeck(originalDeck: string[], passes = 3): string[] 
 
   return deck;
 }
-
-
 
 export function distributeCards(
   playerHands: PlayerHand[],
@@ -71,8 +65,6 @@ export function distributeCards(
 
   return playerHands;
 }
-
-
 
 export function getCardSuit(cardName: string): string {
   return cardName.slice(-1); // last character
@@ -134,8 +126,6 @@ export function calculateRoundPoints(combo: IWinningCard[]): number {
   return points;       // always a number
 }
 
-
-
 export function calculateMoveWinner(bids: IBids[]) {
   if (bids.length === 0) return null;
 
@@ -177,4 +167,88 @@ export function calculateMoveWinner(bids: IBids[]) {
     moveWinner: maxCard.playerName
   };
 
+}
+
+export function calculatePrizeDistribution(players: Player[], prizePool: number): Payouts[] {
+  const payouts: Payouts[] = [];
+
+  // No players or prize pool
+  if (players.length === 0 || prizePool <= 0) return payouts;
+  const sorted = [...players].sort((a, b) => b.score - a.score);
+
+  // Assign ranks with ties considered
+  const rankedGroups: Player[][] = [];
+  let currentGroup: Player[] = [sorted[0]];
+
+  for (let i = 1; i < sorted.length; i++) {
+    if (sorted[i].score === currentGroup[0].score) {
+      currentGroup.push(sorted[i]);
+    } else {
+      rankedGroups.push(currentGroup);
+      currentGroup = [sorted[i]];
+    }
+  }
+  rankedGroups.push(currentGroup); // push the last group
+
+  const totalPlayers = players.length;
+
+  // Case: 2 players → winner takes all
+  if (totalPlayers === 2) {
+    const winner = rankedGroups[0];
+    const amountPerWinner = Math.floor(prizePool / winner.length);
+    for (const p of winner) {
+      const payout = new Payouts();
+      payout.userId = p.mongoId;
+      payout.amount = amountPerWinner;
+      payouts.push(payout);
+    }
+    return payouts;
+  }
+
+  // Case: 3 players → award 1st and 2nd only
+  if (totalPlayers === 3) {
+    const rankShares = [0.7, 0.2]; // no reward for 3rd
+
+    let prizeIndex = 0;
+    let currentRank = 1;
+    for (const group of rankedGroups) {
+      if (prizeIndex >= rankShares.length) break;
+
+      const totalShare = rankShares.slice(prizeIndex, prizeIndex + group.length).reduce((a, b) => a + b, 0);
+      const amountPerPlayer = Math.floor((totalShare * prizePool) / group.length);
+
+      for (const p of group) {
+        const payout = new Payouts();
+        payout.userId = p.mongoId;
+        payout.amount = amountPerPlayer;
+        payouts.push(payout);
+      }
+
+      prizeIndex += group.length;
+      currentRank += group.length;
+    }
+
+    return payouts;
+  }
+
+  // Case: 4 or more players → award top 3
+  const rankShares = [0.7, 0.2, 0.1];
+  let prizeIndex = 0;
+  for (const group of rankedGroups) {
+    if (prizeIndex >= rankShares.length) break;
+
+    const totalShare = rankShares.slice(prizeIndex, prizeIndex + group.length).reduce((a, b) => a + b, 0);
+    const amountPerPlayer = Math.floor((totalShare * prizePool) / group.length);
+
+    for (const p of group) {
+      const payout = new Payouts();
+      payout.userId = p.mongoId;
+      payout.amount = amountPerPlayer;
+      payouts.push(payout);
+    }
+
+    prizeIndex += group.length;
+  }
+
+  return payouts;
 }

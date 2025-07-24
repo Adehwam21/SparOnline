@@ -21,17 +21,17 @@ const JoinRoomModal: React.FC<JoinRoomModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <BaseModal isOpen={isOpen} onClose={onClose} title="Join a Room">
-      <form onSubmit={handleJoinRoom} className="space-y-4 text-black">
+      <form onSubmit={handleJoinRoom} className="space-y-4 text-black text-md font-bold">
       <FormField label="Room code or link" tooltipText="Enter the room code or the room link">
           <input
             type="text"
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded"
+            className="w-full p-2 font-bold text-md border border-gray-300 rounded"
             required
           />
         </FormField>
-        <button type="submit" className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">
+        <button type="submit" className="w-full font-bold bg-green-600 text-white p-2 rounded hover:bg-green-700">
           Join Room
         </button>
       </form>

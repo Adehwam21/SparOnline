@@ -19,16 +19,17 @@ export default class UserService extends IService {
 
     async getOne(input: { username: string }): Promise<IUser | any | null> {
         try {
-            const user = await this.db.UserModel.findOne({ username: input.username });
+            const user = await this.db.UserModel.findOne({ username: input.username }).select("+password");
             return user || null; // Explicitly returning null if no user is found
         } catch (e) {
             throw e;
         }
     }
 
-    async getById(id: Types.ObjectId): Promise<IUser> {
+    async getById(id: Types.ObjectId | string): Promise<IUser> {
         try {
             const user = await this.db.UserModel.findById(id);
+
             if (!user) {
                 throw new Error("User not found");
             }

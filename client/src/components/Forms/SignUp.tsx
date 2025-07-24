@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, ChangeEvent, FormEvent } from 'react';
+import axiosInstance from '../../config/axiosConfig';
 import { toast } from 'react-hot-toast';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../redux/reduxStore';
+import { FaEyeSlash, FaEye } from 'react-icons/fa';
 import { errorToastOptions, invalidPaawordOptions, LoginSignUpProps, successToastOptions } from '../../types';
-import axiosInstance from '../../config/axiosConfig';
 import { registerSuccess, registerFailure, loginStart } from '../../redux/slices/authSlice';
 
 const strongPasswordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
@@ -64,7 +65,7 @@ const SignUp: React.FC<LoginSignUpProps> = () => {
   };
 
   return (
-    <div className="bg-transparent text-white p-6 max-w-sm mx-auto">
+    <div className="bg-transparent mt-10 text-white p-6 max-w-sm mx-auto">
       <h2 className="text-2xl font-bold mb-4 text-center">Sign Up</h2>
       <form onSubmit={handleRegister}>
         <div className="mb-4">
@@ -104,10 +105,10 @@ const SignUp: React.FC<LoginSignUpProps> = () => {
             required
           />
           <span
-            className="absolute right-3 top-2.5 cursor-pointer"
+            className="absolute right-3 top-2 cursor-pointer"
             onClick={togglePasswordVisibility}
           >
-            {showPassword ? '🙈' : '👁️'}
+            {showPassword ? <FaEyeSlash size={25}/> : <FaEye size={25}/>}
           </span>
         </div>
         <button

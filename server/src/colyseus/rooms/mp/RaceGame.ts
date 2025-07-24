@@ -22,7 +22,7 @@ import { IBids } from "../../../types/game";
 
 export class RaceGameRoom extends Room<GameState> {
   DECK = secureShuffleDeck(createDeck(), 10);
-  MAX_CLIENTS = 4;
+  maxClients = 4;
   MAX_MOVES = 5;
   MIN_POINTS = -15
   USER_TO_SESSION_MAP = new Map<string, string>();
@@ -36,7 +36,7 @@ export class RaceGameRoom extends Room<GameState> {
     this.state.deck = new ArraySchema(...this.DECK);
     this.state.roomId = options.roomId || this.roomId;
     this.state.maxPlayers = Number(options.maxPlayers);
-    this.MAX_CLIENTS = this.state.maxPlayers + 1;
+    this.maxClients = this.state.maxPlayers + 1;
     this.state.maxPoints = Number(options.maxPoints);
     this.state.creator = options.creator;
     this.setMetadata(options);
@@ -75,13 +75,15 @@ export class RaceGameRoom extends Room<GameState> {
       p.id = client.sessionId;
       p.username = playerUsername;
       p.active = true;
+      p.connected = true;
+      p.score = 0;
 
       if (!this.state.playerUsernames.includes(playerUsername)) {
         this.state.playerUsernames.push(playerUsername);
       }
       this.state.players.set(client.sessionId, p);
       this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
-      console.log(`Joined: ${playerUsername}`);
+      console.log(`[onJoin]: ${playerUsername} joined`);
 
       if (this.state.players.size >= this.state.maxPlayers) {
         this.state.gameStatus = "ready";
@@ -89,7 +91,7 @@ export class RaceGameRoom extends Room<GameState> {
       }
       this.broadcastGameState();
     } catch (e) {
-      console.error("[onJoin] fatal", e);
+      console.error("[onJoin] Error:", e);
       client.error(2000, `${e}`);
     }
   }
@@ -98,7 +100,7 @@ export class RaceGameRoom extends Room<GameState> {
     this.broadcast("update_state", { roomInfo: this.state  }, {afterNextPatch: true});
   }
 
-  /* ───────── GAME FLOW ───────── */
+  /* ───────────────────────────  GAME FLOW ───────────────────────────  */
 
   private dealCards(deck: string[]) {
     const playersArr = Array.from(this.state.players.values());
@@ -118,7 +120,7 @@ export class RaceGameRoom extends Room<GameState> {
   startGame() {
     try {
       this.state.gameStatus = "started";
-      this.state.nextPlayerIndex = 0;
+      this.state.nextPlayerIndex = 0; // the creator of the room becomes the first to bid
       this.state.roundStatus = "in_progress";
       this.startRound();
     } catch (e) {
@@ -193,10 +195,12 @@ export class RaceGameRoom extends Room<GameState> {
         if (isSuitMismatch && haveSomeCardOfSuit) {
           player.score -= 3;
 
-          // Bar player from room forever. Handled in join as well
+          // Bar player from room forever. If they get a lowwer score
           if (player.score <= this.MIN_POINTS) {
             this.state.players.delete(client.sessionId);
             this.USER_TO_SESSION_MAP.delete(player.username);
+            this.BANNED_USERS.add(player.username)
+
 
             this.broadcast("notification", {
               message: `${player.username} was removed for repeated violations (score too low).`,
@@ -204,9 +208,13 @@ export class RaceGameRoom extends Room<GameState> {
 
             this.broadcastGameState();
 
-            const activePlayers = [...this.state.players.values()].filter(p => p.active);
-            if (activePlayers.length === 1) {
-              const lastPlayer = activePlayers[0];
+            /*
+            * Force end the game if only one active player remains in the room
+            * The last player becomes the winner by default
+            */
+            const activePlayersOnline = [...this.state.players.values()].filter(p => p.connected && p.active);
+            if (activePlayersOnline.length === 1) {
+              const lastPlayer = activePlayersOnline[0];
               lastPlayer.score = this.state.maxPoints;
               this.state.gameWinner = lastPlayer.username;
               this.state.gameStatus = "complete";
@@ -244,7 +252,10 @@ export class RaceGameRoom extends Room<GameState> {
         }
       }
 
-      // Proceed to next turn or evaluate move
+      /*
+      * Proceed to next turn or evaluate valid move if move has ended
+      * A valid move is one where all cards follow the leaiding card and there are no violationa either
+      */
       if (move.bids.length === this.state.players.size) {
         this.evaluateMove();
       } else {

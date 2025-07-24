@@ -9,12 +9,14 @@ import { useParams, useNavigate } from "react-router-dom";
 
 const GamePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { join, consentedLeave, isConnected, isConnecting } = useRoom();
+  const { join, consentedLeave, sendMessagesInChat, isConnected, isConnecting } = useRoom();
   const { id: roomId } = useParams();
   const navigate = useNavigate();
 
   const gameState = useSelector((state: RootState) => state.game);
-  const currentUser = useSelector((state: RootState) => state.auth!.user!.username) ;
+  const userId = useSelector((state: RootState) => state.auth!.user!._id)
+  const currentUser = useSelector((state: RootState) => state.auth!.user!.username);
+  const variant = gameState?.roomInfo?.variant
   const [isWaitingScreenOpen, setIsWaitingScreenOpen] = useState(true);
   const [gameOver, setGameOver] = useState(false);
 
@@ -22,9 +24,9 @@ const GamePage: React.FC = () => {
 
   useEffect(() => {
     if (!isConnected && !isConnecting && roomId) {
-      join(roomId, currentUser);
+      join(roomId, userId,  currentUser);
     }
-  }, [roomId, isConnected, isConnecting, dispatch, join, currentUser]);
+  }, [roomId, isConnected, isConnecting, dispatch, join, userId, currentUser]);
 
 
   useEffect(() => {
@@ -38,19 +40,21 @@ const GamePage: React.FC = () => {
 
     if (gameState?.roomInfo?.gameStatus === "complete") {
       setGameOver(true);
+    } else {
+      setGameOver(false);
     }
   }, [gameState]);
 
   const handleExit = () => {
     localStorage.removeItem("reconnection");
     console.log(localStorage.getItem("reconnection"))
-    navigate("/");
+    navigate("/play");
   };
 
   const handleConsentedLeave = () => {
     consentedLeave(currentUser);
     localStorage.removeItem("reconnection");
-    navigate("/"); // Navigate to landing page
+    navigate("/play"); // Navigate to landing page
   }
 
   if (!gameState?.roomInfo?.players) {
@@ -58,7 +62,7 @@ const GamePage: React.FC = () => {
   }
 
   return (
-    <div className="h-full text-white bg-transparent">
+    <div className="text-white h-full bg-transparent">
       <WaitingScreen
         isOpen={isWaitingScreenOpen}
         roomId={roomId!}
@@ -68,10 +72,14 @@ const GamePage: React.FC = () => {
 
       <Room
         players={Object.values(gameState.roomInfo?.players || {})}
+        deckCount={gameState.roomInfo?.deck?.length || 0}
+        prizePool={gameState.roomInfo?.prizePool || 0}
         currentTurn={gameState.roomInfo?.currentTurn ?? ""}
         currentUser={currentUser}
+        variant={variant!}
         maxPoints={gameState.roomInfo?.maxPoints ?? "0"}
         onLeaveRoom={handleConsentedLeave}
+        onSendMessageInChat={sendMessagesInChat}
       />
 
       <GameCompleteModal

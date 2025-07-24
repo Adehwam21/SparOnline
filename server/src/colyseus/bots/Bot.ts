@@ -20,5 +20,5 @@ export abstract class Bot {
    * Every bot must implement this method to make a decision.
    * @param gameState - the relevant info needed to play the move
    */
-  abstract play(gameState: any): Promise<IBotPlayResponse>;
+  abstract playMove(gameState: any): Promise<IBotPlayResponse>;
 }
