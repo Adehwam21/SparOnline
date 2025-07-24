@@ -23,6 +23,11 @@ interface Chatroom {
   messages: [{sender: string | null, content: string | null, time: string | null}] | null
 }
 
+// interface Payout {
+//   userId: string;
+//   amount: number;
+// } 
+
 export interface GameState {
   roomInfo: { 
     roomId: string | null; // Unique identifier for the room
@@ -46,7 +51,8 @@ export interface GameState {
     roundStatus: string | null;
     gameStatus: string | null;
     gameWinner: string | null;
-    chat: Chatroom | null 
+    chat: Chatroom | null;
+    // payouts: Payout[] | null;
   } | null,
   colyseusRoomId: string | null; // ID of the Colyseus room
   roomLink: string | null;
@@ -77,6 +83,7 @@ const initialState: GameState = {
     creator: null,
     gameWinner: null,
     maxPoints: null, // Maximum points to win the game
+    // payouts: null,
   },
   colyseusRoomId: null,
   roomLink: null,
@@ -106,6 +113,12 @@ const gameSlice = createSlice({
       state.roomInfo!.currentTurn = action.payload;
     },
 
+    // setPayouts: (state, action: PayloadAction<Payout[]>) => {
+    //   if (state.roomInfo) {
+    //     state.roomInfo.payouts = action.payload;
+    //   }
+    // },
+
     updatePlayers: (state, action: PayloadAction<Player[]>) => {
       state.roomInfo!.players = action.payload;
     },
@@ -134,7 +147,8 @@ const gameSlice = createSlice({
 
 export const { 
     setGameState, addBid, setCurrentTurn, updatePlayers, 
-    resetBids, updateRoomInfo,leaveRoom, logOut, updateChatRoom
+    resetBids, updateRoomInfo,leaveRoom, logOut, updateChatRoom,
+    // setPayouts
   } = gameSlice.actions;
   
 export const gameReducer =  gameSlice.reducer;

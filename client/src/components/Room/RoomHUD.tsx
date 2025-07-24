@@ -1,10 +1,10 @@
 import React from "react";
 import {
   FiMoreVertical,
-  FiVolumeX,
-  FiVolume2,
+  // FiVolumeX,
+  // FiVolume2,
   FiMessageSquare,
-  FiFlag,
+  // FiFlag,
   FiLogOut,
 } from "react-icons/fi";
 import { formatPrizePool } from "../../utils/helpers";
@@ -30,10 +30,10 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
   variant,
   onToggleChat,
   onMenuToggle,
-  onMuteToggle,
-  onReportUser,
+  // onMuteToggle,
+  // onReportUser,
   onLeaveRoom,
-  isMuted,
+  // isMuted,
   menuOpen,
 }) => {
   const imageUrl = variant === "survival" ? "/images/game-elements/skull-and-bones.png": "/images/game-elements/target.png"
@@ -84,7 +84,7 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
           <div
             className="absolute right-0 top-14 w-48 bg-white text-black p-1 rounded shadow-lg z-50 transition-all duration-200 transform animate-fade-in"
           >
-            <button
+            {/* <button
               onClick={onMuteToggle}
               className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded w-full text-left"
             >
@@ -98,7 +98,7 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
             >
               <FiFlag />
               Report User
-            </button>
+            </button> */}
 
             <button
               onClick={onLeaveRoom}

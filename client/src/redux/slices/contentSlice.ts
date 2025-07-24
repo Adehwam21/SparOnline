@@ -28,6 +28,7 @@ const contentSlice = createSlice({
     updateContentState : (state, action: PayloadAction<ContentState>) => {
       state.profile = action.payload.profile
     },
+    
 
     updateUserBalance : (state, action: PayloadAction<ContentState>) => {
       state.profile!.balance = action.payload.profile!.balance

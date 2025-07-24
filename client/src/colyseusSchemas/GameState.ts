@@ -9,6 +9,7 @@ import { Schema, type, ArraySchema, MapSchema } from '@colyseus/schema';
 import { Player } from './Player'
 import { Round } from './Round'
 import { ChatRoom } from './ChatRoom'
+import { Payouts } from './Payouts'
 
 export class GameState extends Schema {
     @type("string") public roomId!: string;
@@ -16,9 +17,12 @@ export class GameState extends Schema {
     @type("number") public maxPlayers!: number;
     @type("number") public maxPoints!: number;
     @type("string") public creator!: string;
-    @type("string") public gameMode!: string;
     @type("string") public roomName!: string;
+    @type("string") public roomType!: string;
+    @type("boolean") public bettingEnabled!: boolean;
+    @type("number") public entryFee!: number;
     @type("number") public prizePool!: number;
+    @type("string") public variant!: string;
     @type("number") public eliminationCount!: number;
     @type([ "string" ]) public playerUsernames: ArraySchema<string> = new ArraySchema<string>();
     @type([ "string" ]) public deck: ArraySchema<string> = new ArraySchema<string>();
@@ -31,4 +35,5 @@ export class GameState extends Schema {
     @type("string") public gameStatus!: string;
     @type("string") public gameWinner!: string;
     @type(ChatRoom) public chat: ChatRoom = new ChatRoom();
+    @type([ Payouts ]) public payouts: ArraySchema<Payouts> = new ArraySchema<Payouts>();
 }

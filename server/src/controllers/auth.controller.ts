@@ -30,7 +30,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
             username,
             email,
             password: hashedPassword,
-            balance: 250
+            balance: 1500
         });
 
         res.status(201).json({ message: 'User registered successfully' });

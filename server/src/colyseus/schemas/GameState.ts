@@ -52,6 +52,13 @@ export class ChatRoom extends Schema {
   @type([ChatMessage]) messages = new ArraySchema<ChatMessage>();
 }
 
+//Payouts
+export class Payouts extends Schema {
+  @type("string") userId: string = "";
+  @type("number") amount: number = 0;
+}
+
+
 // GameState keeps track of the entire game
 export class GameState extends Schema {
   // Add this to your room's state or as a private field
@@ -78,4 +85,5 @@ export class GameState extends Schema {
   @type("string") gameStatus: string = "pending"; 
   @type("string") gameWinner: string = "";
   @type(ChatRoom) chat = new ChatRoom()
+  @type([Payouts]) payouts = new ArraySchema<Payouts>()
 }
