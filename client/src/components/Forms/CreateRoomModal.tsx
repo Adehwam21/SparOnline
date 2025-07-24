@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import BaseModal from "./BaseModal";
 import FormField from "./FormField";
@@ -20,7 +20,15 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
   const [roomName, setRoomName] = useState("");
   const [maxPlayers, setMaxPlayers] = useState(2);
   const [maxPoints, setMaxPoints] = useState(5);
-  const [gameMode, setGameMode] = useState("race");
+  const [variant, setGameVariant] = useState("race");
+  const [entryFee, setEntryFee] = useState(0);
+  const [bettingEnabled, setBettingEnabled] = useState(false);
+
+  useEffect(() => {
+    if (entryFee > 0){
+      setBettingEnabled(true);
+    }
+  }, [entryFee, setEntryFee])
 
 
   const handleCreateRoom = async (e: React.FormEvent) => {
@@ -29,15 +37,19 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
     try {
       const data = await createMultiplayerRoom({
         roomName,
+        roomType: "mpr",
         maxPlayers: String(maxPlayers),
         maxPoints: String(maxPoints),
-        gameMode,
-        creator
+        variant,
+        creator,
+        entryFee,
+        bettingEnabled,
       });
   
       if (!data?.colyseusRoomId) throw new Error("Room creation failed");
   
       dispatch(setGameState(data));
+      console.log(data)
 
       // Redirect and waiting screen
       navigate(`/game/${data.colyseusRoomId}`);
@@ -77,12 +89,12 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
 
         {/* Game Mode */}
         <FormField
-          label="Game Mode"
-          tooltipText="Race: Be the fastest to reach maximum points. Survival: Be the last man standing to win."
+          label="Variant"
+          tooltipText="Race: Fastest to reach maximum points wins. Survival: Last man standing wins."
         >
           <select
-            value={gameMode}
-            onChange={(e) => setGameMode(e.target.value)}
+            value={variant}
+            onChange={(e) => setGameVariant(e.target.value)}
             className="w-full p-2 border border-gray-300 rounded"
           >
             <option value="race">Race</option>
@@ -90,11 +102,27 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
           </select>
         </FormField>
 
+        <FormField label="Entry fee" tooltipText="Tokens needed for room entry.">
+          <select
+            value={entryFee}
+            onChange={(e) => setEntryFee(Number(e.target.value))}
+            className="w-full p-2 border border-gray-300 rounded"
+          >
+            <option value={0}>Free</option>
+            <option value={50}>50</option>
+            <option value={200}>200</option>
+            <option value={1000}>1k</option>
+            <option value={5000}>5k</option>
+          </select>
+        </FormField>
+
         {/* Number of Players */}
         <FormField label="Number of Players" tooltipText="Choose how many players can join this room.">
           <select
             value={maxPlayers}
-            onChange={(e) => setMaxPlayers(Number(e.target.value))}
+            onChange={(e, ) => setMaxPlayers(
+              Number(e.target.value)
+            )}
             className="w-full p-2 border border-gray-300 rounded"
           >
             <option value={2}>2 Players</option>

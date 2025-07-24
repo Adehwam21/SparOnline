@@ -1,17 +1,19 @@
 import React from "react";
 import {
   FiMoreVertical,
-  FiVolumeX,
-  FiVolume2,
+  // FiVolumeX,
+  // FiVolume2,
   FiMessageSquare,
-  FiFlag,
+  // FiFlag,
   FiLogOut,
 } from "react-icons/fi";
+import { formatPrizePool } from "../../utils/helpers";
 
 interface RoomHUDProps {
   deckCount: number;
   pot: number;
   maxPoints: string;
+  variant: string;
   onToggleChat: () => void;
   onMenuToggle: () => void;
   onMuteToggle: () => void;
@@ -25,30 +27,40 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
   deckCount,
   pot,
   maxPoints,
+  variant,
   onToggleChat,
   onMenuToggle,
-  onMuteToggle,
-  onReportUser,
+  // onMuteToggle,
+  // onReportUser,
   onLeaveRoom,
-  isMuted,
+  // isMuted,
   menuOpen,
 }) => {
+  const imageUrl = variant === "survival" ? "/images/game-elements/skull-and-bones.png": "/images/game-elements/target.png"
+  const variantImage = variant === "survival" ? "/images/game-elements/sword.png" : "/images/game-elements/finish.png"
   return (
-    <div className="flex items-center font-semibold justify-between px-4 py-2 bg-black/70 text-white w-full">
+    <div className="flex items-center font-semibold justify-between px-4 py-2 bg-black/40 backdrop-blur-2xl relative z-50 text-white w-full">
       {/* Left side */}
       <div className="flex items-center gap-6">
-        <div className="flex justify-center items-center text-center text-lg gap-2">
+        <div className="flex justify-center font-semibold items-center text-center text-sm gap-2">
           <img className="h-6 w-6" src="/images/game-elements/deck-of-card.png" alt="Deck icon" />
           {deckCount}
         </div>
-        <div className="flex justify-center items-center text-center text-lg gap-2">
+        <div className="flex justify-center items-center text-center text-sm font-bold gap-2">
           <img className="h-6 w-6" src="/images/game-elements/money-bag.png" alt="Money bag" />
-          {pot}
+          {formatPrizePool(pot)}
+        </div>
+        <div className="flex justify-center items-center text-center gap-2 text-yellow-400">
+          <img className="h-6 w-6" src={imageUrl} alt="Game variant icon" />
+          <span className="font-bold text-sm text-white">{maxPoints}</span>
         </div>
       </div>
 
-      <div className="flex justify-center items-center text-center border-3 h-10 w-10 p-2 rounded-sm text-yellow-400">
-        <span className="font-bold text-xl">{maxPoints}</span>
+
+      {/* Center */}
+      <div className="flex justify-center items-center text-center gap-1 text-yellow-400">
+        <img className="h-6 w-6" src={variantImage} alt="Game variant icon" />
+        <span className="font-bold text-sm text-white ">{variant?.toUpperCase()}</span>
       </div>
 
       {/* Right side */}
@@ -72,7 +84,7 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
           <div
             className="absolute right-0 top-14 w-48 bg-white text-black p-1 rounded shadow-lg z-50 transition-all duration-200 transform animate-fade-in"
           >
-            <button
+            {/* <button
               onClick={onMuteToggle}
               className="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded w-full text-left"
             >
@@ -86,7 +98,7 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
             >
               <FiFlag />
               Report User
-            </button>
+            </button> */}
 
             <button
               onClick={onLeaveRoom}

@@ -9,13 +9,16 @@ export default class GameService extends IService {
 
     async createGame(input: ICreateGameInput): Promise<IGameRoom | null> {
         try {
-            const { roomName, creator, gameMode, maxPlayers, maxPoints } = input;
+            const { roomName, colyseusRoomId, creator, variant, maxPlayers, maxPoints, entryFee, roomType } = input;
             const gameRoom = await this.db.GameRoomModel.create({
                 roomName,
                 creator,
-                gameMode,
+                colyseusRoomId,
+                variant,
                 maxPlayers,
                 maxPoints,
+                entryFee,
+                roomType,
                 gameState: {},
             });
             return gameRoom.toObject();

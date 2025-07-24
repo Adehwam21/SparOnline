@@ -7,18 +7,20 @@ import { TypedUseSelectorHook, useSelector, useDispatch } from "react-redux";
 import { gameReducer } from "./slices/gameSlice" 
 import { authReducer } from "./slices/authSlice"
 import { createAction } from "@reduxjs/toolkit";
+import { contentReducer } from "./slices/contentSlice";
 
 export const resetApp = createAction("app/reset");
 
 const persistConfig = {
     key: "root",
     storage,
-    whitelist: ["auth"],
+    whitelist: ["auth", "content"],
 };
 
 const appReducer = combineReducers({
     auth: authReducer,
     game: gameReducer,
+    content: contentReducer
 
     //... add more game states
 });
@@ -28,7 +30,7 @@ const rootReducer = (state: any, action: any) => {
         state = undefined;
     }
 
-    return appReducer(state, action)
+    return appReducer(state, action);
 }
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

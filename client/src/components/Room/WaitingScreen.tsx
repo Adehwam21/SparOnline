@@ -36,7 +36,7 @@ interface WaitingScreenProps {
         case "started":
             return "Room is full. Ready to start the game!";
         default:
-            return "Waiting for players to join the room...";
+            return "Waiting for more players to join the room...";
         }
     };
 
@@ -62,7 +62,7 @@ interface WaitingScreenProps {
                     type="text"
                     readOnly
                     value={roomId}
-                    className="flex-1 px-3 py-2 border rounded-md text-sm text-gray-700"
+                    className="flex-1 px-3 py-2 border rounded-md text-md text-gray-700"
                 />
                 <button
                     onClick={handleCopy}

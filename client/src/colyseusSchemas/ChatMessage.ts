@@ -8,8 +8,8 @@
 import { Schema, type } from '@colyseus/schema';
 
 
-export class PlayedCard extends Schema {
-    @type("string") public playerName!: string;
-    @type("string") public cardName!: string;
-    @type("string") public moveIndex!: string;
+export class ChatMessage extends Schema {
+    @type("string") public sender!: string;
+    @type("string") public content!: string;
+    @type("string") public time!: string;
 }

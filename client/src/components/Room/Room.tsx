@@ -2,37 +2,42 @@ import React, { useState } from "react";
 import GameBoard from "./GameBoard";
 import RoomHUD from "./RoomHUD";
 import Chat from "./Chat";
+import { Player } from "../../types/game";
 
 interface RoomProps {
-  players: {
-    id: string;
-    username: string;
-    score: number;
-    hand: string[];
-    bids: string[];
-    active: boolean;
-  }[];
+  deckCount: number;
+  prizePool: number;
+  players: Player[];
   currentTurn: string;
   currentUser: string;
   maxPoints: string;
+  variant: string;
   onLeaveRoom: () => void;
+  onSendMessageInChat: (sender: string, content: string, time: string) => Promise<void>;
 }
 
 const Room: React.FC<RoomProps> = ({
+  deckCount,
+  prizePool, 
   players,
   currentTurn,
   currentUser,
   maxPoints,
-  onLeaveRoom
+  variant,
+  onLeaveRoom,
+  onSendMessageInChat,
 }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const activeConnectedPlayers = players.filter((p) => p.active && p.connected && !p.eliminated)
+  const newDeckCount = deckCount - (activeConnectedPlayers.length*5)
 
   const handleToggleChat = () => {
     setShowChat((prev) => !prev);
     setMenuOpen(false);
   };
+  console.log(variant)
 
   const handleMenuToggle = () => {
     setMenuOpen((prev) => !prev);
@@ -40,18 +45,13 @@ const Room: React.FC<RoomProps> = ({
   };
 
   return (
-    <div className="relative h-full bg-transparent flex flex-col items-center justify-center text-white gap-10"
-      style={{
-        backgroundImage: "url('/images/game-elements/board.jpg')",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
+    <div className="relative flex flex-col items-center justify-evenly text-white gap-10">
       {/* Room HUD */}
       <RoomHUD
-        deckCount={20}
-        pot={100}
+        deckCount={newDeckCount}
+        pot={prizePool}
         maxPoints={maxPoints}
+        variant={variant}
         isMuted={isMuted}
         menuOpen={menuOpen}
         onToggleChat={handleToggleChat}
@@ -72,7 +72,7 @@ const Room: React.FC<RoomProps> = ({
       {/* Chat Panel */}
       {showChat && (
         <div className="absolute top-16 right-4 w-80 h-96 z-50 shadow-lg bg-white rounded-lg">
-          <Chat currentUser={currentUser} />
+          <Chat currentUser={currentUser} sendMessage={onSendMessageInChat} />
         </div>
       )}
     </div>

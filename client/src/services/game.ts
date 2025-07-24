@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import toast from "react-hot-toast";
 import axiosInstance from "../config/axiosConfig";
 import { errorToastOptions, successToastOptions } from "../types";
@@ -6,9 +5,12 @@ import { errorToastOptions, successToastOptions } from "../types";
 type multiplayerConfig = {
     roomName: string, 
     creator:string, 
-    gameMode: string, 
+    variant: string, 
     maxPlayers: string, 
     maxPoints: string
+    roomType?: string;
+    entryFee?: number;
+    bettingEnabled?: boolean;
 }
 
 export const createMultiplayerRoom = async (config: multiplayerConfig) => {

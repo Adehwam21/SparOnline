@@ -65,7 +65,7 @@ const PlayComputerModal: React.FC<PlayComputerModalProps> = ({ isOpen, onClose }
     //   </form>
     // </BaseModal>
     <BaseModal isOpen={isOpen} onClose={onClose} title="Play Against AI">
-      <div className="text-black flex justify-center items-center text-center text-bold text-3xl"> Coming Soon</div>
+      <div className="text-black flex justify-center items-center p-5 text-center text-bold text-3xl"> Coming Soon</div>
     </BaseModal>
   );
 };

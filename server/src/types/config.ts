@@ -9,6 +9,7 @@ export interface Config {
     };
     auth: {
         secret: string;
+        refresh: string
         expiresIn: string;
     };
 }
