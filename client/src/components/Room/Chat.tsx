@@ -62,20 +62,20 @@ const Chat: React.FC<ChatProps> = ({ currentUser, sendMessage, onClose }) => {
       ref={chatBoxRef}
       className="flex flex-col w-full max-w-sm h-[500px] text-black bg-gray-100 rounded shadow-lg p-2"
     >
+      <p className="text-[12px] font-semibold text-center text-gray-500 mb-1">Please be nice in chat.</p>
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto bg-white p-4 rounded shadow-inner space-y-3"
       >
-        <p className="text-sm italic font-light text-center text-gray-500 mb-1">Please be nice.</p>
         {chatMessages.map((msg, index) => {
           const isCurrentUser = msg.sender === currentUser;
           return (
             <div key={index} className={`flex flex-col ${isCurrentUser ? "items-end" : "items-start"}`}>
-              <p className={`text-xs font-semibold mb-1 ${isCurrentUser ? "text-green-700" : "text-blue-700"}`}>
+              <p className={`text-xs font-bold mb-1 ${isCurrentUser ? "text-green-700" : "text-blue-700"}`}>
                 {isCurrentUser ? "You" : msg.sender}
               </p>
               <p
-                className={`text-sm px-3 py-2 rounded-md max-w-[70%] ${
+                className={`text-[12px] font-bold px-2 py-2 rounded-md max-w-[70%] ${
                   isCurrentUser
                     ? "bg-green-100 text-green-900"
                     : "bg-blue-100 text-gray-800"
@@ -91,8 +91,9 @@ const Chat: React.FC<ChatProps> = ({ currentUser, sendMessage, onClose }) => {
       <div className="flex mt-2">
         <input
           type="text"
-          className="flex-1 px-3 py-2 border border-gray-500 rounded-l focus:outline-none"
+          className="flex-1 px-3 py-2 border border-gray-500 rounded-l text-[12px] font-semibold focus:outline-none"
           placeholder="Type your message..."
+          maxLength={50}
           value={newMessage}
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}

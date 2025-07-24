@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import Login from '../components/Forms/Login';
 import SignUp from '../components/Forms/SignUp';
-import Header from '../components/Header';
 
 const LandingPage: React.FC = () =>  {
     const [showLogin, setShowLogin] = useState(true);
@@ -12,8 +11,7 @@ const LandingPage: React.FC = () =>  {
 
     return (
         <div className="font-poppins flex items-center p-4 pt-10 justify-center">
-            <Header/>
-            <div className="landing-content text-white md:w-96 p-4 bg-green-900 py-2 rounded-lg shadow-lg">
+            <div className="landing-content mt-5 text-white md:w-96 p-4 py-2">
                 {showLogin ? (
                     <Login toggleForm={toggleForm} />
                 ) : (
