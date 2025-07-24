@@ -10,7 +10,9 @@ const LearnPage: React.FC = () => {
         <h1 className="text-3xl font-bold text-yellow-400 mb-4">How to Play</h1>
         
         <p className="text-lg mb-4">
-          SparOnline is a strategic card game which follows the logic of the traditional Ghanaian card game (SPAR). It requires a deck of cards, and a set of players. The goal is to outbid your opponents in each round and accumulate the most points.
+          SparOnline is a strategic card game which follows the logic of the traditional Ghanaian card game (SPAR). 
+          It requires a deck of cards, and a set of players. 
+          The goal is to outbid your opponents in each move and accumulate the most points by the end of the round.
         </p>
 
         <h2 className="text-2xl font-bold text-yellow-200 mt-6 mb-2">Game Setup</h2>
@@ -39,7 +41,8 @@ const LearnPage: React.FC = () => {
 
         <h2 className="text-2xl font-bold text-yellow-200 mt-6 mb-2">Winning the Game</h2>
         <p className="mb-4">
-          The game continues until a player reaches the maximum score set at the start. Depending on the mode, the first player to reach this wins, or the last man standing wins (i.e. when other all players have been eliminated).
+          The game continues until a player reaches the maximum score set at the start.
+          Depending on the variant (Race or Survival), the first player to reach this wins, or the last man standing wins (i.e. when other all players have been eliminated).
         </p>
 
         <h2 className="text-2xl font-bold text-yellow-200 mt-6 mb-2">Special Bonus</h2>
@@ -49,7 +52,7 @@ const LearnPage: React.FC = () => {
         <ul className="mb-4">
           <li className="text-yellow-400 font-bold">Three 6s → 9 points</li>
           <li className="text-yellow-400 font-bold">Two 6s & one 7 → 8 points</li>
-          <li className="text-yellow-400 font-bold">Three 7s → 6 points</li>
+          <li className="text-yellow-400 font-bold">Three 7s → 6 points </li>etc.
         </ul>
         <p>
           For this to hold, a card in the sequence must not have the same suit as the next card in the sequence
@@ -64,9 +67,6 @@ const LearnPage: React.FC = () => {
         <p>
           7S, 6H, 7H  → 0 + 0 + 2 = 3 points,
         </p>
-        <p>
-          7S, 6S, 7C  → 0 + 3 + 5 = 5 points,
-        </p>
         <p className="mt-3">
         Example2: Assuming the player was never out-bidded in the last two bids,
         </p>
@@ -77,12 +77,12 @@ const LearnPage: React.FC = () => {
           6H, 7H  →  0 + 2 = 2 points,
         </p>
 
-        <h2 className="text-2xl font-bold text-yellow-200 mt-6 mb-2">Ready to Play?</h2>
+        {/* <h2 className="text-2xl font-bold text-yellow-200 mt-6 mb-2">Ready to Play?</h2>
         <p className="mb-6">Gather your friends and try out SparOnline now!</p>
 
         <button className="bg-yellow-500 text-gray-900 px-6 py-2 font-bold hover:bg-yellow-400 transition-all duration-200">
           Share
-        </button>
+        </button> */}
       </div>
     </div>
   );

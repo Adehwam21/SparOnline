@@ -39,7 +39,7 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
   const imageUrl = variant === "survival" ? "/images/game-elements/skull-and-bones.png": "/images/game-elements/target.png"
   const variantImage = variant === "survival" ? "/images/game-elements/sword.png" : "/images/game-elements/finish.png"
   return (
-    <div className="flex items-center font-semibold justify-between px-4 py-2 bg-black/70 text-white w-full">
+    <div className="flex items-center font-semibold justify-between px-4 py-2 bg-black/40 backdrop-blur-2xl relative z-50 text-white w-full">
       {/* Left side */}
       <div className="flex items-center gap-6">
         <div className="flex justify-center font-semibold items-center text-center text-sm gap-2">
