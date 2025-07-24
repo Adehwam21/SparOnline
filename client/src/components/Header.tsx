@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaBars, FaTimes } from "react-icons/fa";
 import UserHandle from "./User/UserHandle";
 import SettingsMenu from "./User/SettingsMenu";
-import { formatNumber } from "../utils/helpers";
+import { formatBalance } from "../utils/helpers";
 import { fetchUpdatedUserBalance } from "../services/auth";
 
 const Header: React.FC = () => {
@@ -60,17 +60,17 @@ const Header: React.FC = () => {
 
         {/* Middle Section: Navigation (Hidden on mobile) */}
         <nav className="hidden md:flex gap-6 text-lg">
-          <Link to="/" className="hover:text-yellow-300 transition">Play</Link>
+          <Link to="/play" className="hover:text-yellow-300 transition">Play</Link>
           <Link to="/learn" className="hover:text-yellow-300 transition">Learn</Link>
-          <Link to="/watch" className="hover:text-yellow-300 transition">Leaderboard</Link>
-          <Link to="/watch" className="hover:text-yellow-300 transition">Store</Link>
+          {/* <Link to="/leaderboard" className="hover:text-yellow-300 transition">Leaderboard</Link> */}
+          {/* <Link to="/store" className="hover:text-yellow-300 transition">Store</Link> */}
         </nav>
       </div>
 
       {/* Right Section: User Profile (Hidden on mobile) */}
       <div className="flex md:flex items-center justify-center gap-2">
         {user && typeof user === "object" && Object.keys(user).length > 0 ? (
-          <UserHandle user={user} coins={formatNumber(user.balance!)} />
+          <UserHandle user={user} coins={formatBalance(user.balance!)} />
         ) : (
           <Link
             to="/sign-in"

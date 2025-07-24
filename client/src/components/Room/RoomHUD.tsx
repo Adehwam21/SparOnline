@@ -7,7 +7,7 @@ import {
   FiFlag,
   FiLogOut,
 } from "react-icons/fi";
-import { formatNumber } from "../../utils/helpers";
+import { formatPrizePool } from "../../utils/helpers";
 
 interface RoomHUDProps {
   deckCount: number;
@@ -42,17 +42,17 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
     <div className="flex items-center font-semibold justify-between px-4 py-2 bg-black/70 text-white w-full">
       {/* Left side */}
       <div className="flex items-center gap-6">
-        <div className="flex justify-center font-bold items-center text-center text-md gap-2">
+        <div className="flex justify-center font-semibold items-center text-center text-sm gap-2">
           <img className="h-6 w-6" src="/images/game-elements/deck-of-card.png" alt="Deck icon" />
           {deckCount}
         </div>
-        <div className="flex justify-center items-center text-center text-lg gap-2">
+        <div className="flex justify-center items-center text-center text-sm font-bold gap-2">
           <img className="h-6 w-6" src="/images/game-elements/money-bag.png" alt="Money bag" />
-          {formatNumber(pot)}
+          {formatPrizePool(pot)}
         </div>
         <div className="flex justify-center items-center text-center gap-2 text-yellow-400">
           <img className="h-6 w-6" src={imageUrl} alt="Game variant icon" />
-          <span className="font-bold text-md text-white">{maxPoints}</span>
+          <span className="font-bold text-sm text-white">{maxPoints}</span>
         </div>
       </div>
 

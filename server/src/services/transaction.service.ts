@@ -116,4 +116,16 @@ export default class TransactionService extends IService{
       await session.endSession();
     }
   }
+
+  async distributePricePool(){
+    const session = await this.db.connection.startSession();
+    try {
+      session.startTransaction()
+      
+    } catch (error) {
+      
+    } finally {
+      await session.endSession();
+    }
+  }
 }

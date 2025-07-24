@@ -1,6 +1,7 @@
 import React from "react";
 import { FaUser } from "react-icons/fa";
 import CardPile from "./CardPile";
+import { formatPlayerUsername } from "../../utils/helpers";
 
 interface OpponentProps {
   username: string;
@@ -35,7 +36,7 @@ const Opponent: React.FC<OpponentProps> = ({
       <div className={`flex items-center justify-between py-1 border-b ${borderColor} px-4 lg:px-3`}>
         <div className="flex items-center gap-2">
           <FaUser size={18} className={textColor} />
-          <span className={`text-sm font-bold ${textColor}`}>{username}</span>
+          <span className={`text-sm font-bold ${textColor}`}>{formatPlayerUsername(username)}</span>
         </div>
         <div className={`flex justify-center items-center font-bold text-center text-sm gap-2 ${textColor}`}>
           <img className="h-4 w-4" src="/images/game-elements/playing-card.png" alt="Cards in hand" />

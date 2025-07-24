@@ -7,6 +7,7 @@ import { AppDispatch, RootState } from '../../redux/reduxStore';
 import { errorToastOptions, LoginSignUpProps, successToastOptions } from '../../types';
 import axiosInstance from '../../config/axiosConfig';
 import { loginFailure, loginStart, loginSuccess } from '../../redux/slices/authSlice';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login: React.FC<LoginSignUpProps> = () => {
   const dispatch = useDispatch<AppDispatch>()
@@ -45,7 +46,7 @@ const Login: React.FC<LoginSignUpProps> = () => {
 
       toast.success(res.data.message, successToastOptions);
       dispatch(loginSuccess({ token: res.data!.token, user: res.data!.user}));
-      navigate("/")
+      navigate("/play")
 
     } catch (error: any) {
       dispatch(loginFailure(error))
@@ -57,14 +58,14 @@ const Login: React.FC<LoginSignUpProps> = () => {
     setFormData({ username: '', password: '' });
   };
 
-  const handleGuestLogin = () => {
-    localStorage.setItem('username', 'guest');
-    toast.success('Logged in as Guest', successToastOptions);
-    navigate('/');
-  };
+  // const handleGuestLogin = () => {
+  //   localStorage.setItem('username', 'guest');
+  //   toast.success('Logged in as Guest', successToastOptions);
+  //   navigate('/');
+  // };
 
   return (
-    <div className="text-white w-full p-4 md:w-full md:p-6 max-w-sm mx-auto">
+    <div className="text-white w-full mt-20 p-4 md:w-full md:p-6 max-w-sm mx-auto">
       <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
       <form onSubmit={handleLogIn}>
         
@@ -93,10 +94,10 @@ const Login: React.FC<LoginSignUpProps> = () => {
             required
           />
           <span
-            className="absolute right-3 top-2.5 cursor-pointer"
+            className="absolute right-3 top-2 cursor-pointer"
             onClick={togglePasswordVisibility}
           >
-            {showPassword ? '🙈' : '👁️'}
+            {showPassword ? <FaEyeSlash size={25}/> : <FaEye size={25}/>}
           </span>
         </div>
         <button
@@ -107,7 +108,7 @@ const Login: React.FC<LoginSignUpProps> = () => {
           {loading ? 'Please wait...' : 'Login'}
         </button>
 
-        {/* OR Separator */}
+        {/* OR Separator
         <div className="flex items-center my-4">
           <hr className="flex-grow border-white" />
           <span className="mx-2 text-white text-sm">OR</span>
@@ -120,7 +121,7 @@ const Login: React.FC<LoginSignUpProps> = () => {
           className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 rounded-lg transition-all duration-200"
         >
           Continue as Guest
-        </button>
+        </button> */}
       </form>
     </div>
   );

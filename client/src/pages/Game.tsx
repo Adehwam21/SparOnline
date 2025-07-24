@@ -48,13 +48,13 @@ const GamePage: React.FC = () => {
   const handleExit = () => {
     localStorage.removeItem("reconnection");
     console.log(localStorage.getItem("reconnection"))
-    navigate("/");
+    navigate("/play");
   };
 
   const handleConsentedLeave = () => {
     consentedLeave(currentUser);
     localStorage.removeItem("reconnection");
-    navigate("/"); // Navigate to landing page
+    navigate("/play"); // Navigate to landing page
   }
 
   if (!gameState?.roomInfo?.players) {
