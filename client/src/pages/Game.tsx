@@ -72,7 +72,7 @@ const GamePage: React.FC = () => {
 
       <Room
         players={Object.values(gameState.roomInfo?.players || {})}
-        deckCount={gameState.roomInfo?.deck?.length || 40}
+        deckCount={gameState.roomInfo?.deck?.length || 0}
         prizePool={gameState.roomInfo?.prizePool || 0}
         currentTurn={gameState.roomInfo?.currentTurn ?? ""}
         currentUser={currentUser}

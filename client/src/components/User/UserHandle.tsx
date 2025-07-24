@@ -45,9 +45,9 @@ const UserHandle: React.FC<UserHandleProps> = ({user, coins}) => {
     <div className="relative" ref={menuRef}>      
       <div className="flex justify-between items-center text-center gap-5 p-2">
         {/* Wallet */}
-        <div className="flex justify-center items-center rounded-2xl pr-2 bg-black/60 backdrop-blur-md text-yellow-400 shadow-md">
-          <img className="h-8 w-8" src="/images/game-elements/coin.png" alt="Wallet" />
-          <div className="flex justify-end items-center space-x-0.5 text-center w-18 p-1 font-bold text-md text-yellow-400">
+        <div className="flex items-center bg-black/60 backdrop-blur-md rounded-2xl pr-2 shadow-md text-yellow-400 max-w-full overflow-hidden">
+          <img className="h-8 w-8 shrink-0" src="/images/game-elements/coin.png" alt="Coin" />
+          <div className="flex-1 px-2 py-1 font-bold text-sm truncate text-right">
             {coins}
           </div>
         </div>
