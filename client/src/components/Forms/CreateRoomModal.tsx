@@ -49,7 +49,6 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
       if (!data?.colyseusRoomId) throw new Error("Room creation failed");
   
       dispatch(setGameState(data));
-      console.log(data)
 
       // Redirect and waiting screen
       navigate(`/game/${data.colyseusRoomId}`);

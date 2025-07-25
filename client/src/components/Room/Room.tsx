@@ -3,6 +3,7 @@ import GameBoard from "./GameBoard";
 import RoomHUD from "./RoomHUD";
 import Chat from "./Chat";
 import { Player } from "../../types/game";
+import { GameServerStats } from "../../contexts/roomContext";
 
 interface RoomProps {
   deckCount: number;
@@ -11,6 +12,7 @@ interface RoomProps {
   currentTurn: string;
   currentUser: string;
   maxPoints: string;
+  serverStats: GameServerStats;
   variant: string;
   onLeaveRoom: () => void;
   onSendMessageInChat: (sender: string, content: string, time: string) => Promise<void>;
@@ -22,6 +24,7 @@ const Room: React.FC<RoomProps> = ({
   players,
   currentTurn,
   currentUser,
+  serverStats,
   maxPoints,
   variant,
   onLeaveRoom,
@@ -53,6 +56,7 @@ const Room: React.FC<RoomProps> = ({
         variant={variant}
         isMuted={isMuted}
         menuOpen={menuOpen}
+        serverStats={serverStats}
         onToggleChat={handleToggleChat}
         onMenuToggle={handleMenuToggle}
         onMuteToggle={() => setIsMuted((prev) => !prev)}

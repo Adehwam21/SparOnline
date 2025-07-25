@@ -8,7 +8,7 @@ import { successToastOptions } from '../../types';
 interface WaitingScreenProps {
     isOpen: boolean;
     roomId: string;
-    gameStatus: "ready" | "started";
+    gameStatus: "ready" | "started" | "complete";
     onStartGame?: () => void;
     onClose: () => void; // Add an onClose prop to close the screen
     }
@@ -35,6 +35,9 @@ interface WaitingScreenProps {
         switch (gameStatus) {
         case "started":
             return "Room is full. Ready to start the game!";
+        case "complete":
+            roomId = "CLOSED";
+            return "Room is closed";
         default:
             return "Waiting for more players to join the room...";
         }
@@ -55,14 +58,14 @@ interface WaitingScreenProps {
                 <FaTimes size={16} />
                 </button>
 
-                <h2 className="text-lg font-bold text-center text-green-800">Room Link</h2>
+                <h2 className="text-lg font-bold text-center text-green-800">Room Code</h2>
 
                 <div className="flex items-center gap-2">
                 <input
                     type="text"
                     readOnly
                     value={roomId}
-                    className="flex-1 px-3 py-2 border rounded-md text-md text-gray-700"
+                    className="flex-1 px-3 py-2 border rounded-md text-md text-black"
                 />
                 <button
                     onClick={handleCopy}
