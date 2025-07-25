@@ -78,7 +78,6 @@ function start(config) {
             const { server } = (0, gameServer_1.createGameServer)(app);
             server.listen(config.app.port, () => {
                 console.log(`🚀 Express API running at http://0.0.0.0:${config.app.port}`);
-                console.log(`🎮 Colyseus WebSocket server running on ws://0.0.0.0:${config.app.port}`);
             });
         }
         catch (err) {
