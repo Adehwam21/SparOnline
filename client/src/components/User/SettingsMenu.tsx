@@ -77,7 +77,7 @@ const SettingsMenu: React.FC = () => {
                     transition={{ duration: 0.5 }}
                     >
                     {/* <FaServer /> */}
-                    <span>PING: <span className="text-bold text-lg">{ping !== null ? `${ping} ms` : "N/A"}</span></span>
+                    <span className="text-bold text-sm">PING: <span className="text-bold text-sm">{ping !== null ? `${ping} ms` : "N/A"}</span></span>
                   </motion.div>
                   <motion.div
                     className="flex items-center gap-2 text-sm mt-1"
@@ -85,7 +85,7 @@ const SettingsMenu: React.FC = () => {
                     transition={{ duration: 0.5 }}
                     >
                     {/* <FaServer /> */}
-                    <span>SERVER: <span className="text-bold text-lg">{serverProcessingTime !== null ? `${serverProcessingTime} ms` : "N/A"}</span></span>
+                    <span className="text-bold text-sm">SERVER: <span className="text-bold text-sm">{serverProcessingTime !== null ? `${serverProcessingTime} ms` : "N/A"}</span></span>
                   </motion.div>
                 </div>
               </li>

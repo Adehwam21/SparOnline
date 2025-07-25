@@ -41,7 +41,6 @@ const Login: React.FC<LoginSignUpProps> = () => {
       if (res.status !== 200){
         toast.error(res.data.message, errorToastOptions)
       }
-      console.log(res.data)
       localStorage.setItem("token", res.data!.token);
 
       toast.success(res.data.message, successToastOptions);
@@ -65,7 +64,7 @@ const Login: React.FC<LoginSignUpProps> = () => {
   // };
 
   return (
-    <div className="text-white w-full mt-20 p-4 md:w-full md:p-6 max-w-sm mx-auto">
+    <div className="text-white w-full mt-20 p-4 md:w-full md:p-6 max-w-md mx-auto">
       <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
       <form onSubmit={handleLogIn}>
         
@@ -89,7 +88,7 @@ const Login: React.FC<LoginSignUpProps> = () => {
             name="password"
             value={formData.password}
             onChange={handleInputChange}
-            placeholder="Password"
+            placeholder="Enter password"
             className="w-full px-3 py-2 rounded-lg bg-transparent border border-white focus:border-gold focus:outline-none"
             required
           />

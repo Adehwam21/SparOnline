@@ -65,7 +65,7 @@ interface WaitingScreenProps {
                     type="text"
                     readOnly
                     value={roomId}
-                    className="flex-1 px-3 py-2 border rounded-md text-md text-gray-700"
+                    className="flex-1 px-3 py-2 border rounded-md text-md text-black"
                 />
                 <button
                     onClick={handleCopy}

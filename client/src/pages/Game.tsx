@@ -9,7 +9,7 @@ import { useParams, useNavigate } from "react-router-dom";
 
 const GamePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { join, consentedLeave, sendMessagesInChat, isConnected, isConnecting } = useRoom();
+  const { join, consentedLeave, sendMessagesInChat, isConnected, isConnecting, serverStats } = useRoom();
   const { id: roomId } = useParams();
   const navigate = useNavigate();
 
@@ -77,6 +77,7 @@ const GamePage: React.FC = () => {
         currentTurn={gameState.roomInfo?.currentTurn ?? ""}
         currentUser={currentUser}
         variant={variant!}
+        serverStats = {serverStats!}
         maxPoints={gameState.roomInfo?.maxPoints ?? "0"}
         onLeaveRoom={handleConsentedLeave}
         onSendMessageInChat={sendMessagesInChat}
