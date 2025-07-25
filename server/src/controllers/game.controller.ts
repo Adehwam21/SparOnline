@@ -7,7 +7,6 @@ import { matchMaker } from 'colyseus';
 export const createGameRoom = async (req: Request, res: Response): Promise<void> => {
     try {
         const { roomName, maxPlayers, maxPoints, variant, roomType, creator, entryFee, bettingEnabled} = req.body;
-
         const { error } = createGameInput.validate(req.body);
         if (error) {
             res.status(400).json({ message: error.message });
@@ -66,3 +65,33 @@ export const createGameRoom = async (req: Request, res: Response): Promise<void>
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+
+export const updateWithFinalGamestate = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const gameRoomId = req.params.roomId;
+        const { gameState } = req.body;
+
+        if (!gameRoomId) {
+        res.status(400).json({ message: "Room ID not provided" });
+        return;
+        }
+
+        if (!gameState || typeof gameState !== "object") {
+        res.status(400).json({ message: "Invalid or missing game state" });
+        return;
+        }
+
+        const updatedRoom = await req.context.services?.game.updateGameState(gameRoomId, gameState);
+        if (!updatedRoom) {
+        res.status(404).json({ message: "Update wasn't completed" });
+        return;
+        }
+
+        res.status(200).json({ updatedRoom, message: "Room updated successfully" });
+    } catch (error) {
+        console.error("Error updating game state:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+

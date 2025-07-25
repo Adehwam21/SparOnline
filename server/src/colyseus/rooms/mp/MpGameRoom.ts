@@ -734,6 +734,7 @@ export class MpGameRoom extends Room<GameState> {
         }
       }
 
+      
       this.broadcastGameState();
       // this.broadcastPayouts();
 
