@@ -19,7 +19,7 @@ const SettingsMenu: React.FC = () => {
 
       if (response.status === 200) {
         setPing(Math.round(end - start)); // Round-trip latency
-        setServerProcessingTime(response.data.processingTime || null); // Ensure processingTime exists
+        setServerProcessingTime(response.data.serverProcessingTime || null); // Ensure processingTime exists
       }
     } catch (error) {
       console.error("Failed to fetch ping:", error);

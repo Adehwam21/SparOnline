@@ -58,7 +58,7 @@ const GamePage: React.FC = () => {
   }
 
   if (!gameState?.roomInfo?.players) {
-    return <div className="flex items-center bg-transparent justify-center h-screen text-white">Loading game...</div>;
+    return <div className="flex items-center font-bold text-2xl bg-transparent justify-center h-screen text-white">Please wait. . .</div>;
   }
 
   return (
@@ -66,7 +66,7 @@ const GamePage: React.FC = () => {
       <WaitingScreen
         isOpen={isWaitingScreenOpen}
         roomId={roomId!}
-        gameStatus={gameState.roomInfo!.gameStatus as "ready" | "started"}
+        gameStatus={gameState.roomInfo!.gameStatus as "ready" | "started" | "complete"}
         onClose={handleCloseWaitingScreen}
       />
 
