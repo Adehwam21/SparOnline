@@ -28,9 +28,6 @@ export default async function start(config: Config) {
     app.use(cors({
       origin: [
       process.env.CLIENT_URL || "http://localhost:5173",
-      "http://localhost:3000",
-      "http://192.168.43.241:5173",
-      "http://192.168.43.48:5173",
       ],
       credentials: true
     }));
@@ -66,10 +63,11 @@ export default async function start(config: Config) {
     //use routes
     app.use("/api/v1", routes);
 
+    // Ping server
     app.use("/ping", async (req, res) => {
       const start = process.hrtime();
 
-      // Simulate some processing logic (optional)
+      // Some processing logic
       await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 10)));
 
       const [seconds, nanoseconds] = process.hrtime(start);

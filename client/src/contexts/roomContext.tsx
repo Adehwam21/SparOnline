@@ -17,6 +17,13 @@ interface TurnTimerType {
     deadline: number;
 }
 
+export interface GameServerStats {
+    serverTime?: number;
+    processingTime?: string;
+    rttEstimate?: string;
+}
+
+
 
 interface RoomContextType {
     isConnecting: boolean;
@@ -27,6 +34,7 @@ interface RoomContextType {
     playCard: (cardName: string) => Promise<void>;
     consentedLeave: (currentUser: string) => Promise<void>;
     sendMessagesInChat: (sender: string, message: string, time: string) => Promise<void>;
+    serverStats: GameServerStats | null;
     joinError: boolean;
     state: GameState | null;
     turnTimer: TurnTimerType | null;
@@ -42,6 +50,7 @@ export const RoomContext = createContext<RoomContextType>({
     playCard: async () => {},
     consentedLeave: async () => {},
     sendMessagesInChat: async () => {},
+    serverStats: null,
     turnTimer: null,
     joinError: false,
     state: null,
@@ -52,6 +61,7 @@ export const useRoom = () => useContext(RoomContext);
 const client = new Client(SERVER_BASE_URL);
 let hasActiveJoinRequest = false;
 
+
 export function RoomProvider({ children }: { children: React.ReactNode }) {
     const dispatch = useDispatch<AppDispatch>();
     const [joinError, setJoinError] = useState(false);
@@ -60,6 +70,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
     const [state, setState] = useState<GameState | null>(null);
     const [room, setRoom] = useState<Room<GameState> | null>(null);
     const [turnTimer, setTurnTimer] = useState<TurnTimerType | null>(null);
+    const [serverStats, setServerStats] = useState<GameServerStats | null>(null)
 
     useEffect(() => {
         if (!room || !isConnected) return;
@@ -69,7 +80,16 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         const handleUpdate = (payload: any) => dispatch(setGameState(payload));
         // const handleSetPayouts = (payload: Payouts[]) => dispatch(setPayouts(payload));
         const handleNotification = (payload: any) => toast.success(payload.message, successToastOptions);
+        const handlePong = (payload: any) => {
+            const { serverTime, processingTime, rttEstimate } = payload;
 
+            setServerStats({serverTime, processingTime, rttEstimate}); // ✅ update state for UI
+            console.log(`📡 Server Time: ${new Date(serverTime).toLocaleTimeString()}`);
+            console.log(`🧠 Processing Time: ${processingTime}`);
+            console.log(`⏱ RTT Estimate: ${rttEstimate}`);
+        };
+
+        room.onMessage("pong", handlePong)
         room.onStateChange(handleStateChange);
         room.onLeave(handleLeave);
         room.onMessage("update_state", handleUpdate);
@@ -85,7 +105,18 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
         return () => {
             room.removeAllListeners();
         };
-        }, [room, isConnected, dispatch]);
+    }, [room, isConnected, dispatch]);
+
+    useEffect(() => {
+        if (!room || !isConnected) return;
+
+        const interval = setInterval(() => {
+            room.send("ping", { sentAt: Date.now() });
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [room, isConnected]);
+
 
     const join = async (roomId: string, userId: string, playerUsername: string) => {
         if (hasActiveJoinRequest) return;
@@ -168,6 +199,7 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
                 playCard,
                 consentedLeave,
                 sendMessagesInChat,
+                serverStats,
                 joinError,
                 state,
                 turnTimer
