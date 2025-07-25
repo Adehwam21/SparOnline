@@ -77,7 +77,6 @@ export default async function start(config: Config) {
     const { server } = createGameServer(app);
     server.listen(config.app.port, () => {
       console.log(`🚀 Express API running at http://0.0.0.0:${config.app.port}`);
-      console.log(`🎮 Colyseus WebSocket server running on ws://0.0.0.0:${config.app.port}`);
     });
   } catch (err) {
     console.error(err);

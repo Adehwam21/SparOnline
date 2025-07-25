@@ -1,5 +1,8 @@
 FROM node:20-alpine as builder
 
+# Install Git in the alpine image
+RUN apk add --no-cache git
+
 WORKDIR /app
 
 COPY package*.json ./
