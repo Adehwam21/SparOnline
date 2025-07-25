@@ -271,6 +271,18 @@ export class MpGameRoom extends Room<GameState> {
     this.onMessage("play_card", this.handlePlayCard.bind(this));
     this.onMessage("send_chat_message", this.handleSendMessagesInChat.bind(this));
     this.onMessage("leave_room", this.onLeave);
+    this.onMessage("ping", (client) => {
+      const start = process.hrtime();
+
+      // Simulate some processing
+      const [seconds, nanoseconds] = process.hrtime(start);
+      const processingTime = (seconds * 1000 + nanoseconds / 1e6).toFixed(3);
+
+      client.send("pong", {
+        serverProcessingTime: `${processingTime} ms`
+      });
+    });
+
   }
 
   /* ────────────────────────────────────────────────────────────────────── JOINING ROOM ─────────────────────────────────────────────────────────────────────────── 

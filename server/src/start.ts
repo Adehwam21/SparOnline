@@ -66,9 +66,21 @@ export default async function start(config: Config) {
     //use routes
     app.use("/api/v1", routes);
 
-    app.use("/ping", (req, res) => {
-      res.status(200).send("Greeeeeen! ✅");
+    app.use("/ping", async (req, res) => {
+      const start = process.hrtime();
+
+      // Simulate some processing logic (optional)
+      await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 10)));
+
+      const [seconds, nanoseconds] = process.hrtime(start);
+      const processingTimeMs = (seconds * 1000 + nanoseconds / 1e6).toFixed();
+
+      res.status(200).json({
+        status: "Greeeeeen! ✅",
+        serverProcessingTime: `${processingTimeMs}`
+      });
     });
+
 
     app.use(customError);
     app.use("/colyseus-playground", playground());
