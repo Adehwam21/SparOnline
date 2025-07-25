@@ -1,6 +1,6 @@
 import { colyseus } from "use-colyseus";
 import { GameState } from "./GameState";
-import { COLYSEUS_WS_URL } from "../constants";
+import { SERVER_BASE_URL} from "../constants";
 
 export const {
     client,
@@ -8,4 +8,4 @@ export const {
     disconnectFromColyseus,
     useColyseusRoom,
     useColyseusState
-} = colyseus(COLYSEUS_WS_URL, GameState);
+} = colyseus(SERVER_BASE_URL, GameState);
