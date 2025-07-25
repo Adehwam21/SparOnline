@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Room, Client } from 'colyseus.js';
-import { COLYSEUS_WS_URL } from '../constants';
+import { SERVER_BASE_URL } from '../constants';
 import { GameState } from '../colyseusSchemas/GameState';
 import { leaveRoom, setGameState, updateChatRoom } from '../redux/slices/gameSlice';
 import { AppDispatch } from '../redux/reduxStore';
@@ -49,7 +49,7 @@ export const RoomContext = createContext<RoomContextType>({
 
 export const useRoom = () => useContext(RoomContext);
 // Initialize client
-const client = new Client(COLYSEUS_WS_URL);
+const client = new Client(SERVER_BASE_URL);
 let hasActiveJoinRequest = false;
 
 export function RoomProvider({ children }: { children: React.ReactNode }) {
