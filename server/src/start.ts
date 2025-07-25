@@ -28,9 +28,6 @@ export default async function start(config: Config) {
     app.use(cors({
       origin: [
       process.env.CLIENT_URL || "http://localhost:5173",
-      "http://localhost:3000",
-      "http://192.168.43.241:5173",
-      "http://192.168.43.48:5173",
       ],
       credentials: true
     }));
@@ -66,9 +63,22 @@ export default async function start(config: Config) {
     //use routes
     app.use("/api/v1", routes);
 
-    app.use("/ping", (req, res) => {
-      res.status(200).send("Greeeeeen! ✅");
+    // Ping server
+    app.use("/ping", async (req, res) => {
+      const start = process.hrtime();
+
+      // Some processing logic
+      await new Promise(resolve => setTimeout(resolve, Math.floor(Math.random() * 10)));
+
+      const [seconds, nanoseconds] = process.hrtime(start);
+      const processingTimeMs = (seconds * 1000 + nanoseconds / 1e6).toFixed();
+
+      res.status(200).json({
+        status: "Greeeeeen! ✅",
+        serverProcessingTime: `${processingTimeMs}`
+      });
     });
+
 
     app.use(customError);
     app.use("/colyseus-playground", playground());

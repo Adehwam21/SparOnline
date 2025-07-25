@@ -57,7 +57,7 @@ export class MpGameRoom extends Room<GameState> {
   DECK = secureShuffleDeck(createDeck(), 10);
 
   /* ──────────────────────────────────────────────────────────────────── UTILITY FUNCTIONS ─────────────────────────────────────────────────────────────────── */
-
+  
   private dealCards(deck: string[]) {
     const legalPlayers = Array.from(this.state.players.values()).filter(p => p.active && !p.eliminated);
 
@@ -271,6 +271,22 @@ export class MpGameRoom extends Room<GameState> {
     this.onMessage("play_card", this.handlePlayCard.bind(this));
     this.onMessage("send_chat_message", this.handleSendMessagesInChat.bind(this));
     this.onMessage("leave_room", this.onLeave);
+    this.onMessage("ping", (client, message: { sentAt: number }) => {
+      const start = process.hrtime();
+      const processingDelay = Math.floor(Math.random() * 10); // Simulate 10ms delay
+
+      setTimeout(() => {
+        const [seconds, nanoseconds] = process.hrtime(start);
+        const processingTime = (seconds * 1000 + nanoseconds / 1e6).toFixed();
+        const now = Date.now();
+
+        client.send("pong", {
+          serverTime: now,
+          processingTime: `${processingTime}`,
+          rttEstimate: message?.sentAt ? `${now - message.sentAt}` : undefined,
+        });
+      }, processingDelay);
+    });
   }
 
   /* ────────────────────────────────────────────────────────────────────── JOINING ROOM ─────────────────────────────────────────────────────────────────────────── 

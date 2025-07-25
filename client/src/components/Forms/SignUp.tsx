@@ -75,7 +75,7 @@ const SignUp: React.FC<LoginSignUpProps> = () => {
             name="username"
             value={formData.username}
             onChange={handleInputChange}
-            placeholder="Enter your username"
+            placeholder="Enter username"
             className="w-full px-3 py-2 rounded-lg bg-transparent border border-white focus:border-gold focus:outline-none"
             required
           />
@@ -87,7 +87,7 @@ const SignUp: React.FC<LoginSignUpProps> = () => {
             name="email"
             value={formData.email}
             onChange={handleInputChange}
-            placeholder="Enter your email"
+            placeholder="Enter email"
             className="w-full px-3 py-2 rounded-lg bg-transparent border border-white focus:border-gold focus:outline-none"
             required
           />
@@ -100,7 +100,7 @@ const SignUp: React.FC<LoginSignUpProps> = () => {
             name="password"
             value={formData.password}
             onChange={handleInputChange}
-            placeholder="Enter your password"
+            placeholder="Enter password"
             className="w-full px-3 py-2 rounded-lg bg-transparent border border-white focus:border-gold focus:outline-none"
             required
           />
