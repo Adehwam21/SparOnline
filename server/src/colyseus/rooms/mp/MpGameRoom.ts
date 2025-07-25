@@ -348,8 +348,7 @@ export class MpGameRoom extends Room<GameState> {
       newPlayer.eliminated = false;
       newPlayer.score = this.BASE_POINT;
 
-      console.log("Joined player",newPlayer.mongoId, newPlayer.username)
-
+      // console.log("Joined player",newPlayer.mongoId, newPlayer.username)
       this.state.players.set(client.sessionId, newPlayer);
       this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
 

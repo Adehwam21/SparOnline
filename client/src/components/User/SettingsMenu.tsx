@@ -14,7 +14,7 @@ const SettingsMenu: React.FC = () => {
   const measureLatency = async () => {
     try {
       const start = Date.now();
-      const response = await axios.get(`${SERVER_BASE_URL}/health`);
+      const response = await axios.get(`${SERVER_BASE_URL}/ping`);
       const end = Date.now();
 
       if (response.status === 200) {

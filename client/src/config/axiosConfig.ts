@@ -1,13 +1,11 @@
 import axios from 'axios';
 import { store } from '../redux/reduxStore';
 import { logout } from '../redux/slices/authSlice';
-
-// Get API base URL from environment variables
-const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_BASE_URL } from '../constants';
 
 // Create an Axios instance
 const axiosInstance = axios.create({
-  baseURL: BASE_URL,
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
