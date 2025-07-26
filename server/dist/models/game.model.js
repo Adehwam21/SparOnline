@@ -38,8 +38,8 @@ const mongoose_1 = __importStar(require("mongoose"));
 const uuid_1 = require("uuid");
 // Define the schema
 const GameRoomSchema = new mongoose_1.Schema({
-    roomId: { type: String, required: true, default: uuid_1.v4, unique: true, index: true },
-    colyseusRoomId: { type: String, required: true, index: true, unique: false },
+    roomUUID: { type: String, required: true, default: uuid_1.v4, unique: true, index: true },
+    colyseusRoomId: { type: String, unique: false },
     roomName: { type: String, required: true },
     creator: { type: String, required: true, ref: "User" }, // Creator of the game room
     players: { type: [String], required: true }, // List of players in the game
