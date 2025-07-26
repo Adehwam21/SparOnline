@@ -29,7 +29,8 @@ interface Chatroom {
 // } 
 
 export interface GameState {
-  roomInfo: { 
+  roomInfo: {
+    roomUUID: string | null
     roomId: string | null; // Unique identifier for the room
     colyseusRoomId: string | null;
     maxPlayers: number | null;
@@ -61,6 +62,7 @@ export interface GameState {
 
 const initialState: GameState = {
   roomInfo: {
+    roomUUID: null,
     roomId: null,
     colyseusRoomId: null,
     gameName: null,
