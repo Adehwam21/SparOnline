@@ -24,12 +24,10 @@ const transaction_service_1 = __importDefault(require("../../../services/transac
 const start_1 = require("../../../start");
 const game_service_1 = __importDefault(require("../../../services/game.service"));
 /* ───────────────────────────────────────────────── MULTIPLAYER ROOM ───────────────────────────────────────────────────
-*
-* This Colyseus room class handles both Race and Survival game modes, by injecting the game mode interfaces.
+* This Room handles both Race and Survival game variants, by injecting the game mode interfaces.
 * It checks and validates turns and penalizes violators as well.
-* Players who are eliminated or violators are kept in state as BANNED_USERS order for them to spectate.
-* Price distribution, which is yet to be implemented, shall be done based on player ranks
-*
+* Players who are eliminated or violators are kept in state as BANNED_USERS to support order spectating in the future.
+* Price distribution, is done based on player ranks
 */
 class MpGameRoom extends colyseus_1.Room {
     constructor() {
@@ -39,6 +37,7 @@ class MpGameRoom extends colyseus_1.Room {
         this.PENALTY = -3;
         this.MIN_POINTS = -9;
         this.DISPOSE_AFTER = 5000;
+        this.ROOM_UUID = "";
         this.USER_TO_SESSION_MAP = new Map();
         this.VIOLATORS = new Set();
         this.ELIMINATED_PLAYERS = new Set();
@@ -192,10 +191,12 @@ class MpGameRoom extends colyseus_1.Room {
     /* ────────────────────────────────────────────────────────────────────── ROOM CREATION ────────────────────────────────────────────────────────────────────────── */
     onCreate(options) {
         var _a;
+        console.log(options.roomUUID);
         const transactionService = new transaction_service_1.default(start_1.appContext);
         const gameService = new game_service_1.default(start_1.appContext);
         this.state = new GameState_1.GameState();
-        this.state.roomId = options.roomId;
+        this.ROOM_UUID = options.roomUUID;
+        this.state.roomId = options.roomUUID;
         this.state.entryFee = options.entryFee;
         this.state.prizePool = options.entryFee * options.maxPlayers;
         this.state.bettingEnabled = options.bettingEnabled;
@@ -205,8 +206,7 @@ class MpGameRoom extends colyseus_1.Room {
         this.BASE_POINT = this.state.variant === "survival" ? options.maxPoints : 0;
         this.MIN_POINTS = this.state.variant === "survival" ? 0 : -9;
         this.state.deck = new schema_1.ArraySchema(...this.DECK);
-        this.state.roomId = options.roomId;
-        this.state.colyseusRoomId = options.coluserusRoomId || this.roomId;
+        this.state.colyseusRoomId = options.coluserusRoomId;
         this.state.maxPlayers = Number(options.maxPlayers);
         this.MAX_CLIENTS = this.state.maxPlayers;
         this.state.maxPoints = this.state.variant === "survival" ? 0 : options.maxPoints;
@@ -218,6 +218,20 @@ class MpGameRoom extends colyseus_1.Room {
         this.onMessage("play_card", this.handlePlayCard.bind(this));
         this.onMessage("send_chat_message", this.handleSendMessagesInChat.bind(this));
         this.onMessage("leave_room", this.onLeave);
+        this.onMessage("ping", (client, message) => {
+            const start = process.hrtime();
+            const processingDelay = Math.floor(Math.random() * 10); // Simulate 10ms delay
+            setTimeout(() => {
+                const [seconds, nanoseconds] = process.hrtime(start);
+                const processingTime = (seconds * 1000 + nanoseconds / 1e6).toFixed();
+                const now = Date.now();
+                client.send("pong", {
+                    serverTime: now,
+                    processingTime: `${processingTime}`,
+                    rttEstimate: (message === null || message === void 0 ? void 0 : message.sentAt) ? `${now - message.sentAt}` : undefined,
+                });
+            }, processingDelay);
+        });
     }
     /* ────────────────────────────────────────────────────────────────────── JOINING ROOM ───────────────────────────────────────────────────────────────────────────
     * Starts game automatically when the room is full.
@@ -557,6 +571,7 @@ class MpGameRoom extends colyseus_1.Room {
             console.error("[startNextRound]", e);
         }
     }
+    // Otherwise, check game over
     checkGameOver() {
         if (this.state.variant === "survival") {
             const alivePlayers = [...this.state.players.values()].filter(p => p.active && !p.eliminated && p.connected && p.score > this.MIN_POINTS);
@@ -578,6 +593,7 @@ class MpGameRoom extends colyseus_1.Room {
         }
         return false;
     }
+    // If game is over end game 
     endGame() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -594,6 +610,13 @@ class MpGameRoom extends colyseus_1.Room {
                         return;
                     }
                 }
+                // Update the final gamestate in db, for ai training.
+                try {
+                    const updated = yield this.ROOM_MASTER.updateWithFinalGameState(this.ROOM_UUID, this.state.toJSON());
+                }
+                catch (err) {
+                    console.error("[endGame] Failed to update final game state:", err);
+                }
                 this.broadcastGameState();
                 // this.broadcastPayouts();
                 // Dispose room after timeout
@@ -606,7 +629,7 @@ class MpGameRoom extends colyseus_1.Room {
             }
         });
     }
-    /* ─────────────────────────────────────────────────────────── DISCONNECTIONS AND VOLUNTARY LEAVES ──────────────────────────────────────────────────────── */
+    /* ─────────────────────────────────────────────────────────── HANDLE DISCONNECTIONS AND VOLUNTARY LEAVES ──────────────────────────────────────────────────────── */
     onLeave(client, consented) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
