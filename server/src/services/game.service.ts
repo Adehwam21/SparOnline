@@ -7,7 +7,7 @@ export default class GameService extends IService {
         super(props);
     }
 
-    async createGame(input: ICreateGameInput): Promise<IGameRoom | null> {
+    async createGame(input: ICreateGameInput): Promise<IGameRoom | null |any |any> {
         try {
             const { roomName, colyseusRoomId, creator, variant, maxPlayers, maxPoints, entryFee, roomType } = input;
             const gameRoom = await this.db.GameRoomModel.create({
@@ -26,7 +26,7 @@ export default class GameService extends IService {
             throw e;
         }
     }
-    async getGameById(id: string): Promise<IGameRoom | null> {
+    async getGameById(id: string): Promise<IGameRoom | null |any> {
         try {
             const gameRoom = await this.db.GameRoomModel.findById(id);
             return gameRoom ? gameRoom.toObject() : null;
@@ -34,7 +34,7 @@ export default class GameService extends IService {
             throw e;
         }
     }
-    async getAllGames(): Promise<IGameRoom[]> {
+    async getAllGames(): Promise<IGameRoom[] | any> {
         try {
             const gameRooms = await this.db.GameRoomModel.find({});
             return gameRooms.map((gameRoom) => gameRoom.toObject());
@@ -42,7 +42,7 @@ export default class GameService extends IService {
             throw e;
         }
     }
-    async updateGame(id: string, input: Partial<ICreateGameInput>): Promise<IGameRoom | null> {
+    async updateGame(id: string, input: Partial<ICreateGameInput>): Promise<IGameRoom | null |any> {
         try {
             const gameRoom = await this.db.GameRoomModel.findByIdAndUpdate(
                 id,
@@ -54,7 +54,7 @@ export default class GameService extends IService {
             throw e;
         }
     }
-    async deleteGame(id: string): Promise<IGameRoom | null> {
+    async deleteGame(id: string): Promise<IGameRoom | null |any> {
         try {
             const gameRoom = await this.db.GameRoomModel.findByIdAndDelete(id);
             return gameRoom ? gameRoom.toObject() : null;
@@ -62,7 +62,7 @@ export default class GameService extends IService {
             throw e;
         }
     }
-    async addPlayerToGame(gameId: string, playerId: string): Promise<IGameRoom | null> {
+    async addPlayerToGame(gameId: string, playerId: string): Promise<IGameRoom | null |any> {
         try {
             const gameRoom = await this.db.GameRoomModel.findByIdAndUpdate(
                 gameId,
@@ -74,7 +74,7 @@ export default class GameService extends IService {
             throw e;
         }
     }
-    async removePlayerFromGame(gameId: string, playerId: string): Promise<IGameRoom | null> {
+    async removePlayerFromGame(gameId: string, playerId: string): Promise<IGameRoom | null |any> {
         try {
             const gameRoom = await this.db.GameRoomModel.findByIdAndUpdate(
                 gameId,
@@ -86,10 +86,10 @@ export default class GameService extends IService {
             throw e;
         }
     }
-    async updateGameState(gameId: string, gameState: object): Promise<IGameRoom | null> {
+    async updateGameState(roomUUID: string, gameState: object): Promise<IGameRoom | null |any> {
         try {
-            const gameRoom = await this.db.GameRoomModel.findByIdAndUpdate(
-                gameId,
+            const gameRoom = await this.db.GameRoomModel.findOneAndUpdate(
+                {roomUUID},
                 { $set: { gameState } },
                 { new: true }
             );
@@ -98,7 +98,7 @@ export default class GameService extends IService {
             throw e;
         }
     }
-    async resetGameState(gameId: string): Promise<IGameRoom | null> {
+    async resetGameState(gameId: string): Promise<IGameRoom | null |any> {
         try {
             const gameRoom = await this.db.GameRoomModel.findByIdAndUpdate(
                 gameId,

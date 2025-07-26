@@ -9,8 +9,8 @@ export interface IGameRoomModel extends Model<IGameRoomDocument> { }
 // Define the schema
 const GameRoomSchema = new Schema<IGameRoomDocument>(
   {
-    roomId: { type: String, required: true, default: uuidv4, unique: true, index: true },
-    colyseusRoomId: {type: String, required: true, index: true, unique: false},
+    roomUUID: { type: String, required: true, default: uuidv4, unique: true, index: true },
+    colyseusRoomId: {type: String, unique: false},
     roomName: {type: String, required: true},
     creator: { type: String, required: true, ref: "User" }, // Creator of the game room
     players: { type: [String], required: true }, // List of players in the game
