@@ -13,6 +13,7 @@ exports.createGameRoom = void 0;
 const game_1 = require("../validation/game");
 const colyseus_1 = require("colyseus");
 const createGameRoom = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
     try {
         const { roomName, maxPlayers, maxPoints, variant, roomType, creator, entryFee, bettingEnabled } = req.body;
         const { error } = game_1.createGameInput.validate(req.body);
@@ -20,8 +21,27 @@ const createGameRoom = (req, res) => __awaiter(void 0, void 0, void 0, function*
             res.status(400).json({ message: error.message });
             return;
         }
-        // Create the Colyseus room
+        const initialRoom = {
+            roomName,
+            maxPlayers,
+            maxPoints,
+            entryFee,
+            bettingEnabled,
+            variant,
+            creator,
+            players: [creator],
+            gameState: {}, // Optional initial state
+        };
+        const savedGameRoom = yield req.context.services.game.createGame(initialRoom);
+        if (!savedGameRoom || !savedGameRoom.roomUUID) {
+            res.status(500).json({ message: 'Error saving game room to database' });
+            return;
+        }
+        const roomUUID = savedGameRoom.roomUUID.toString();
+        const roomMongoId = savedGameRoom._id.toString();
+        // Step 2: Create the Colyseus room with roomUUID
         const colyseusRoom = yield colyseus_1.matchMaker.create(`${roomType}`, {
+            roomUUID,
             roomName,
             maxPlayers: Number(maxPlayers),
             maxPoints: Number(maxPoints),
@@ -32,33 +52,16 @@ const createGameRoom = (req, res) => __awaiter(void 0, void 0, void 0, function*
             entryFee,
             bettingEnabled,
         });
-        if (!colyseusRoom) {
-            res.status(500).json({ message: 'Error creating game room' });
+        if (!colyseusRoom || !((_a = colyseusRoom.room) === null || _a === void 0 ? void 0 : _a.roomId)) {
+            res.status(500).json({ message: 'Error creating Colyseus room' });
             return;
         }
-        // Get the roomId from the Colyseus room
         const colyseusRoomId = colyseusRoom.room.roomId;
-        // Save the room to your MongoDB with the roomId
-        const newGameRoom = {
-            colyseusRoomId,
-            roomName,
-            maxPlayers,
-            maxPoints,
-            entryFee,
-            bettingEnabled,
-            variant,
-            creator,
-            players: [creator],
-            gameState: {}, // Add initial state if needed
-        };
-        const savedGameRoom = yield req.context.services.game.createGame(newGameRoom);
-        if (!savedGameRoom) {
-            res.status(500).json({ message: 'Error saving game room' });
-            return;
-        }
+        // Update the MongoDB record with colyseusRoomId
+        yield req.context.services.game.updateGame(roomMongoId, { colyseusRoomId });
         const link = `${req.protocol}://${req.get('host')}/game/${colyseusRoomId}`;
         res.status(201).json({
-            roomInfo: savedGameRoom,
+            roomInfo: Object.assign(Object.assign({}, (_b = savedGameRoom.toObject) === null || _b === void 0 ? void 0 : _b.call(savedGameRoom)), { colyseusRoomId }),
             colyseusRoomId,
             roomLink: link,
             message: 'Game room created successfully'

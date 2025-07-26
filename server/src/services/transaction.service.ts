@@ -10,7 +10,6 @@ export default class TransactionService extends IService{
 
   async creditCoins(userId: string, amount: number, transactionType: string, reason: string, metadata?: Record<string, any>): Promise<any | null> {
     try {
-      
       await this.db.UserModel.updateOne({ userId }, { $inc: { balance: amount }, $set: { updatedAt: new Date() } }, { upsert: true });
       const result = await this.db.TransactionModel.insertOne({
         userId,
