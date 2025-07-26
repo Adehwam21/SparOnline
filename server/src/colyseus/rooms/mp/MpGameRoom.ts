@@ -1,26 +1,12 @@
 import { Room, Client, Delayed } from "colyseus";
 import { ArraySchema, MapSchema } from "@colyseus/schema";
-
 import {
-  GameState,
-  Player,
-  Round,
-  PlayedCard,
-  Moves,
-  ChatRoom,
-  ChatMessage,
-  Payouts,
+  GameState,Player,Round,PlayedCard,
+  Moves,ChatRoom,ChatMessage,Payouts,
 } from "../../schemas/GameState";
 import {
-  createDeck,
-  secureShuffleDeck,
-  distributeCards,
-  calculateMoveWinner,
-  getCardRank,
-  getCardSuit,
-  getCardValue,
-  getCardPoints,
-  calculatePrizeDistribution,
+  createDeck,secureShuffleDeck,distributeCards,calculateMoveWinner,
+  getCardRank,getCardSuit,getCardValue,getCardPoints,calculatePrizeDistribution,
 } from "../../utils/roomUtils";
 import { IBids } from "../../../types/game";
 import { SurvivalModeStrategy } from "../strategy/SurvivalModeStrategy";
@@ -32,12 +18,10 @@ import { appContext } from "../../../start";
 import GameService from "../../../services/game.service";
 
 /* ───────────────────────────────────────────────── MULTIPLAYER ROOM ─────────────────────────────────────────────────── 
-*
-* This Colyseus room class handles both Race and Survival game modes, by injecting the game mode interfaces.
+* This Room handles both Race and Survival game variants, by injecting the game mode interfaces.
 * It checks and validates turns and penalizes violators as well.
-* Players who are eliminated or violators are kept in state as BANNED_USERS order for them to spectate.
-* Price distribution, which is yet to be implemented, shall be done based on player ranks
-* 
+* Players who are eliminated or violators are kept in state as BANNED_USERS to support order spectating in the future.
+* Price distribution, is done based on player ranks
 */
 
 export class MpGameRoom extends Room<GameState> {
@@ -47,6 +31,7 @@ export class MpGameRoom extends Room<GameState> {
   MIN_POINTS = -9;
   DISPOSE_AFTER = 5000;
   BASE_POINT!: number;
+  ROOM_UUID: string = "";
   STRATEGY!: IGameModeStrategy;
   ROOM_MASTER!: RoomMaster;
   USER_TO_SESSION_MAP = new Map<string, string>();
@@ -57,7 +42,6 @@ export class MpGameRoom extends Room<GameState> {
   DECK = secureShuffleDeck(createDeck(), 10);
 
   /* ──────────────────────────────────────────────────────────────────── UTILITY FUNCTIONS ─────────────────────────────────────────────────────────────────── */
-  
   private dealCards(deck: string[]) {
     const legalPlayers = Array.from(this.state.players.values()).filter(p => p.active && !p.eliminated);
 
@@ -240,14 +224,16 @@ export class MpGameRoom extends Room<GameState> {
   /* ────────────────────────────────────────────────────────────────────── ROOM CREATION ────────────────────────────────────────────────────────────────────────── */
   override onCreate(
     options: {
-      roomId: string, coluserusRoomId: string; maxPlayers: number; maxPoints: number; 
+      roomUUID: string, coluserusRoomId: string; maxPlayers: number; maxPoints: number; 
       creator: string, variant: string, entryFee: number, bettingEnabled: boolean },
   ) {
+    console.log(options.roomUUID)
     const transactionService = new TransactionService(appContext);
     const gameService = new GameService(appContext);
 
     this.state = new GameState();
-    this.state.roomId = options.roomId;
+    this.ROOM_UUID = options.roomUUID
+    this.state.roomId = options.roomUUID;
     this.state.entryFee = options.entryFee;
     this.state.prizePool = options.entryFee * options.maxPlayers;
     this.state.bettingEnabled = options.bettingEnabled;
@@ -257,8 +243,7 @@ export class MpGameRoom extends Room<GameState> {
     this.BASE_POINT = this.state.variant === "survival" ? options.maxPoints : 0;
     this.MIN_POINTS = this.state.variant === "survival" ? 0 : -9
     this.state.deck = new ArraySchema(...this.DECK);
-    this.state.roomId = options.roomId;
-    this.state.colyseusRoomId = options.coluserusRoomId || this.roomId;
+    this.state.colyseusRoomId = options.coluserusRoomId
     this.state.maxPlayers = Number(options.maxPlayers);
     this.MAX_CLIENTS = this.state.maxPlayers;
     this.state.maxPoints = this.state.variant === "survival" ? 0 : options.maxPoints;
@@ -292,7 +277,6 @@ export class MpGameRoom extends Room<GameState> {
   /* ────────────────────────────────────────────────────────────────────── JOINING ROOM ─────────────────────────────────────────────────────────────────────────── 
   * Starts game automatically when the room is full.
   */
-
   override onJoin(client: Client, { userId, playerUsername }: { userId: string, playerUsername: string }) {
     try {
       // Validate username
@@ -686,7 +670,8 @@ export class MpGameRoom extends Room<GameState> {
     } catch (e) {
       console.error("[startNextRound]", e);
     }
-  }
+  } 
+  // Otherwise, check game over
 
   checkGameOver(): boolean {
     if (this.state.variant=== "survival") {
@@ -714,7 +699,8 @@ export class MpGameRoom extends Room<GameState> {
     }
 
     return false;
-  }
+  } 
+  // If game is over end game 
 
   async endGame() {
     try {
@@ -734,10 +720,15 @@ export class MpGameRoom extends Room<GameState> {
         }
       }
 
-      
+      // Update the final gamestate in db, for ai training.
+      try {
+        const updated = await this.ROOM_MASTER.updateWithFinalGameState(this.ROOM_UUID, this.state.toJSON());
+      } catch (err) {
+        console.error("[endGame] Failed to update final game state:", err);
+      }
+
       this.broadcastGameState();
       // this.broadcastPayouts();
-
 
       // Dispose room after timeout
       this.clock.setTimeout(() => {
@@ -749,8 +740,7 @@ export class MpGameRoom extends Room<GameState> {
     }
   }
 
-
-  /* ─────────────────────────────────────────────────────────── DISCONNECTIONS AND VOLUNTARY LEAVES ──────────────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────────────── HANDLE DISCONNECTIONS AND VOLUNTARY LEAVES ──────────────────────────────────────────────────────── */
   override async onLeave(client: Client, consented: boolean) {
     try {
       const player = this.state.players.get(client.sessionId);
