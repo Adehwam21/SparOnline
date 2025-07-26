@@ -102,10 +102,10 @@ class GameService extends app_1.IService {
             }
         });
     }
-    updateGameState(gameId, gameState) {
+    updateGameState(roomUUID, gameState) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const gameRoom = yield this.db.GameRoomModel.findByIdAndUpdate(gameId, { $set: { gameState } }, { new: true });
+                const gameRoom = yield this.db.GameRoomModel.findOneAndUpdate({ roomUUID }, { $set: { gameState } }, { new: true });
                 return gameRoom ? gameRoom.toObject() : null;
             }
             catch (e) {
