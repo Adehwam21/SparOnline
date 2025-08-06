@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../redux/reduxStore';
 import { errorToastOptions, LoginSignUpProps, successToastOptions } from '../../types';
 import axiosInstance from '../../config/axiosConfig';
-import { loginFailure, loginStart, loginSuccess } from '../../redux/slices/authSlice';
+import { loginFailure, start, end, loginSuccess } from '../../redux/slices/authSlice';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 
 const Login: React.FC<LoginSignUpProps> = () => {
@@ -34,7 +34,7 @@ const Login: React.FC<LoginSignUpProps> = () => {
 
   const handleLogIn = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    dispatch(loginStart())
+    dispatch(start())
     try {
       const res = await axiosInstance.post("/auth/login", formData)
 
@@ -51,7 +51,9 @@ const Login: React.FC<LoginSignUpProps> = () => {
       dispatch(loginFailure(error))
       const errorMessage = error.response?.data?.message || "An error occurred"
       toast.error(errorMessage || "An error occured", errorToastOptions)
-    } 
+    } finally {
+      dispatch(end())
+    }
   
     // Reset the form after submission
     setFormData({ username: '', password: '' });

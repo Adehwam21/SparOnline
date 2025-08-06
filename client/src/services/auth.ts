@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { AppDispatch, store } from "../redux/reduxStore";
 import { IRegisterUserInput } from "../types/auth";
-import { loginFailure, loginStart, loginSuccess, registerFailure, registerSuccess, updateBalance } from "../redux/slices/authSlice";
+import { loginFailure, start, end, loginSuccess, registerFailure, registerSuccess, updateBalance } from "../redux/slices/authSlice";
 import axiosInstance from "../config/axiosConfig";
 import toast from "react-hot-toast";
 import { errorToastOptions } from "../types";
 
 export const login = (credentials: { username: string; password: string }) => async (dispatch: AppDispatch) => {
   try {
-    dispatch(loginStart());
+    dispatch(start());
 
     const response = await axiosInstance.post('/auth/login', credentials);
     if (response.status !== 200){
@@ -18,12 +18,14 @@ export const login = (credentials: { username: string; password: string }) => as
     }
   } catch (error: any) {
     dispatch(loginFailure(error.response?.data?.message || 'Failed to log in'));
+  } finally {
+    dispatch(end())
   }
 };
 
 export const register = (registerData: IRegisterUserInput) => async (dispatch: AppDispatch) => {
   try {
-    dispatch(loginStart());
+    dispatch(start());
 
     const response = await axiosInstance.post('/auth/register', registerData);
     if (response.status !== 200){
@@ -35,6 +37,8 @@ export const register = (registerData: IRegisterUserInput) => async (dispatch: A
     dispatch(registerSuccess({ token: response.data.token, user: response.data.user}));
   } catch (error: any) {
     dispatch(loginFailure(error.response?.data?.message || 'Failed to register'));
+  } finally {
+    dispatch(end())
   }
 };
 
