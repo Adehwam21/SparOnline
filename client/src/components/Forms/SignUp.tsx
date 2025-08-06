@@ -6,7 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '../../redux/reduxStore';
 import { FaEyeSlash, FaEye } from 'react-icons/fa';
 import { errorToastOptions, invalidPaawordOptions, LoginSignUpProps, successToastOptions } from '../../types';
-import { registerSuccess, registerFailure, loginStart } from '../../redux/slices/authSlice';
+import { registerSuccess, registerFailure, start, end } from '../../redux/slices/authSlice';
 
 const strongPasswordRegex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
 
@@ -42,7 +42,7 @@ const SignUp: React.FC<LoginSignUpProps> = () => {
       return;
     }
     
-    dispatch(loginStart())
+    dispatch(start())
     try {
       const res = await axiosInstance.post("/auth/register", formData)
 
@@ -58,6 +58,8 @@ const SignUp: React.FC<LoginSignUpProps> = () => {
       dispatch(registerFailure(error))
       const errorMessage = error.response?.data?.message || "An error occurred"
       toast.error(errorMessage || "An error occured", errorToastOptions)
+    } finally {
+      dispatch(end())
     }
   
     // Reset the form after submission

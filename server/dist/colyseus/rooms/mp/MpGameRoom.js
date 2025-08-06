@@ -645,13 +645,7 @@ class MpGameRoom extends colyseus_1.Room {
                     player.hand.clear();
                     player.bids.clear();
                     this.ELIMINATED_PLAYERS.add(leaverUsername);
-                    this.broadcast("notification", {
-                        message: `${leaverUsername} left the room and has been eliminated.`,
-                    });
-                    // ✅ Skip turn if it was their turn
-                    this.skipIfCurrentTurn(leaverUsername);
-                    this.broadcastGameState();
-                    const remaining = [...this.state.players.values()].filter(p => p.active);
+                    const remaining = [...this.state.players.values()].filter(p => p.active && p.connected);
                     if (remaining.length === 1) {
                         const winner = remaining[0];
                         winner.score = this.state.maxPoints;
@@ -662,8 +656,17 @@ class MpGameRoom extends colyseus_1.Room {
                         });
                         this.broadcastGameState();
                         this.clock.setTimeout(() => this.disconnect(), 900);
+                        return;
                     }
-                    return;
+                    else {
+                        this.broadcast("notification", {
+                            message: `${leaverUsername} left the room and has been eliminated.`,
+                        });
+                        // ✅ Skip turn if it was their turn
+                        this.skipIfCurrentTurn(leaverUsername);
+                        this.broadcastGameState();
+                        return;
+                    }
                 }
                 // Not consented → disconnected
                 player.connected = false;
@@ -685,8 +688,7 @@ class MpGameRoom extends colyseus_1.Room {
                         this.ELIMINATED_PLAYERS.add(leaverUsername);
                     }
                     this.skipIfCurrentTurn(leaverUsername);
-                    const currentPlayer = [...this.state.players.values()]
-                        .find(p => p.username === this.state.currentTurn);
+                    const currentPlayer = [...this.state.players.values()].find(p => p.username === this.state.currentTurn);
                     if (currentPlayer) {
                         this.startTurnTimer(currentPlayer);
                         if (!currentPlayer.connected) {
@@ -700,7 +702,7 @@ class MpGameRoom extends colyseus_1.Room {
                     this.broadcastGameState();
                     const connected = [...this.state.players.values()].filter(p => p.connected);
                     if (connected.length === 0) {
-                        console.log(`[Room] No connected players remaining, disposing room ${this.roomId}`);
+                        colyseus_1.logger.info(`[Room] No connected players remaining, disposing room ${this.roomId}`);
                         this.disconnect();
                     }
                 }, 60 * 1000);
