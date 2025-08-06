@@ -14,10 +14,13 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    loginStart(state) {
+    start(state) {
       state.loading = true;
       state.errorMessage = null;
       state.successMessage = null;
+    },
+    end(state){
+      state.loading = false
     },
     loginSuccess(state, action: PayloadAction<{ token: string; user: AuthState['user']}>) {
       state.loading = false;
@@ -59,11 +62,12 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.token = null;
       state.user = null;
+      state.loading = false;
     },
   },
 });
 
 export const { 
-  loginStart, loginSuccess, loginFailure, registerSuccess, registerFailure, logout, setUsername, updateBalance
+  start, end, loginSuccess, loginFailure, registerSuccess, registerFailure, logout, setUsername, updateBalance
 } = authSlice.actions;
 export const authReducer = authSlice.reducer;
