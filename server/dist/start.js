@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -15,6 +48,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.appContext = void 0;
 exports.default = start;
 require("dotenv/config");
+const os = __importStar(require("os"));
+const qrcode = __importStar(require("qrcode-terminal"));
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const error_1 = __importDefault(require("./middleware/error"));
@@ -29,6 +64,30 @@ const gameServer_1 = require("./colyseus/gameServer");
 const playground_1 = require("@colyseus/playground");
 // Global AppContext for game rooms.
 exports.appContext = {};
+const frontendQRCode = () => {
+    const interfaces = os.networkInterfaces();
+    let localIP = null;
+    for (const name in interfaces) {
+        for (const iface of interfaces[name] || []) {
+            if (iface.family === "IPv4" && !iface.internal) {
+                localIP = iface.address;
+                break;
+            }
+        }
+        if (localIP)
+            break;
+    }
+    if (localIP) {
+        const url = `http://${localIP}:5173`; // change port if needed
+        qrcode.generate(url, { small: true }, function (qrcode) {
+            console.log("Scan to connect to frontend dev server");
+            console.log(qrcode);
+        });
+    }
+    else {
+        console.log("Could not find local IP address.");
+    }
+};
 function start(config) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -82,8 +141,9 @@ function start(config) {
             app.use("/colyseus-playground", (0, playground_1.playground)());
             // Create and start Colyseus + Express server
             const { server } = (0, gameServer_1.createGameServer)(app);
+            frontendQRCode();
             server.listen(config.app.port, () => {
-                console.log(`🚀 Express API running at http://0.0.0.0:${config.app.port}`);
+                console.log(`Express API & Colyseus WS server running at http://0.0.0.0:${config.app.port}`);
             });
         }
         catch (err) {

@@ -1,5 +1,6 @@
 import "dotenv/config";
-
+import * as os from "os";
+import * as qrcode from "qrcode-terminal";
 import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import { Config } from "./types/config";
@@ -18,6 +19,30 @@ import { playground } from "@colyseus/playground";
 // Global AppContext for game rooms.
 export const appContext: IAppContext =  {};
 
+const frontendQRCode = () => {
+  const interfaces = os.networkInterfaces();
+  let localIP: string | null = null;
+
+  for (const name in interfaces) {
+    for (const iface of interfaces[name] || []) {
+      if (iface.family === "IPv4" && !iface.internal) {
+        localIP = iface.address;
+        break;
+      }
+    }
+    if (localIP) break;
+  }
+
+  if (localIP) {
+      const url = `http://${localIP}:5173`; // change port if needed
+      qrcode.generate(url, {small: true}, function (qrcode) {
+      console.log("Scan to connect to frontend dev server")
+      console.log(qrcode)
+    })
+  } else {
+    console.log("Could not find local IP address.");
+  }
+}
 
 export default async function start(config: Config) {
   try {
@@ -79,16 +104,18 @@ export default async function start(config: Config) {
       });
     });
 
-
     app.use(customError);
     app.use("/colyseus-playground", playground());
 
     // Create and start Colyseus + Express server
     const { server } = createGameServer(app);
+    frontendQRCode()
+
     server.listen(config.app.port, () => {
-      console.log(`🚀 Express API running at http://0.0.0.0:${config.app.port}`);
+      console.log(`Express API & Colyseus WS server running at http://0.0.0.0:${config.app.port}`);
     });
   } catch (err) {
     console.error(err);
   }
 }
+
