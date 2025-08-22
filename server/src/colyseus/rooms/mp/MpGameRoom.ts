@@ -632,7 +632,8 @@ export class MpGameRoom extends Room<GameState> {
         }
       } else {
         round.roundWinner = moveWinner;
-        this.STRATEGY.awardPoints(round, this.state.players);
+        const playersMap: Map<string, Player> = new Map(this.state.players.entries())
+        this.STRATEGY.awardPoints(round, playersMap);
         round.roundStatus = "complete";
         if (this.checkGameOver()) {
           this.endGame();
