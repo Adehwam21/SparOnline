@@ -20,6 +20,18 @@ export function createDeck(): string[] {
   );
 }
 
+export function makeCard(playerName: string, cardName: string, bidIndex: number){
+  return {
+      playerName,
+      cardName,
+      rank: getCardRank(cardName),
+      suit: getCardSuit(cardName),
+      value: getCardValue(cardName),
+      point: getCardPoints(cardName),
+      bidIndex: bidIndex
+  }
+}
+
 export function secureShuffleDeck(originalDeck: string[], passes = 3): string[] {
   let deck = [...originalDeck];
 

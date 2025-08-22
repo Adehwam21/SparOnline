@@ -7,6 +7,7 @@ import {
 import {
   createDeck,secureShuffleDeck,distributeCards,calculateMoveWinner,
   getCardRank,getCardSuit,getCardValue,getCardPoints,calculatePrizeDistribution,
+  makeCard,
 } from "../../utils/roomUtils";
 import { IBids } from "../../../types/game";
 import { SurvivalModeStrategy } from "../strategy/SurvivalModeStrategy";
@@ -476,14 +477,9 @@ export class MpGameRoom extends Room<GameState> {
       const move = round.moves.get(key)!;
 
       const newCard = new PlayedCard();
-      newCard.playerName = player.username;
-      newCard.cardName = cardName;
-      newCard.rank = getCardRank(cardName);
-      newCard.suit = getCardSuit(cardName);
-      newCard.value = getCardValue(cardName);
-      newCard.point = getCardPoints(cardName);
-      newCard.bidIndex = move.bids.length;
-
+      const bidIndex = move.bids.length;
+      const card = makeCard(player.username, cardName, bidIndex)
+      Object.assign(newCard, card);
       player.bids.push(newCard.cardName);
       move.bids.push(newCard);
 
@@ -518,10 +514,6 @@ export class MpGameRoom extends Room<GameState> {
               last.score = this.state.maxPoints;
               this.state.gameWinner = last.username;
               this.state.gameStatus = "complete";
-
-              this.broadcast("notification", {
-                message: `${last.username} wins by default.`,
-              });
 
               this.broadcastGameState();
               this.clock.setTimeout(() => this.disconnect(), 3000);
@@ -764,11 +756,7 @@ export class MpGameRoom extends Room<GameState> {
           this.state.gameWinner = winner.username;
           this.state.gameStatus = "complete";
 
-          this.broadcast("notification", {
-            message: `${winner.username} wins by default.`,
-          });
           this.broadcastGameState();
-
           this.clock.setTimeout(() => this.disconnect(), 900);
           return;
           

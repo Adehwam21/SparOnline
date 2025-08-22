@@ -1,6 +1,7 @@
 import React from "react";
 import { FaUser } from "react-icons/fa";
-import DraggableTappableCard from "./DraggableTappableCard";
+// import DraggableTappableCard from "./DraggableTappableCard";
+import TappableCard from "./TappableCard";
 
 interface PlayerBarProps {
   username: string;
@@ -40,7 +41,7 @@ const PlayerBar: React.FC<PlayerBarProps> = ({
     {/* Hand */}
     <div className="flex justify-center items-center gap-2 p-2 rounded-sm w-full md:w-auto">
       {playableCards.map((card) => (
-        <DraggableTappableCard key={card} id={card} isTurn={isTurn} />
+        <TappableCard key={card} id={card} isTurn={isTurn} />
       ))}
     </div>
   </div>
