@@ -9,7 +9,7 @@ export class RaceModeStrategy implements IGameModeStrategy {
 
     for (const p of players.values()) {
       if (p.username === winnerName) {
-        p.score += calculateRoundPoints(round.winningCards as PlayedCard[]);
+        p.score += calculateRoundPoints(Array.from(round.winningCards) as PlayedCard[]);
       }
     }
   }
