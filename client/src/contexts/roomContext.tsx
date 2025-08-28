@@ -84,9 +84,9 @@ export function RoomProvider({ children }: { children: React.ReactNode }) {
             const { serverTime, processingTime, rttEstimate } = payload;
 
             setServerStats({serverTime, processingTime, rttEstimate}); // ✅ update state for UI
-            console.log(`📡 Server Time: ${new Date(serverTime).toLocaleTimeString()}`);
-            console.log(`🧠 Processing Time: ${processingTime}`);
-            console.log(`⏱ RTT Estimate: ${rttEstimate}`);
+            // console.log(`📡 Server Time: ${new Date(serverTime).toLocaleTimeString()}`);
+            // console.log(`🧠 Processing Time: ${processingTime}`);
+            // console.log(`⏱ RTT Estimate: ${rttEstimate}`);
         };
 
         room.onMessage("pong", handlePong)
