@@ -8,6 +8,8 @@ import {
 // import { FaSignal } from "react-icons/fa";
 import { formatPrizePool } from "../../utils/helpers";
 import { GameServerStats } from "../../contexts/roomContext";
+// import { useSelector } from "react-redux";
+// import { RootState } from "../../redux/reduxStore";
 
 interface RoomHUDProps {
   deckCount: number;
@@ -35,6 +37,9 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
   onLeaveRoom,
   menuOpen,
 }) => {
+  // const unreadCount = useSelector(
+  //     (state: RootState) => state.game.roomInfo!.chat!.unreadCount! || 0
+  //   );
   const imageUrl =
     variant === "survival"
       ? "/images/game-elements/skull-and-bones.png"
@@ -45,7 +50,6 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
       ? "/images/game-elements/sword.png"
       : "/images/game-elements/finish.png";
 
-  console.log(serverStats);
   return (
     <div className="flex items-center font-semibold justify-between px-4 py-2 bg-black/40 backdrop-blur-2xl relative z-50 text-white w-full">
       {/* Left side */}
@@ -74,13 +78,21 @@ const RoomHUD: React.FC<RoomHUDProps> = ({
 
       {/* Right side */}
       <div className="relative flex gap-3.5">
-        <button
-          onClick={onToggleChat}
-          className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded shadow"
-        >
-          <FiMessageSquare size={16} />
-          <span className="text-sm">Chat</span>
-        </button>
+        {/*Chat icon */}
+          <button
+            onClick={onToggleChat}
+            className="flex items-center gap-2 px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded shadow relative"
+          >
+            <FiMessageSquare size={16} />
+            <span className="text-sm">Chat</span>
+          </button>
+        {/* 
+          Floating Badge
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow">
+              {unreadCount}
+            </span>
+          )} */}
 
         <button
           onClick={onMenuToggle}

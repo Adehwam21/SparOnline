@@ -12,7 +12,6 @@ const TappableCard: React.FC<Props> = ({ id, isTurn }) => {
 
   const handleTapToPlay = () => {
     if (isTurn) {
-      console.log("Tapped:", id);
       playCard(id);
     }
   };

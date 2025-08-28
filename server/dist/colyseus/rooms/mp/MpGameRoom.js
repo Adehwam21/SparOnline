@@ -80,9 +80,9 @@ class MpGameRoom extends colyseus_1.Room {
                 const nextUsername = this.state.playerUsernames[nextIndex];
                 this.state.nextPlayerIndex = nextIndex;
                 this.state.currentTurn = nextUsername;
-                this.broadcast("notification", {
-                    message: `Turn skipped — ${leaverUsername} left. It's now ${nextUsername}'s turn.`,
-                });
+                // this.broadcast("notification", {
+                //   message: `Turn skipped — ${leaverUsername} left. It's now ${nextUsername}'s turn.`,
+                // });
                 this.broadcastGameState();
                 // ADD: start timer for the new player
                 const nextPlayer = [...this.state.players.values()]
@@ -407,13 +407,9 @@ class MpGameRoom extends colyseus_1.Room {
                 round.moves.set(key, new GameState_1.Moves());
             const move = round.moves.get(key);
             const newCard = new GameState_1.PlayedCard();
-            newCard.playerName = player.username;
-            newCard.cardName = cardName;
-            newCard.rank = (0, roomUtils_1.getCardRank)(cardName);
-            newCard.suit = (0, roomUtils_1.getCardSuit)(cardName);
-            newCard.value = (0, roomUtils_1.getCardValue)(cardName);
-            newCard.point = (0, roomUtils_1.getCardPoints)(cardName);
-            newCard.bidIndex = move.bids.length;
+            const bidIndex = move.bids.length;
+            const card = (0, roomUtils_1.makeCard)(player.username, cardName, bidIndex);
+            Object.assign(newCard, card);
             player.bids.push(newCard.cardName);
             move.bids.push(newCard);
             const idx = player.hand.indexOf(cardName);
@@ -443,9 +439,6 @@ class MpGameRoom extends colyseus_1.Room {
                             last.score = this.state.maxPoints;
                             this.state.gameWinner = last.username;
                             this.state.gameStatus = "complete";
-                            this.broadcast("notification", {
-                                message: `${last.username} wins by default.`,
-                            });
                             this.broadcastGameState();
                             this.clock.setTimeout(() => this.disconnect(), 3000);
                         }
@@ -541,7 +534,8 @@ class MpGameRoom extends colyseus_1.Room {
             }
             else {
                 round.roundWinner = moveWinner;
-                this.STRATEGY.awardPoints(round, this.state.players);
+                const playersMap = new Map(this.state.players.entries());
+                this.STRATEGY.awardPoints(round, playersMap);
                 round.roundStatus = "complete";
                 if (this.checkGameOver()) {
                     this.endGame();
@@ -651,9 +645,6 @@ class MpGameRoom extends colyseus_1.Room {
                         winner.score = this.state.maxPoints;
                         this.state.gameWinner = winner.username;
                         this.state.gameStatus = "complete";
-                        this.broadcast("notification", {
-                            message: `${winner.username} wins by default.`,
-                        });
                         this.broadcastGameState();
                         this.clock.setTimeout(() => this.disconnect(), 900);
                         return;
@@ -662,7 +653,7 @@ class MpGameRoom extends colyseus_1.Room {
                         this.broadcast("notification", {
                             message: `${leaverUsername} left the room and has been eliminated.`,
                         });
-                        // ✅ Skip turn if it was their turn
+                        // Skip turn if it was their turn
                         this.skipIfCurrentTurn(leaverUsername);
                         this.broadcastGameState();
                         return;

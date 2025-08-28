@@ -12,7 +12,7 @@ class SurvivalModeStrategy {
         if (winnerIndex === -1)
             return;
         const nextPlayer = playerList[(winnerIndex + 1) % playerList.length];
-        const deduction = (0, roomUtils_1.calculateRoundPoints)(round.winningCards);
+        const deduction = (0, roomUtils_1.calculateRoundPoints)(Array.from(round.winningCards));
         nextPlayer.score -= deduction;
     }
     checkGameOver(players, _maxPoints) {

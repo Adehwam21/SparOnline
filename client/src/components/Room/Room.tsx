@@ -4,6 +4,9 @@ import RoomHUD from "./RoomHUD";
 import Chat from "./Chat";
 import { Player } from "../../types/game";
 import { GameServerStats } from "../../contexts/roomContext";
+import { AppDispatch} from "../../redux/reduxStore";
+import { useDispatch } from "react-redux";
+import { resetUnread } from "../../redux/slices/gameSlice";
 
 interface RoomProps {
   deckCount: number;
@@ -30,6 +33,7 @@ const Room: React.FC<RoomProps> = ({
   onLeaveRoom,
   onSendMessageInChat,
 }) => {
+  const dispatch = useDispatch<AppDispatch>();
   const [isMuted, setIsMuted] = useState(false);
   const [showChat, setShowChat] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -37,7 +41,14 @@ const Room: React.FC<RoomProps> = ({
   const newDeckCount = deckCount - (activeConnectedPlayers.length*5)
 
   const handleToggleChat = () => {
-    setShowChat((prev) => !prev);
+    setShowChat((prev) => {
+      const next = !prev;
+      if (next) {
+        // reset unread when chat is opened
+        dispatch(resetUnread());
+      }
+      return next;
+    });
     setMenuOpen(false);
   };
 
