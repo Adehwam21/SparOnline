@@ -21,6 +21,8 @@ interface Message {
 }
 interface Chatroom {
   messages: [{sender: string | null, content: string | null, time: string | null}] | null
+  unreadCount: number | null;
+  lastReadIndex: number | null;
 }
 
 // interface Payout {
@@ -73,7 +75,6 @@ const initialState: GameState = {
     variant: null,
     entryFee: null,
     roomType: null,
-    chat: null,
     leadingCard: null,
     currentTurn: null,
     players: [],
@@ -85,6 +86,11 @@ const initialState: GameState = {
     creator: null,
     gameWinner: null,
     maxPoints: null, // Maximum points to win the game
+    chat: {
+      messages: null,
+      unreadCount: 0,
+      lastReadIndex: 0,
+    },
     // payouts: null,
   },
   colyseusRoomId: null,
@@ -131,6 +137,19 @@ const gameSlice = createSlice({
 
     updateChatRoom: (state, action: PayloadAction<Message>) => {
       state.roomInfo!.chat?.messages?.push(action.payload)
+
+      // increment unread only if chat is not open
+      const totalMessages = state.roomInfo!.chat!.messages!.length;
+      const unread = totalMessages - state.roomInfo!.chat!.lastReadIndex!;
+      state.roomInfo!.chat!.unreadCount = Math.max(unread, 0);
+      state.roomInfo!.chat!.unreadCount = unread;
+    },
+
+    resetUnread: (state) => {
+      if (!state.roomInfo?.chat) return;
+
+      state.roomInfo.chat.lastReadIndex = state.roomInfo!.chat!.messages!.length;
+      state.roomInfo.chat.unreadCount = 0;
     },
 
     leaveRoom: (state) => {
@@ -150,6 +169,7 @@ const gameSlice = createSlice({
 export const { 
     setGameState, addBid, setCurrentTurn, updatePlayers, 
     resetBids, updateRoomInfo,leaveRoom, logOut, updateChatRoom,
+    resetUnread
     // setPayouts
   } = gameSlice.actions;
   
