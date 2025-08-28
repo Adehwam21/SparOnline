@@ -9,7 +9,7 @@ class RaceModeStrategy {
             return;
         for (const p of players.values()) {
             if (p.username === winnerName) {
-                p.score += (0, roomUtils_1.calculateRoundPoints)(round.winningCards);
+                p.score += (0, roomUtils_1.calculateRoundPoints)(Array.from(round.winningCards));
             }
         }
     }

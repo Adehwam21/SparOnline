@@ -5,6 +5,7 @@ import { FaPlusCircle, FaUsers } from "react-icons/fa";
 import CustomButton from "./CustomLobbyButton";
 import CreateRoomModal from "../../components/Forms/CreateRoomModal";
 import JoinRoomModal from "../../components/Forms/JoinRoomModal";
+import Footer from "../../components/Footer";
 // import PlayComputer from "../Forms/PlayComputer";
 // import { QuickGame } from "../Forms/QuickGame";
 
@@ -25,6 +26,7 @@ const Play: React.FC = () => {
   // const handleClosePlayComputer = () => setIsPlayComputerOpen(false);
 
   return (
+    <>
     <div className="flex items-center bg-transparent justify-center min-h-screen ">
         <Header />
         {/* Buttons Grid */}
@@ -41,6 +43,8 @@ const Play: React.FC = () => {
       {/* <QuickGame isOpen={isQuickGameModalOpen} onClose={handleCloseQuickGameModal} /> */}
       {/* <PlayComputer isOpen={isPlayComputerOpen} onClose={handleClosePlayComputer} /> */}
     </div>
+    <Footer/>
+    </>
   );
 };
 

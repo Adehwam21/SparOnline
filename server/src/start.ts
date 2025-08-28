@@ -112,7 +112,7 @@ export default async function start(config: Config) {
     frontendQRCode()
 
     server.listen(config.app.port, () => {
-      console.log(`Express API & Colyseus WS server running at http://0.0.0.0:${config.app.port}`);
+      console.log(`Express API & Colyseus WS server running at http://localhost:${config.app.port}`);
     });
   } catch (err) {
     console.error(err);

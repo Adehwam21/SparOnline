@@ -12,7 +12,7 @@ export class SurvivalModeStrategy implements IGameModeStrategy {
     if (winnerIndex === -1) return;
 
     const nextPlayer = playerList[(winnerIndex + 1) % playerList.length];
-    const deduction = calculateRoundPoints(round.winningCards as PlayedCard[]);
+    const deduction = calculateRoundPoints(Array.from(round.winningCards) as PlayedCard[]);
     nextPlayer.score -= deduction;
   }
 

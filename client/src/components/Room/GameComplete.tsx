@@ -49,7 +49,7 @@ export const GameCompleteModal: React.FC<GameCompleteModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-green/90 backdrop-blur-2xl">
       {/* Show confetti only if current user is the winner */}
       {currentPlayer === firstPlace && (
         <Confetti width={windowSize.width} height={windowSize.height} recycle={false} numberOfPieces={300} />
