@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createDeck = createDeck;
+exports.makeCard = makeCard;
 exports.secureShuffleDeck = secureShuffleDeck;
 exports.distributeCards = distributeCards;
 exports.getCardSuit = getCardSuit;
@@ -25,6 +26,17 @@ const ranks = [
 ];
 function createDeck() {
     return suits.flatMap((suit) => ranks.map((rank) => `${rank.name}${suit}`));
+}
+function makeCard(playerName, cardName, bidIndex) {
+    return {
+        playerName,
+        cardName,
+        rank: getCardRank(cardName),
+        suit: getCardSuit(cardName),
+        value: getCardValue(cardName),
+        point: getCardPoints(cardName),
+        bidIndex: bidIndex
+    };
 }
 function secureShuffleDeck(originalDeck, passes = 3) {
     let deck = [...originalDeck];

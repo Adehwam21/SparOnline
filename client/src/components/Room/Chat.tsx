@@ -14,7 +14,7 @@ interface ChatProps {
   onClose?: () => void;
 }
 
-const Chat: React.FC<ChatProps> = ({ currentUser, sendMessage, onClose }) => {
+const Chat: React.FC<ChatProps> = ({ currentUser, sendMessage }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const chatBoxRef = useRef<HTMLDivElement>(null);
 
@@ -32,20 +32,6 @@ const Chat: React.FC<ChatProps> = ({ currentUser, sendMessage, onClose }) => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [chatMessages]);
-
-  // Close on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        chatBoxRef.current &&
-        !chatBoxRef.current.contains(event.target as Node)
-      ) {
-        if (onClose) onClose();
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [onClose]);
 
   // Send message to server
   const handleSend = () => {
@@ -81,8 +67,10 @@ const Chat: React.FC<ChatProps> = ({ currentUser, sendMessage, onClose }) => {
                     : "bg-blue-100 text-gray-800"
                 }`}
               >
-                {msg.content}
+                <p>{msg.content}</p>
+                <p className="text-[9px] text-gray-500 text-end">{msg.time?.slice(0,5)}{msg.time?.slice(8)}</p>
               </p>
+              
             </div>
           );
         })}
