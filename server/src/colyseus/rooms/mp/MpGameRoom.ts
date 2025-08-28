@@ -90,9 +90,9 @@ export class MpGameRoom extends Room<GameState> {
         this.state.nextPlayerIndex = nextIndex;
         this.state.currentTurn = nextUsername;
 
-        this.broadcast("notification", {
-          message: `Turn skipped — ${leaverUsername} left. It's now ${nextUsername}'s turn.`,
-        });
+        // this.broadcast("notification", {
+        //   message: `Turn skipped — ${leaverUsername} left. It's now ${nextUsername}'s turn.`,
+        // });
 
         this.broadcastGameState();
 
@@ -632,7 +632,8 @@ export class MpGameRoom extends Room<GameState> {
         }
       } else {
         round.roundWinner = moveWinner;
-        this.STRATEGY.awardPoints(round, this.state.players);
+        const playersMap: Map<string, Player> = new Map(this.state.players.entries())
+        this.STRATEGY.awardPoints(round, playersMap);
         round.roundStatus = "complete";
         if (this.checkGameOver()) {
           this.endGame();
@@ -765,7 +766,7 @@ export class MpGameRoom extends Room<GameState> {
             message: `${leaverUsername} left the room and has been eliminated.`,
           });
 
-          // ✅ Skip turn if it was their turn
+          // Skip turn if it was their turn
           this.skipIfCurrentTurn(leaverUsername);
           this.broadcastGameState();
 

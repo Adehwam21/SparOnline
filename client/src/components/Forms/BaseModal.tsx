@@ -13,7 +13,7 @@ const BaseModal: React.FC<BaseModalProps> = ({ isOpen, onClose, title, children 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-green/90 backdrop-blur-2xl">
       <motion.div 
         initial={{ opacity: 0, y: -50 }} 
         animate={{ opacity: 1, y: 0 }} 

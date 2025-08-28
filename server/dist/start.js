@@ -143,7 +143,7 @@ function start(config) {
             const { server } = (0, gameServer_1.createGameServer)(app);
             frontendQRCode();
             server.listen(config.app.port, () => {
-                console.log(`Express API & Colyseus WS server running at http://0.0.0.0:${config.app.port}`);
+                console.log(`Express API & Colyseus WS server running at http://localhost:${config.app.port}`);
             });
         }
         catch (err) {

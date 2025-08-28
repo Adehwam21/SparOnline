@@ -35,7 +35,10 @@ const GamePage: React.FC = () => {
       gameState.roomInfo?.gameStatus === "started" &&
       gameState.roomInfo.players
     ) {
-      setIsWaitingScreenOpen(false);
+      setTimeout(()=>{
+        setIsWaitingScreenOpen(false)
+      }, 2000)
+      
     }
 
     if (gameState?.roomInfo?.gameStatus === "complete") {
@@ -67,6 +70,9 @@ const GamePage: React.FC = () => {
         isOpen={isWaitingScreenOpen}
         roomId={roomId!}
         gameStatus={gameState.roomInfo!.gameStatus as "ready" | "started" | "complete"}
+        players={Object.values(gameState.roomInfo.players || {})}
+        maxPlayers={gameState.roomInfo.maxPlayers ?? 4} 
+        currentUser={currentUser}
         onClose={handleCloseWaitingScreen}
       />
 
