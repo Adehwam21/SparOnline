@@ -35,6 +35,7 @@ export interface ICreateGameInput {
     entryFee?: number;
     bettingEnabled?: boolean;
     gameState: any
+    isPrivate: boolean;
     
 }
 
