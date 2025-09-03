@@ -5,7 +5,7 @@ import { RootState } from "../redux/reduxStore";
 import { motion, AnimatePresence } from "framer-motion";
 // import { FaBars, FaTimes } from "react-icons/fa";
 import UserHandle from "./User/UserHandle";
-import SettingsMenu from "./User/SettingsMenu";
+// import SettingsMenu from "./User/SettingsMenu";
 // import { formatBalance } from "../utils/helpers";
 import { fetchUpdatedUserBalance } from "../services/auth";
 
@@ -82,7 +82,7 @@ const Header: React.FC = () => {
           </Link>
         )}
 
-        <SettingsMenu/>
+        {/* <SettingsMenu/> */}
       </div>
 
       {/* Mobile Menu (Dropdown) */}
