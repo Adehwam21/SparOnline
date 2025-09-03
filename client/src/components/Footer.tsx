@@ -11,7 +11,7 @@ const Footer: React.FC = () => {
                 {/* <a href="/faq" className="hover:text-yellow-300 transition">FAQ</a> */}
                 {/* <a href="/terms" className="hover:text-yellow-300 transition">Terms of Service</a> */}
                 {/* <a href="/privacy" className="hover:text-yellow-300 transition">Privacy Policy</a> */}
-                <a href="https://github.com/Adehwam21/SparOnline" className="hover:text-yellow-300 transition">Contribute</a>
+                {/* <a href="https://github.com/Adehwam21/SparOnline" className="hover:text-yellow-300 transition">Contribute</a> */}
             </div>
         </footer>
     );
