@@ -37,7 +37,7 @@ const CreateRoomModal: React.FC<CreateRoomModalProps> = ({ isOpen, onClose }) =>
     try {
       const data = await createMultiplayerRoom({
         roomName,
-        roomType: "mpr",
+        roomType: "custom",
         maxPlayers: String(maxPlayers),
         maxPoints: String(maxPoints),
         variant,
