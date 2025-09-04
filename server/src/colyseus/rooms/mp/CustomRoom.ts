@@ -228,7 +228,7 @@ export class CustomRoom extends Room<GameState> {
     options: {
       roomUUID: string, coluserusRoomId: string, maxPlayers: number,
       maxPoints: number, creator: string, variant: string, entryFee: number, 
-      bettingEnabled: boolean, private: boolean, locked: boolean 
+      bettingEnabled: boolean, isPrivate: boolean, isLocked: boolean 
     }
   ) {
     console.log(options.roomUUID)

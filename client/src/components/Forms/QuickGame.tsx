@@ -3,6 +3,11 @@ import BaseModal from "./BaseModal";
 import { quickGameTables } from "../../config/quickGameTables";
 import { motion } from "framer-motion";
 import { FaUser } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { AppDispatch, RootState } from "../../redux/reduxStore";
+import { createOrJoinQuickRoom } from "../../services/game";
+import { setGameState } from "../../redux/slices/gameSlice";
 
 const survivalIcon = "/images/game-elements/sword.png";
 const raceIcon = "/images/game-elements/finish.png"
@@ -11,15 +16,40 @@ const coinIcon = "/images/game-elements/coin.png";
 interface QuickGameModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onStartQuickGame?: (roomOptions: typeof quickGameTables[0]) => void;
 }
 
-const QuickGame: React.FC<QuickGameModalProps> = ({ isOpen, onClose, onStartQuickGame }) => {
+const QuickGame: React.FC<QuickGameModalProps> = ({ isOpen, onClose }) => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const creator = useSelector((state: RootState) => state.auth?.user?.username) || "Guest";
+  const balance = useSelector((state: RootState) => state.auth?.user?.balance) || 0;
   const [activeVariant, setActiveVariant] = useState<"race" | "survival">("race");
   const filteredRooms = quickGameTables.filter((room) => room.variant === activeVariant);
 
+  const handleCreateOrJoinQuickRoom = async (room: typeof quickGameTables[0]) => {
+      try {
+        const data = await createOrJoinQuickRoom({
+          roomName: "quick", // Use a better name letter
+          roomType: "quick",
+          maxPlayers: String(room.maxPlayers),
+          maxPoints: String(room.maxPoints),
+          variant: room.variant,
+          creator,
+          entryFee: room.entryFee,
+          bettingEnabled: room.entryFee === 0 ? false : true,
+        });
+
+        if (!data?.colyseusRoomId) throw new Error("Room creation failed");
+
+        dispatch(setGameState(data));
+        navigate(`/game/${data.colyseusRoomId}`);
+        onClose();
+      } catch (err) {
+        console.error("Error creating room:", err);
+      }
+    };
+
   // function to pick button styles based on stakes + variant
-// function to pick button styles based on stakes + variant
   const getButtonClasses = (entryFee: number, variant: "race" | "survival") => {
     const isRace = variant === "race";
 
@@ -70,13 +100,17 @@ const QuickGame: React.FC<QuickGameModalProps> = ({ isOpen, onClose, onStartQuic
         </div>
 
         {/* Grid of Rooms */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {filteredRooms.map((room, idx) => (
             <motion.button
               key={idx}
               whileHover={{ scale: 1.05 }}
-              className={`p-3 flex flex-col justify-center items-center text-center rounded-xl shadow-md cursor-pointer hover:shadow-lg transition ${getButtonClasses(room.entryFee, activeVariant)}`}
-              onClick={() => onStartQuickGame?.(room)}
+              disabled={balance < room.entryFee}
+              className={`p-3 flex flex-col justify-center items-center text-center rounded-xl shadow-md cursor-pointer hover:shadow-lg transition 
+                ${getButtonClasses(room.entryFee, activeVariant)}
+                ${balance < room.entryFee ? "opacity-50 hover:cursor-not-allowed" : ""}`
+              }
+              onClick={() => handleCreateOrJoinQuickRoom(room)}
             >
               <h3 className="text-[14px] font-bold mb-1">{room.name}</h3>
 
