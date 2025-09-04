@@ -45,3 +45,7 @@ docker-compose.override.yml
 .DS_Store
 Thumbs.db
 *.swp
+
+
+# personal
+bugs.txt

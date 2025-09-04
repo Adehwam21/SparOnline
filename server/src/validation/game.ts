@@ -12,4 +12,5 @@ export const createGameInput = Joi.object<ICreateGameInput>({
     bettingEnabled: Joi.boolean().optional(), // True if entry fee taken
     roomType: Joi.string(), // Type of game room (e.g. multiplayer, single player)
     gameState: Joi.object().optional(), // Store snapshot of game state
+    isPrivate: Joi.boolean().optional()
 });

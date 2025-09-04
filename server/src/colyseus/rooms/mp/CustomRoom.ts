@@ -5,9 +5,9 @@ import {
   Moves,ChatRoom,ChatMessage,Payouts,
 } from "../../schemas/GameState";
 import {
-  createDeck,secureShuffleDeck,distributeCards,calculateMoveWinner,
-  getCardRank,getCardSuit,getCardValue,getCardPoints,calculatePrizeDistribution,
-  makeCard,
+  createDeck,secureShuffleDeck, distributeCards,
+  calculateMoveWinner, getCardSuit,
+  calculatePrizeDistribution, makeCard
 } from "../../utils/roomUtils";
 import { IBids } from "../../../types/game";
 import { SurvivalModeStrategy } from "../strategy/SurvivalModeStrategy";
@@ -18,6 +18,7 @@ import TransactionService from "../../../services/transaction.service";
 import { appContext } from "../../../start";
 import GameService from "../../../services/game.service";
 
+
 /* ───────────────────────────────────────────────── MULTIPLAYER ROOM ─────────────────────────────────────────────────── 
 * This Room handles both Race and Survival game variants, by injecting the game mode interfaces.
 * It checks and validates turns and penalizes violators as well.
@@ -25,7 +26,7 @@ import GameService from "../../../services/game.service";
 * Price distribution, is done based on player ranks
 */
 
-export class MpGameRoom extends Room<GameState> {
+export class CustomRoom extends Room<GameState> {
   MAX_CLIENTS = 4;
   MAX_MOVES = 5;
   PENALTY = -3;
@@ -225,8 +226,10 @@ export class MpGameRoom extends Room<GameState> {
   /* ────────────────────────────────────────────────────────────────────── ROOM CREATION ────────────────────────────────────────────────────────────────────────── */
   override onCreate(
     options: {
-      roomUUID: string, coluserusRoomId: string; maxPlayers: number; maxPoints: number; 
-      creator: string, variant: string, entryFee: number, bettingEnabled: boolean },
+      roomUUID: string, coluserusRoomId: string, maxPlayers: number,
+      maxPoints: number, creator: string, variant: string, entryFee: number, 
+      bettingEnabled: boolean, isPrivate: boolean, isLocked: boolean 
+    }
   ) {
     console.log(options.roomUUID)
     const transactionService = new TransactionService(appContext);
@@ -253,7 +256,6 @@ export class MpGameRoom extends Room<GameState> {
     this.state.chat = new ChatRoom();
     this.state.payouts = new ArraySchema<Payouts>();
     this.setMetadata(options);
-
     this.onMessage("play_card", this.handlePlayCard.bind(this));
     this.onMessage("send_chat_message", this.handleSendMessagesInChat.bind(this));
     this.onMessage("leave_room", this.onLeave);
@@ -361,6 +363,7 @@ export class MpGameRoom extends Room<GameState> {
       if ([...this.state.players.values()].filter(p => p.connected).length >= this.MAX_CLIENTS) {
         this.state.gameStatus = "ready";
         this.startGame();
+        this.setMetadata({locked: true})
       }
 
       this.broadcastGameState();
@@ -445,11 +448,11 @@ export class MpGameRoom extends Room<GameState> {
       rnd.winningCards = new ArraySchema<PlayedCard>();
       rnd.roundStatus = "in_progress";
 
-      // ✅ Start timer for current player
+      // Start timer for current player
       if (nextPlayer) {
         this.startTurnTimer(nextPlayer);
 
-        // ✅ Immediately auto-play if the player is disconnected
+        // Immediately auto-play if the player is disconnected
         if (!nextPlayer.connected) {
           this.autoPlayForPlayer(nextPlayer);
         }
@@ -550,7 +553,7 @@ export class MpGameRoom extends Room<GameState> {
         }
       }
 
-      // ✅ Check if move complete
+      // Check if move complete
       const legalPlayerCount = [...this.state.players.values()]
         .filter(p => p.active && !p.eliminated).length;
 
