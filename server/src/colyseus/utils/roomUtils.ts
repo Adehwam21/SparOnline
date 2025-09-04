@@ -20,6 +20,20 @@ export function createDeck(): string[] {
   );
 }
 
+export function makePlayer(
+  userId: string, sessionId: string, playerUsername: string,connected: boolean,
+  active:boolean, eliminated: boolean, score: number){
+  return {
+    mongoId: userId,
+    id: sessionId,
+    username: playerUsername,
+    connected,
+    active,
+    eliminated,
+    score
+  }
+}
+
 export function makeCard(playerName: string, cardName: string, bidIndex: number){
   return {
       playerName,
