@@ -15,4 +15,5 @@ exports.createGameInput = joi_1.default.object({
     bettingEnabled: joi_1.default.boolean().optional(), // True if entry fee taken
     roomType: joi_1.default.string(), // Type of game room (e.g. multiplayer, single player)
     gameState: joi_1.default.object().optional(), // Store snapshot of game state
+    isPrivate: joi_1.default.boolean().optional()
 });
