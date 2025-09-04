@@ -7,7 +7,7 @@ export const gameRouter = Router();
 gameRouter.route("/create-custom")
     .post(verifyToken, createCustomGameRoom)
 
-gameRouter.route("/create-quick-room")
+gameRouter.route("/create-quick")
     .post(verifyToken, createOrJoinQuickGameRoom)
 
 gameRouter.route("/all-rooms")

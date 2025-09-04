@@ -143,7 +143,7 @@ export class QuickRoom extends Room<GameState> {
       this.TURN_TIMER.clear();
     }
 
-    const duration = 15; // seconds
+    const duration = 20; // seconds
     const deadline = Date.now() + duration * 1000;
 
     this.broadcast("start_turn_timer", {
@@ -228,7 +228,7 @@ export class QuickRoom extends Room<GameState> {
     options: {
       roomUUID: string, coluserusRoomId: string, maxPlayers: number,
       maxPoints: number, creator: string, variant: string, entryFee: number, 
-      bettingEnabled: boolean, isPrivate: boolean, locked: boolean 
+      bettingEnabled: boolean, isPrivate: boolean, isLocked: boolean 
     }
   ) {
     console.log(options.roomUUID)
@@ -255,7 +255,15 @@ export class QuickRoom extends Room<GameState> {
     this.state.eliminationCount = -1
     this.state.chat = new ChatRoom();
     this.state.payouts = new ArraySchema<Payouts>();
-    this.setMetadata(options);
+    this.setMetadata({
+      roomUUID: options.roomUUID,
+      variant: this.state.variant,
+      entryFee: this.state.entryFee,
+      maxPlayers: this.state.maxPlayers,
+      maxPoints: this.state.maxPoints,
+      isLocked: options.isLocked ?? false,
+      isPrivate: options.isPrivate ?? false,
+    });
     this.onMessage("play_card", this.handlePlayCard.bind(this));
     this.onMessage("send_chat_message", this.handleSendMessagesInChat.bind(this));
     this.onMessage("leave_room", this.onLeave);
@@ -363,7 +371,7 @@ export class QuickRoom extends Room<GameState> {
       if ([...this.state.players.values()].filter(p => p.connected).length >= this.MAX_CLIENTS) {
         this.state.gameStatus = "ready";
         this.startGame();
-        this.setMetadata({locked: true})
+        this.setMetadata({isLocked: true})
       }
 
       this.broadcastGameState();

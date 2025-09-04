@@ -29,7 +29,7 @@ export const createMultiplayerRoom = async (config: multiplayerConfig) => {
     }
 }
 
-export const createorJoinQuickRoom = async (metadata: multiplayerConfig) => {
+export const createOrJoinQuickRoom = async (metadata: multiplayerConfig) => {
     try {
         const response = await axiosInstance.post('/game/create-quick', metadata);
         if (response.status !== 201) {
@@ -45,7 +45,7 @@ export const createorJoinQuickRoom = async (metadata: multiplayerConfig) => {
     }
 }
 
-export const createorSingleRoom = async (metadata: multiplayerConfig) => {
+export const createOrSingleRoom = async (metadata: multiplayerConfig) => {
     try {
         const response = await axiosInstance.post('/game/create-quick', metadata);
         if (response.status !== 201) {

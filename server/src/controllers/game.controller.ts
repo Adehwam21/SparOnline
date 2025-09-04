@@ -2,7 +2,7 @@ import { Response, Request} from 'express';
 import { ICreateGameInput } from '../types/game';
 import {createGameInput} from '../validation/game';
 import { matchMaker } from 'colyseus';
-
+import { randomUUID } from 'crypto';
 
 export const createCustomGameRoom = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -48,7 +48,7 @@ export const createCustomGameRoom = async (req: Request, res: Response): Promise
             playerUsername: creator,
             entryFee,
             bettingEnabled,
-            locked: false,
+            isLocked: false,
             isPrivate,
         });
 
@@ -78,7 +78,7 @@ export const createCustomGameRoom = async (req: Request, res: Response): Promise
 
 export const createOrJoinQuickGameRoom = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { roomName, maxPlayers, maxPoints, variant, roomType, creator, entryFee, bettingEnabled } = req.body;
+        const { maxPlayers, maxPoints, variant, roomType} = req.body;
         const { error } = createGameInput.validate(req.body);
 
         if (error) {
@@ -86,44 +86,45 @@ export const createOrJoinQuickGameRoom = async (req: Request, res: Response): Pr
             return;
         }
 
-        const options = {
-            roomName,
-            maxPlayers: Number(maxPlayers),
-            maxPoints: Number(maxPoints),
-            variant,
-            creator,
-            playerUsername: creator,
-            entryFee,
-            bettingEnabled,
-            locked: false,
-            isPrivate: false,
-        }
+        const rooms = await matchMaker.query({ name: roomType });
+        const availableRooms = rooms.filter(room =>
+            room.metadata?.isLocked === false &&
+            room.metadata?.maxPlayers === Number(maxPlayers) &&
+            room.metadata?.maxPoints === Number(maxPoints) &&
+            room.metadata?.variant === variant &&
+            room.metadata?.isPrivate === false
+        );
+        const bestRoom = availableRooms.sort((a, b) => a.clients - b.clients)[0];
 
-        const availableRoom = await matchMaker.findOneRoomAvailable(`${roomType}`, {metadata: options});
-        if (availableRoom){
-            const colyseusRoomId = availableRoom.roomId;
-            const link = `${req.protocol}://${req.get('host')}/game/${colyseusRoomId}`;
-            res.status(200).json({
+        if (bestRoom) {
+            console.log("Joining existing room:", bestRoom.roomId);
+
+            const colyseusRoomId = bestRoom.roomId;
+            const link = `${req.protocol}://${req.get("host")}/game/${colyseusRoomId}`;
+
+            res.status(201).json({
                 colyseusRoomId,
                 roomLink: link,
-                message: 'Quick room joinded successfully'
+                message: "Quick room joined successfully",
             });
 
             return;
         }
-        
+
+        // No existing room found → create a new one
         return await createCustomGameRoom(req, res);
+
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ message: "Internal server error" });
     }
 };
 
 export const queryRooms = async (req: Request, res: Response): Promise<void> => {
     try {
-        const customRooms = await matchMaker.query({name: "custom"}) 
-        const singlePRooms = await matchMaker.query({name: "single"}) 
-        const quickRooms = await matchMaker.query({name: "quick"})
+        const customRooms = await matchMaker.query({name: "custom"});
+        const singlePRooms = await matchMaker.query({name: "single"});
+        const quickRooms = await matchMaker.query({name: "quick"});
 
         if (!customRooms?.length && !singlePRooms?.length && !quickRooms?.length) {
             res.status(404).json({ message: "No rooms found" });
@@ -136,4 +137,3 @@ export const queryRooms = async (req: Request, res: Response): Promise<void> => 
         res.status(500).json({message: "No rooms found"})
     }
 }
-
