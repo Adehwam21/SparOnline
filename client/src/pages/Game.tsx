@@ -50,7 +50,6 @@ const GamePage: React.FC = () => {
 
   const handleExit = () => {
     localStorage.removeItem("reconnection");
-    console.log(localStorage.getItem("reconnection"))
     navigate("/play");
   };
 
