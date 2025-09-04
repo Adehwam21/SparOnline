@@ -71,7 +71,7 @@ const UserHandle: React.FC<UserHandleProps> = ({user, coins}) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-            className="absolute right-0 top-12 mt-3 w-48 bg-white text-green-900 rounded-lg shadow-lg"
+            className="absolute right-0 top-14 mt-3 w-48 bg-white text-green-900 rounded-lg shadow-lg"
           >
             <ul className="p-1">
               <li>
