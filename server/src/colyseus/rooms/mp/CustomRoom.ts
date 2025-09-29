@@ -7,7 +7,8 @@ import {
 import {
   createDeck,secureShuffleDeck, distributeCards,
   calculateMoveWinner, getCardSuit,
-  calculatePrizeDistribution, makeCard
+  calculatePrizeDistribution, makeCard,
+  makePlayer
 } from "../../utils/roomUtils";
 import { IBids } from "../../../types/game";
 import { SurvivalModeStrategy } from "../strategy/SurvivalModeStrategy";
@@ -343,15 +344,8 @@ export class CustomRoom extends Room<GameState> {
 
       // New player logic
       const newPlayer = new Player();
-      newPlayer.mongoId = userId;
-      newPlayer.id = client.sessionId;
-      newPlayer.username = playerUsername;
-      newPlayer.connected = true;
-      newPlayer.active = true;
-      newPlayer.eliminated = false;
-      newPlayer.score = this.BASE_POINT;
-
-      // console.log("Joined player",newPlayer.mongoId, newPlayer.username)
+      const player = makePlayer(userId, client.sessionId, playerUsername, true, true, false, this.BASE_POINT)
+      Object.assign(newPlayer, player)
       this.state.players.set(client.sessionId, newPlayer);
       this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
 
@@ -713,6 +707,8 @@ export class CustomRoom extends Room<GameState> {
         if (status === false) {
           this.broadcast('notification', { message });
           return;
+        } else if (status == true) {
+          this.broadcast('notification', {message});
         }
       }
 
