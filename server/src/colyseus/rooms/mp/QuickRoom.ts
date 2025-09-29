@@ -715,8 +715,9 @@ export class QuickRoom extends Room<GameState> {
         if (status === false) {
           this.broadcast('notification', { message });
           return;
+        } else if (status === true){
+          this.broadcast('notification', {message});
         }
-        this.broadcast('notification', {message});
       }
 
       // Update the final gamestate in db, for ai training.

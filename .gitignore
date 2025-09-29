@@ -14,11 +14,11 @@ env/
 Pipfile.lock
 
 # Colyseus server logs
-game-server/node_modules/
-game-server/package-lock.json
-game-server/logs/
-game-server/.env
-game-server/dist/
+server/node_modules/
+server/package-lock.json
+server/logs/
+server/.env
+server/dist/
 
 # ai-server environment variables and logs
 ai-server/.env
