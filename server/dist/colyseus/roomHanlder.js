@@ -1,9 +1,9 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.registerRooms = registerRooms;
-const SpGameRoom_1 = require("./rooms/sp/SpGameRoom");
-const CustomRoom_1 = require("./rooms/mp/CustomRoom");
-const QuickRoom_1 = require("./rooms/mp/QuickRoom");
+const SpGameRoom_1 = require("./rooms/game-rooms/SpGameRoom");
+const CustomRoom_1 = require("./rooms/game-rooms/CustomRoom");
+const QuickRoom_1 = require("./rooms/game-rooms/QuickRoom");
 function registerRooms(gameServer) {
     gameServer.define("custom", CustomRoom_1.CustomRoom)
         .on("create", (room) => console.log("room created:", room.roomId))

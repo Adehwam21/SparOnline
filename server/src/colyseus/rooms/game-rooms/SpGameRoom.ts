@@ -17,8 +17,11 @@ import {
   getCardSuit,
   getCardValue,
   getCardPoints,
+  makeCard,
 } from "../../utils/roomUtils";
 import { IBids } from "../../../types/game";
+import { SparBot } from "../../bots/SparBot";
+import { Difficulty } from "../../bots/Bot";
 
 export class SpGameRoom extends Room<GameState> {
   DECK = secureShuffleDeck(createDeck(), 10);
@@ -26,11 +29,12 @@ export class SpGameRoom extends Room<GameState> {
   MAX_MOVES = 5;
   MIN_POINTS = -15
   USER_TO_SESSION_MAP = new Map<string, string>();
+  BOT: any;
   BANNED_USERS = new Set<string>();
   SECONDS_UNTIL_DISPOSE = 10 * 1000
 
   override onCreate(
-    options: { roomId: string; maxPlayers: number; maxPoints: number; creator: string },
+    options: { roomId: string; maxPlayers: number; maxPoints: number; creator: string, botDifficulty:string },
   ) {
     this.state = new GameState();
     this.state.deck = new ArraySchema(...this.DECK);
@@ -39,6 +43,7 @@ export class SpGameRoom extends Room<GameState> {
     this.MAX_CLIENTS = this.state.maxPlayers + 1;
     this.state.maxPoints = Number(options.maxPoints);
     this.state.creator = options.creator;
+    this.BOT = new SparBot(options.botDifficulty as Difficulty);
     this.setMetadata(options);
 
     this.onMessage("play_card", this.handlePlayCard.bind(this));
@@ -76,10 +81,17 @@ export class SpGameRoom extends Room<GameState> {
       p.username = playerUsername;
       p.active = true;
 
+      // new bot object
+      const b = new Player();
+      b.id = "bot";
+      b.username = "bot";
+      b.active = true
+
       if (!this.state.playerUsernames.includes(playerUsername)) {
         this.state.playerUsernames.push(playerUsername);
       }
       this.state.players.set(client.sessionId, p);
+      this.state.players.set("bot", b)
       this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
       console.log(`Joined: ${playerUsername}`);
 
@@ -164,15 +176,9 @@ export class SpGameRoom extends Room<GameState> {
       const move = round.moves.get(key)!;
 
       const newCard = new PlayedCard();
-      newCard.playerName = player.username;
-      newCard.cardName = cardName;
-      newCard.rank = getCardRank(cardName);
-      newCard.suit = getCardSuit(cardName);
-      newCard.value = getCardValue(cardName);
-      newCard.point = getCardPoints(cardName);
-      newCard.bidIndex = move.bids.length;
-
-      // Add card to player and move
+      const bidIndex = move.bids.length;
+      const card = makeCard(player.username, cardName, bidIndex)
+      Object.assign(newCard, card);
       player.bids.push(newCard.cardName);
       move.bids.push(newCard);
 

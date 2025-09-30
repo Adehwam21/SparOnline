@@ -1,7 +1,7 @@
 import { Server } from "colyseus";
-import { SpGameRoom } from "./rooms/sp/SpGameRoom";
-import { CustomRoom } from "./rooms/mp/CustomRoom";
-import { QuickRoom } from "./rooms/mp/QuickRoom";
+import { SpGameRoom } from "./rooms/game-rooms/SpGameRoom";
+import { CustomRoom } from "./rooms/game-rooms/CustomRoom";
+import { QuickRoom } from "./rooms/game-rooms/QuickRoom";
 
 
 export function registerRooms(gameServer: Server) {

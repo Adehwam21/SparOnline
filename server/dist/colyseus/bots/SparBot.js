@@ -14,20 +14,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SparBot = void 0;
 const axios_1 = __importDefault(require("axios"));
-const bot_config_1 = require("../config/bot-config");
+const config_1 = require("./config");
 const Bot_1 = require("./Bot");
 const roomUtils_1 = require("../utils/roomUtils");
 class SparBot extends Bot_1.Bot {
     constructor(difficulty) {
         super(difficulty);
-        this.serverUrl = (0, bot_config_1.getBotServerUrl)(difficulty);
-        this.name = bot_config_1.botNamesByDifficulty[difficulty];
+        this.serverUrl = (0, config_1.getBotServerUrl)(difficulty);
+        this.name = config_1.botNamesByDifficulty[difficulty];
     }
     playMove(gameState) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             try {
-                if (this.difficulty === "easy") { // If difficulty is easy, just play a valid move to avoid penalties
+                if (this.difficulty === "easy") {
+                    // If difficulty is easy, just play a valid move to avoid penalties
                     const hand = gameState.players["bot"].hand;
                     const round = gameState.rounds.at(-1);
                     if (!round)
@@ -40,13 +41,14 @@ class SparBot extends Bot_1.Bot {
                         return;
                     return cardToPlay;
                 }
-                else { // Make a request to external bot servers for a calculated move
+                else {
+                    // Make a request to external bot servers for a calculated move
                     const response = yield axios_1.default.post(`${this.serverUrl}/play`, gameState);
                     return response.data;
                 }
             }
             catch (e) {
-                console.log('[Bot Erro]: ', e);
+                console.log('[Bot Error]: ', e);
             }
         });
     }

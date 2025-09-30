@@ -1,3 +1,5 @@
+import { Player } from "../schemas/GameState";
+
 // /game/bots/BotBase.ts
 export enum Difficulty {
   easy = "easy",
@@ -11,6 +13,8 @@ export interface IBotPlayResponse {
 
 export abstract class Bot {
   difficulty: keyof typeof Difficulty;
+
+
 
   constructor(difficulty: keyof typeof Difficulty) {
     this.difficulty = difficulty;

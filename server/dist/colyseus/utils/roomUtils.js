@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createDeck = createDeck;
+exports.makePlayer = makePlayer;
 exports.makeCard = makeCard;
 exports.secureShuffleDeck = secureShuffleDeck;
 exports.distributeCards = distributeCards;
@@ -26,6 +27,17 @@ const ranks = [
 ];
 function createDeck() {
     return suits.flatMap((suit) => ranks.map((rank) => `${rank.name}${suit}`));
+}
+function makePlayer(userId, sessionId, playerUsername, connected, active, eliminated, score) {
+    return {
+        mongoId: userId,
+        id: sessionId,
+        username: playerUsername,
+        connected,
+        active,
+        eliminated,
+        score
+    };
 }
 function makeCard(playerName, cardName, bidIndex) {
     return {
