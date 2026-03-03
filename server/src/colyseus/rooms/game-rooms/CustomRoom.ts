@@ -1,4 +1,4 @@
-import { Room, Client, Delayed, logger } from "colyseus";
+import { Room, Client, Delayed } from "colyseus";
 import { ArraySchema, MapSchema } from "@colyseus/schema";
 import {
   GameState,Player,Round,PlayedCard,
@@ -724,7 +724,7 @@ export class CustomRoom extends Room<GameState> {
 
       // Dispose room after timeout
       this.clock.setTimeout(() => {
-        this.disconnect(4000);
+        this.disconnect();
       }, this.DISPOSE_AFTER);
 
     } catch (e) {
@@ -812,7 +812,7 @@ export class CustomRoom extends Room<GameState> {
 
         const connected = [...this.state.players.values()].filter(p => p.connected);
         if (connected.length === 0) {
-          logger.info(`[Room] No connected players remaining, disposing room ${this.roomId}`);
+          console.log(`[Room] No connected players remaining, disposing room ${this.roomId}`);
           this.disconnect();
         }
       }, 60 * 1000);

@@ -11,9 +11,14 @@ export interface IBotPlayResponse {
   cardName: string;
 }
 
+export interface IBotStrategy {
+  comboMode:      boolean; // true = bot is protecting 6s/7s for a late combo
+  comboAbandoned: boolean; // flipped mid-round once combo is no longer viable
+  comboReason:    string;  // for logging / debugging
+}
+
 export abstract class Bot {
   difficulty: keyof typeof Difficulty;
-
 
 
   constructor(difficulty: keyof typeof Difficulty) {

@@ -8,8 +8,8 @@ export const getBotServerUrl = (difficulty: keyof typeof botServerUrl): string =
   return botServerUrl[difficulty];
 }
 export const botNamesByDifficulty = {
-  easy: "Jack",
-  medium: "King",
+  easy: "Brook",
+  medium: "Ray",
   hard: "Ace",
 };
 
