@@ -25,7 +25,7 @@ export interface IGameRoom {
 
 export interface ICreateGameInput {
     colyseusRoomId?: string; // Unique identifier for the room
-    roomName: string;
+    roomName?: string;
     maxPlayers: string; // Maximum number of players allowed in the room
     maxPoints: string; // Maximum points to win the game
     variant: string; // Type of game (e.g., "classic", "custom")
@@ -34,9 +34,25 @@ export interface ICreateGameInput {
     roomType?: string;
     entryFee?: number;
     bettingEnabled?: boolean;
-    gameState: any
+    gameState?: any
     isPrivate: boolean;
     
+}
+
+export interface ICreateVSComputerInput {
+    colyseusRoomId?: string; // Unique identifier for the room
+    roomName?: string;
+    maxPlayers?: string; // Maximum number of players allowed in the room
+    maxPoints?: string; // Maximum points to win the game
+    variant?: string; // Type of game (e.g., "classic", "custom")
+    players?: string[]; // List of players in the game
+    creator?: string; // Store player id
+    roomType?: string;
+    botDifficulty?: string,
+    entryFee?: number;
+    bettingEnabled?: boolean;
+    gameState?: any
+    isPrivate?: boolean;
 }
 
 export interface IBids {

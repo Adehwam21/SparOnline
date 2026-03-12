@@ -90,7 +90,7 @@ export class QuickRoom extends Room<GameState> {
       if (nextIndex !== -1) {
         const nextUsername = this.state.playerUsernames[nextIndex];
         this.state.nextPlayerIndex = nextIndex;
-        this.state.currentTurn = nextUsername;
+        this.state.currentTurn = nextUsername!;
 
         // this.broadcast("notification", {
         //   message: `Turn skipped — ${leaverUsername} left. It's now ${nextUsername}'s turn.`,
@@ -131,7 +131,7 @@ export class QuickRoom extends Room<GameState> {
         return;
       }
       this.state.nextPlayerIndex = fallbackIndex;
-      this.state.currentTurn = this.state.playerUsernames[fallbackIndex];
+      this.state.currentTurn = this.state.playerUsernames[fallbackIndex]!;
     }
   }
 
@@ -227,7 +227,7 @@ export class QuickRoom extends Room<GameState> {
   /* ────────────────────────────────────────────────────────────────────── ROOM CREATION ────────────────────────────────────────────────────────────────────────── */
   override onCreate(
     options: {
-      roomUUID: string, coluserusRoomId: string, maxPlayers: number,
+      roomUUID: string, colyseusRoomId: string, maxPlayers: number,
       maxPoints: number, creator: string, variant: string, entryFee: number, 
       bettingEnabled: boolean, isPrivate: boolean, isLocked: boolean 
     }
@@ -248,7 +248,7 @@ export class QuickRoom extends Room<GameState> {
     this.BASE_POINT = this.state.variant === "survival" ? options.maxPoints : 0;
     this.MIN_POINTS = this.state.variant === "survival" ? 0 : -9
     this.state.deck = new ArraySchema(...this.DECK);
-    this.state.colyseusRoomId = options.coluserusRoomId
+    this.state.colyseusRoomId = options.colyseusRoomId
     this.state.maxPlayers = Number(options.maxPlayers);
     this.MAX_CLIENTS = this.state.maxPlayers;
     this.state.maxPoints = this.state.variant === "survival" ? 0 : options.maxPoints;
@@ -440,10 +440,10 @@ export class QuickRoom extends Room<GameState> {
         }
 
         this.state.nextPlayerIndex = fallbackIndex;
-        this.state.currentTurn = this.state.playerUsernames[fallbackIndex];
+        this.state.currentTurn = this.state.playerUsernames[fallbackIndex]!;
         nextPlayer = eligiblePlayers.find(p => p.username === this.state.currentTurn);
       } else {
-        this.state.currentTurn = nextUsername;
+        this.state.currentTurn = nextUsername!;
       }
 
       rnd.moves = new MapSchema<Moves>();
@@ -493,7 +493,7 @@ export class QuickRoom extends Room<GameState> {
 
       // Penalty Check
       if (move.bids.length > 1) {
-        const firstSuit = move.bids[0].suit;
+        const firstSuit = move.bids[0]!.suit;
         const currentSuit = newCard.suit;
         const hasSuit = player.hand.some(card => getCardSuit(card) === firstSuit);
 
