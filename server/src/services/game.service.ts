@@ -1,13 +1,12 @@
-import { IGameRoom, ICreateGameInput } from "../types/game";
+import { IGameRoom, ICreateGameInput, ICreateVSComputerInput } from "../types/game";
 import { IAppContext, IService } from "../types/app";
-import { Types } from "mongoose";
 
 export default class GameService extends IService {
     constructor(props: IAppContext) {
         super(props);
     }
 
-    async createGame(input: ICreateGameInput): Promise<IGameRoom | null |any |any> {
+    async createGame(input: ICreateGameInput | ICreateVSComputerInput): Promise<IGameRoom | null |any |any> {
         try {
             const { roomName, colyseusRoomId, creator, variant, maxPlayers, maxPoints, entryFee, roomType } = input;
             const gameRoom = await this.db.GameRoomModel.create({

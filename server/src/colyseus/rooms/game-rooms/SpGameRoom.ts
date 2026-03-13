@@ -17,370 +17,254 @@ import {
   makeCard,
 } from "../../utils/roomUtils";
 import { IBids } from "../../../types/game";
-import { SparBot } from "../../bots/SparBot";
+import { SparBot, Variant } from "../../bots/SparBot";
 import { Difficulty } from "../../bots/Bot";
 
 export class SpGameRoom extends Room<GameState> {
-  DECK = secureShuffleDeck(createDeck(), 10);
-  MAX_CLIENTS = 4;
-  MAX_MOVES = 5;
-  MIN_POINTS = -6;
-  USER_TO_SESSION_MAP = new Map<string, string>();
-  BOT: SparBot | any;
-  BANNED_USERS = new Set<string>();
-  SECONDS_UNTIL_DISPOSE = 10 * 1000;
+  MAX_MOVES        = 5;
+  MIN_POINTS       = -6;
+  BOT_THINK_TIME   = 1000;
+  SECONDS_TO_CLOSE = 10 * 1000;
 
-  // How long the bot "thinks" before playing (ms)
-  BOT_THINK_TIME = 1000;
+  BOT!:     SparBot;
+  VARIANT!: Variant;
 
-  override onCreate(
-    options: {
-      roomId: string;
-      maxPlayers: number;
-      maxPoints: number;
-      creator: string;
-      botDifficulty: string;
-    },
-  ) {
-    this.state = new GameState();
-    this.state.deck = new ArraySchema(...this.DECK);
-    this.state.roomId = options.roomId || this.roomId;
-    this.state.maxPlayers = Number(options.maxPlayers);
-    this.MAX_CLIENTS = this.state.maxPlayers + 1;
-    this.state.maxPoints = Number(options.maxPoints);
-    this.state.creator = options.creator;
-    this.BOT = new SparBot(options.botDifficulty as Difficulty);
-    this.setMetadata(options);
+  humanSessionId = "";
+
+  override onCreate(options: {
+    roomId:        string;
+    maxPoints:     number;
+    creator:       string;
+    botDifficulty: string;
+    variant:       Variant;
+  }) {
+    this.state            = new GameState();
+    this.state.roomId     = options.roomId || this.roomId;
+    this.state.maxPlayers = 2;
+    this.state.maxPoints  = Number(options.maxPoints);
+    this.state.creator    = options.creator;
+    this.state.variant    = options.variant ?? "race";
+    this.VARIANT          = options.variant ?? "race";
+    this.BOT              = new SparBot(options.botDifficulty as Difficulty);
+    this.maxClients       = 1;
 
     this.onMessage("play_card", this.handlePlayCard.bind(this));
-    this.onMessage("leave_room", this.onLeave);
   }
 
-  override onJoin(
-    client: Client,
-    { playerUsername }: { playerUsername: string },
-  ) {
-    try {
-      const existing = this.USER_TO_SESSION_MAP.get(playerUsername);
+  override onJoin(client: Client, { playerUsername }: { playerUsername: string }) {
+    this.humanSessionId = client.sessionId;
 
-      if (this.BANNED_USERS.has(playerUsername)) {
-        console.warn(`[onJoin] Rejected banned player: ${playerUsername}`);
-        client.error(4030, "You have been removed from this room for rule violations.");
-        client.leave();
-        return;
-      }
+    const human      = new Player();
+    human.id         = client.sessionId;
+    human.username   = playerUsername;
+    human.active     = true;
 
-      if (existing) {
-        const prev = this.state.players.get(existing);
-        if (prev) {
-          this.state.players.delete(existing);
-          prev.id = client.sessionId;
-          prev.active = true;
-          this.state.players.set(client.sessionId, prev);
-          this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
-          console.log(`Reconnected: ${playerUsername}`);
-          this.broadcastGameState();
-          return;
-        }
-      }
+    const bot        = new Player();
+    bot.id           = "bot";
+    bot.username     = "bot";
+    bot.active       = true;
 
-      // New player
-      const p = new Player();
-      p.id = client.sessionId;
-      p.username = playerUsername;
-      p.active = true;
+    this.state.players.set(client.sessionId, human);
+    this.state.players.set("bot", bot);
+    this.state.playerUsernames.push(playerUsername, "bot");
 
-      // Bot player entry (always keyed by "bot")
-      const b = new Player();
-      b.id = "bot";
-      b.username = "bot";
-      b.active = true;
-
-      if (!this.state.playerUsernames.includes(playerUsername)) {
-        this.state.playerUsernames.push(playerUsername);
-      }
-
-      this.state.players.set(client.sessionId, p);
-      this.state.players.set("bot", b);
-      this.USER_TO_SESSION_MAP.set(playerUsername, client.sessionId);
-      console.log(`Joined: ${playerUsername}`);
-
-      if (this.state.players.size >= this.state.maxPlayers) {
-        this.state.gameStatus = "ready";
-        this.startGame();
-      }
-
-      this.broadcastGameState();
-    } catch (e) {
-      console.error("[onJoin] fatal", e);
-      client.error(2000, `${e}`);
+    // Survival: both players start at maxPoints and drain down to 0
+    // Race: both players start at 0 and climb to maxPoints
+    if (this.VARIANT === "survival") {
+      human.score = this.state.maxPoints;
+      bot.score   = this.state.maxPoints;
     }
+
+    this.state.gameStatus = "ready";
+    this.startGame();
+    this.broadcastGameState();
   }
 
   private broadcastGameState() {
-    this.broadcast(
-      "update_state",
-      { roomInfo: this.state },
-      { afterNextPatch: true },
-    );
+    this.broadcast("update_state", { roomInfo: this.state });
   }
 
-  /* ─────────────────────────────────────────────────────────────
+  /* ─────────────────────────────────────────────────
      GAME FLOW
-  ───────────────────────────────────────────────────────────── */
+  ───────────────────────────────────────────────── */
 
-  private dealCards(deck: string[]) {
-    const playersArr = Array.from(this.state.players.values());
+  private startGame() {
+    this.state.gameStatus = "started";
+    this.startRound();
+  }
+
+  private startRound() {
+    const deck = secureShuffleDeck(createDeck(), 5);
+
+    const rnd        = new Round();
+    rnd.roundNumber  = this.state.rounds.length;
+    rnd.moves        = new MapSchema<Moves>();
+    rnd.winningCards = new ArraySchema<PlayedCard>();
+    rnd.roundStatus  = "in_progress";
+    this.state.rounds.push(rnd);
+    this.state.moveNumber = 0;
+
+    const human = this.state.players.get(this.humanSessionId)!;
+    const bot   = this.state.players.get("bot")!;
 
     const hands = distributeCards(
-      playersArr.map((p) => ({ playerName: p.username, hand: [] })),
+      [{ playerName: human.username, hand: [] }, { playerName: "bot", hand: [] }],
       deck,
     );
+    human.hand = new ArraySchema(...(hands.find(h => h.playerName === human.username)?.hand ?? []));
+    bot.hand   = new ArraySchema(...(hands.find(h => h.playerName === "bot")?.hand ?? []));
+    human.bids = new ArraySchema();
+    bot.bids   = new ArraySchema();
 
-    for (const p of playersArr) {
-      const h = hands.find((h) => h.playerName === p.username);
-      p.hand = new ArraySchema(...(h?.hand || []));
-      p.bids = new ArraySchema();
-    }
+    // Alternate who leads each round
+    const humanLeads       = rnd.roundNumber % 2 === 0;
+    this.state.currentTurn = humanLeads ? human.username : "bot";
+
+    this.broadcastGameState();
+    this.maybeTriggerBot();
   }
 
-  startGame() {
-    try {
-      this.state.gameStatus = "started";
-      this.state.nextPlayerIndex = 0;
-      this.state.roundStatus = "in_progress";
-      this.startRound();
-    } catch (e) {
-      console.error("[startGame]", e);
+  private endRound(roundWinner: string, pointsEarned: number) {
+    const round       = this.state.rounds.at(-1)!;
+    round.roundWinner = roundWinner;
+    round.roundStatus = "complete";
+
+    const winnerId  = roundWinner === "bot" ? "bot" : this.humanSessionId;
+    const loserId   = roundWinner === "bot" ? this.humanSessionId : "bot";
+    const winner    = this.state.players.get(winnerId)!;
+    const loser     = this.state.players.get(loserId)!;
+
+    if (this.VARIANT === "race") {
+      // Race: winner gains points
+      winner.score += pointsEarned;
+
+    } else {
+      // Survival: winner subtracts points from the opponent's score
+      loser.score  -= pointsEarned;
     }
+
+    if (this.checkGameOver()) {
+      this.endGame();
+      return;
+    }
+
+    this.clock.setTimeout(() => this.startRound(), 1200);
   }
 
-  startRound() {
-    try {
-      const newDeck = secureShuffleDeck(createDeck(), 5);
-      this.DECK = newDeck;
+  /**
+   * Game-over conditions differ by variant:
+   *
+   * Race:     a player reaches maxPoints → that player wins
+   * Survival: a player reaches 0 or below → that player LOSES,
+   *           the other player wins
+   */
+  private checkGameOver(): boolean {
+    if (this.VARIANT === "race") {
+      for (const p of this.state.players.values()) {
+        if (p.score >= this.state.maxPoints) {
+          this.state.gameWinner = p.username;
+          this.state.gameStatus = "complete";
+          return true;
+        }
+      }
 
-      const rnd = new Round();
-      rnd.roundNumber = this.state.rounds.length;
-      this.state.rounds.push(rnd);
-      this.state.moveNumber = 0;
-
-      this.dealCards(this.DECK);
-
-      this.state.currentTurn =
-        this.state.playerUsernames[this.state.nextPlayerIndex];
-
-      rnd.moves = new MapSchema<Moves>();
-      rnd.winningCards = new ArraySchema<PlayedCard>();
-      rnd.roundStatus = "in_progress";
-
-      this.broadcastGameState();
-
-      // If the bot leads this round, trigger its turn immediately
-      this.maybeTriggerBot();
-    } catch (e) {
-      console.error("[startRound]", e);
+    } else {
+      // Survival: whoever hits 0 or below loses
+      for (const p of this.state.players.values()) {
+        if (p.score <= 0) {
+          // The OTHER player wins
+          const winner = [...this.state.players.values()].find(
+            (pl) => pl.username !== p.username
+          );
+          this.state.gameWinner = winner?.username ?? "";
+          this.state.gameStatus = "complete";
+          return true;
+        }
+      }
     }
+
+    return false;
   }
 
-  /* ─────────────────────────────────────────────────────────────
-     BOT TURN MANAGEMENT
+  private endGame() {
+    this.broadcastGameState();
+    this.clock.setTimeout(() => this.disconnect(), this.SECONDS_TO_CLOSE);
+  }
 
-     maybeTriggerBot() is the single place we decide whether
-     it's the bot's turn. Call it anywhere currentTurn may have
-     just changed: after startRound, after handlePlayCard advances
-     the turn, and after evaluateMove sets the next leader.
-
-     The bot plays after BOT_THINK_TIME ms to simulate thinking.
-  ───────────────────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────
+     BOT TURN
+  ───────────────────────────────────────────────── */
 
   private maybeTriggerBot() {
     if (this.state.currentTurn !== "bot") return;
     if (this.state.gameStatus === "complete") return;
 
-    this.clock.setTimeout(() => {
-      // Guard again inside the timeout — state may have changed
+    this.clock.setTimeout(async () => {
       if (this.state.currentTurn !== "bot") return;
       if (this.state.gameStatus === "complete") return;
-
-      this.botPlayTurn();
+      await this.botPlayTurn();
     }, this.BOT_THINK_TIME);
   }
 
-  /**
-   * Ask the bot to choose a card and inject it into the game
-   * exactly as if a human client had sent a "play_card" message.
-   *
-   * We pass a plain JS snapshot of the game state so the bot
-   * receives the same shape it was designed to read (rounds array,
-   * players map, moveNumber, etc.) without Colyseus schema wrappers.
-   */
   private async botPlayTurn() {
     try {
-      const stateSnapshot = this.buildBotGameState();
-      const response      = await this.BOT.playMove(stateSnapshot);
-
-      if (!response?.cardName) {
-        console.error("[botPlayTurn] Bot returned no card");
-        return;
-      }
-
-      this.applyBotCard(response.cardName);
+      const snapshot = this.buildBotSnapshot();
+      const response = await this.BOT.playMove(snapshot);
+      if (!response?.cardName) return;
+      this.applyCard("bot", response.cardName);
     } catch (e) {
       console.error("[botPlayTurn]", e);
     }
   }
 
-  /**
-   * Build a plain-object snapshot of the game state for the bot.
-   *
-   * The bot reads:
-   *   - gameState.players["bot"].hand
-   *   - gameState.players[opponentId].score
-   *   - gameState.rounds (array of rounds with moves/bids)
-   *   - gameState.moveNumber
-   *   - gameState.maxPoints       ← passed through for adaptive scoring
-   */
-  private buildBotGameState(): any {
-    const playersSnapshot: Record<string, any> = {};
+  private buildBotSnapshot(): any {
+    const human = this.state.players.get(this.humanSessionId)!;
+    const bot   = this.state.players.get("bot")!;
 
-    for (const [key, p] of this.state.players.entries()) {
-      playersSnapshot[key === "bot" ? "bot" : key] = {
-        id:       p.id,
-        username: p.username,
-        hand:     [...p.hand],
-        score:    p.score,
-      };
-    }
-
-    // Also expose by username "bot" so the bot's own lookup always works
-    // (in case the key is a sessionId for the human but "bot" for the bot)
-    const botEntry = this.state.players.get("bot");
-    if (botEntry) {
-      playersSnapshot["bot"] = {
-        id:       botEntry.id,
-        username: botEntry.username,
-        hand:     [...botEntry.hand],
-        score:    botEntry.score,
-      };
-    }
-
-    // Serialise rounds → plain objects
-    const roundsSnapshot = this.state.rounds.map((rnd) => {
+    const roundsSnapshot = this.state.rounds.map(rnd => {
       const movesSnapshot: Record<string, any> = {};
-
       rnd.moves.forEach((move, key) => {
         movesSnapshot[key] = {
-          bids: move.bids.map((b) => ({
-            playerName: b.playerName,
-            cardName:   b.cardName,
-            rank:       b.rank,
-            suit:       b.suit,
-            value:      b.value,
-            point:      b.point,
-            bidIndex:   b.bidIndex,
-          })),
+          bids:       move.bids.map(b => ({ ...b })),
           moveWinner: move.moveWinner,
         };
       });
-
       return {
         roundNumber:  rnd.roundNumber,
         moves:        movesSnapshot,
-        winningCards: rnd.winningCards.map((c) => ({ ...c })),
+        winningCards: rnd.winningCards.map(c => ({ ...c })),
         roundWinner:  rnd.roundWinner,
         roundStatus:  rnd.roundStatus,
       };
     });
 
     return {
-      players:    playersSnapshot,
-      rounds:     roundsSnapshot,
-      moveNumber: this.state.moveNumber,
-      maxPoints:  this.state.maxPoints,   // bot needs this for adaptive scoring
+      moveNumber:  this.state.moveNumber,
+      maxPoints:   this.state.maxPoints,
+      variant:     this.VARIANT,            // bot needs this to pick the right strategy
       currentTurn: this.state.currentTurn,
+      rounds:      roundsSnapshot,
+      players: {
+        [this.humanSessionId]: { id: human.id, username: human.username, hand: [...human.hand], score: human.score },
+        bot:                   { id: bot.id,   username: bot.username,   hand: [...bot.hand],   score: bot.score   },
+      },
     };
   }
 
-  /**
-   * Apply the bot's chosen card into the game state.
-   * Mirrors handlePlayCard exactly — penalty check, hand removal,
-   * move evaluation — but uses the bot's player entry directly
-   * instead of resolving a client session.
-   */
-  private applyBotCard(cardName: string) {
-    try {
-      const botPlayer = this.state.players.get("bot");
-      if (!botPlayer) return;
-
-      // Confirm it's still the bot's turn (race-condition guard)
-      if (this.state.currentTurn !== "bot") return;
-
-      const round = this.state.rounds.at(-1);
-      if (!round) return;
-
-      const key = String(this.state.moveNumber);
-      if (!round.moves.has(key)) round.moves.set(key, new Moves());
-      const move = round.moves.get(key)!;
-
-      const bidIndex = move.bids.length;
-      const newCard  = new PlayedCard();
-      Object.assign(newCard, makeCard(botPlayer.username, cardName, bidIndex));
-
-      botPlayer.bids.push(newCard.cardName);
-      move.bids.push(newCard);
-
-      // Remove card from bot's hand
-      const idx = botPlayer.hand.indexOf(cardName);
-      if (idx !== -1) botPlayer.hand.splice(idx, 1);
-
-      /*
-        NOTE: The bot's SparBot logic already avoids suit violations.
-        The penalty check below is a safety net in case something
-        unexpected happens (e.g. bot hand is stale, edge case in logic).
-      */
-      if (move.bids.length > 1) {
-        const firstSuit   = move.bids[0].suit;
-        const currentSuit = newCard.suit;
-        const haveSuit    = botPlayer.hand.some(
-          (c) => getCardSuit(c) === firstSuit,
-        );
-
-        if (currentSuit !== firstSuit && haveSuit) {
-          botPlayer.score -= 3;
-          this.broadcast("notification", {
-            message: `Bot played a different suit and lost 3 points!`,
-          });
-        }
-      }
-
-      // Either evaluate the move (all players played) or advance turn
-      if (move.bids.length === this.state.players.size) {
-        this.evaluateMove();
-      } else {
-        this.state.nextPlayerIndex =
-          (this.state.nextPlayerIndex + 1) % this.state.players.size;
-        this.state.currentTurn =
-          this.state.playerUsernames[this.state.nextPlayerIndex];
-
-        // In case the next player is also the bot (future: >2 players)
-        this.maybeTriggerBot();
-      }
-
-      this.broadcastGameState();
-    } catch (e) {
-      console.error("[applyBotCard]", e);
-    }
-  }
-
-  /* ─────────────────────────────────────────────────────────────
-     HUMAN CARD PLAY
-  ───────────────────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────
+     CARD PLAY  (shared for human and bot)
+  ───────────────────────────────────────────────── */
 
   handlePlayCard(client: Client, { cardName }: { cardName: string }) {
+    const player = this.state.players.get(client.sessionId);
+    if (!player || player.username !== this.state.currentTurn) return;
+    this.applyCard(client.sessionId, cardName);
+  }
+
+  private applyCard(playerId: string, cardName: string) {
     try {
-      const player = this.state.players.get(client.sessionId);
-      if (!player || player.username !== this.state.currentTurn) return;
+      const player = this.state.players.get(playerId);
+      if (!player) return;
 
       const round = this.state.rounds.at(-1);
       if (!round) return;
@@ -389,260 +273,93 @@ export class SpGameRoom extends Room<GameState> {
       if (!round.moves.has(key)) round.moves.set(key, new Moves());
       const move = round.moves.get(key)!;
 
-      const bidIndex = move.bids.length;
-      const newCard  = new PlayedCard();
-      Object.assign(newCard, makeCard(player.username, cardName, bidIndex));
-
-      player.bids.push(newCard.cardName);
+      const newCard = new PlayedCard();
+      Object.assign(newCard, makeCard(player.username, cardName, move.bids.length));
       move.bids.push(newCard);
+      player.bids.push(newCard.cardName);
 
-      // Remove card from hand
       const idx = player.hand.indexOf(cardName);
       if (idx !== -1) player.hand.splice(idx, 1);
 
-      // Penalty check
+      // ── Penalty check ──
       if (move.bids.length > 1) {
-        const firstSuit        = move.bids[0].suit;
-        const currentSuit      = newCard.suit;
-        const haveSomeCardOfSuit = player.hand.some(
-          (c) => getCardSuit(c) === firstSuit,
-        );
+        const leadSuit         = move.bids[0]!.suit;
+        const stillHasLeadSuit = player.hand.some(c => getCardSuit(c) === leadSuit);
 
-        if (currentSuit !== firstSuit && haveSomeCardOfSuit) {
+        if (newCard.suit !== leadSuit && stillHasLeadSuit) {
           player.score -= 3;
+          this.broadcast("notification", {
+            message: `${player.username} played the wrong suit — 3 point penalty!`,
+          });
 
-          // Ban and remove if score too low
-          if (player.score <= this.MIN_POINTS) {
-            this.BANNED_USERS.add(player.username);
-            this.state.players.delete(client.sessionId);
-            this.USER_TO_SESSION_MAP.delete(player.username);
-
-            this.broadcast("notification", {
-              message: `${player.username} was removed for repeated violations.`,
-            });
-
+          // Human hitting the floor ends the game
+          if (playerId !== "bot" && player.score <= this.MIN_POINTS) {
+            this.state.gameWinner = "bot";
+            this.state.gameStatus = "complete";
             this.broadcastGameState();
-
-            const activePlayers = [...this.state.players.values()].filter(
-              (p) => p.active,
-            );
-            if (activePlayers.length === 1) {
-              const lastPlayer = activePlayers[0];
-              lastPlayer.score       = this.state.maxPoints;
-              this.state.gameWinner  = lastPlayer.username;
-              this.state.gameStatus  = "complete";
-              this.broadcast("notification", {
-                message: `${lastPlayer.username} wins by default.`,
-              });
-              this.broadcastGameState();
-              this.clock.setTimeout(() => this.disconnect(), 3000);
-            }
+            this.clock.setTimeout(() => this.disconnect(), 3000);
             return;
           }
 
-          this.broadcast("notification", {
-            message: `${player.username} played a different suit and lost 3 points!`,
-          });
           this.broadcastGameState();
-
-          const currentIndex = this.state.playerUsernames.indexOf(player.username);
-          const nextIndex    = (currentIndex + 1) % this.state.playerUsernames.length;
-          this.state.nextPlayerIndex = nextIndex;
-          this.state.currentTurn     = this.state.playerUsernames[nextIndex];
-
-          this.clock.setTimeout(() => {
-            this.startRound();
-            this.broadcastGameState();
-          }, 2000);
-
+          this.clock.setTimeout(() => this.startRound(), 2000);
           return;
         }
       }
 
-      // Advance turn or evaluate
-      if (move.bids.length === this.state.players.size) {
+      // ── Both players have played ──
+      if (move.bids.length === 2) {
         this.evaluateMove();
       } else {
-        this.state.nextPlayerIndex =
-          (this.state.nextPlayerIndex + 1) % this.state.players.size;
-        this.state.currentTurn =
-          this.state.playerUsernames[this.state.nextPlayerIndex];
-
-        // Human played — check if it's now the bot's turn
+        this.state.currentTurn = playerId === "bot"
+          ? this.state.players.get(this.humanSessionId)!.username
+          : "bot";
         this.maybeTriggerBot();
       }
 
       this.broadcastGameState();
     } catch (e) {
-      console.error("[handlePlayCard]", e);
-      client.error(4000, `${e}`);
+      console.error("[applyCard]", e);
     }
   }
 
-  /* ─────────────────────────────────────────────────────────────
-     MOVE / ROUND EVALUATION
-  ───────────────────────────────────────────────────────────── */
+  /* ─────────────────────────────────────────────────
+     MOVE EVALUATION
+  ───────────────────────────────────────────────── */
 
-  evaluateMove() {
-    try {
-      const round = this.state.rounds.at(-1);
-      if (!round) return;
+  private evaluateMove() {
+    const round = this.state.rounds.at(-1)!;
+    const move  = round.moves.get(String(this.state.moveNumber))!;
 
-      const key  = String(this.state.moveNumber);
-      const move = round.moves.get(key);
-      if (!move || move.bids.length < this.state.players.size) return;
+    const { winningCard, moveWinner } = calculateMoveWinner(
+      move.bids as unknown as IBids[],
+    )!;
 
-      const { winningCard, moveWinner } = calculateMoveWinner(
-        move.bids as unknown as IBids[],
-      )!;
+    move.moveWinner = moveWinner;
+    const win = new PlayedCard();
+    Object.assign(win, winningCard);
+    round.winningCards.push(win);
 
-      move.moveWinner = moveWinner;
+    this.state.moveNumber++;
 
-      const win = new PlayedCard();
-      Object.assign(win, winningCard);
-      round.winningCards.push(win);
-
-      this.state.moveNumber++;
-
-      if (this.state.moveNumber < this.MAX_MOVES) {
-        // Next move — winner leads
-        this.state.nextPlayerIndex =
-          this.state.playerUsernames.indexOf(moveWinner);
-        this.state.currentTurn = moveWinner;
-
-        // If the move winner is the bot, trigger its turn
-        this.maybeTriggerBot();
-      } else {
-        // Round finished
-        round.roundWinner  = moveWinner;
-        round.roundStatus  = "complete";
-
-        const sess = this.USER_TO_SESSION_MAP.get(moveWinner);
-        if (sess) {
-          const p = this.state.players.get(sess)!;
-          p.score += calculateRoundPoints(round.winningCards as any);
-        } else if (moveWinner === "bot") {
-          // Bot won the round — award it points directly
-          const botPlayer = this.state.players.get("bot");
-          if (botPlayer) {
-            botPlayer.score += calculateRoundPoints(round.winningCards as any);
-          }
-        }
-
-        if (this.checkGameOver()) {
-          this.endGame();
-          return;
-        }
-
-        this.clock.setTimeout(() => {
-          this.startNextRound(moveWinner);
-        }, 1200);
-      }
-
-      this.broadcastGameState();
-    } catch (e) {
-      console.error("[evaluateMove]", e);
+    if (this.state.moveNumber < this.MAX_MOVES) {
+      this.state.currentTurn = moveWinner;
+      this.maybeTriggerBot();
+    } else {
+      // All 5 moves done — calculate points and end the round
+      const pointsEarned = calculateRoundPoints(round.winningCards as any);
+      this.endRound(moveWinner, pointsEarned);
     }
+
+    this.broadcastGameState();
   }
 
-  advanceTurn(winnerName: string): number {
-    const i = this.state.playerUsernames.indexOf(winnerName);
-    return i === -1
-      ? this.state.nextPlayerIndex
-      : (i + 1) % this.state.playerUsernames.length;
-  }
+  /* ─────────────────────────────────────────────────
+     LEAVE
+  ───────────────────────────────────────────────── */
 
-  startNextRound(roundWinner: string) {
-    try {
-      this.state.nextPlayerIndex = this.advanceTurn(roundWinner);
-      this.startRound(); // startRound calls maybeTriggerBot at the end
-    } catch (e) {
-      console.error("[startNextRound]", e);
-    }
-  }
-
-  checkGameOver(): boolean {
-    for (const p of this.state.players.values()) {
-      if (p.score >= this.state.maxPoints) {
-        this.state.gameWinner = p.username;
-        this.state.gameStatus = "complete";
-        return true;
-      }
-    }
-    return false;
-  }
-
-  endGame() {
-    try {
-      this.broadcastGameState();
-      this.clock.setTimeout(() => {
-        this.disconnect();
-      }, this.SECONDS_UNTIL_DISPOSE);
-    } catch (e) {
-      console.error("[endGame]", e);
-    }
-  }
-
-  /* ─────────────────────────────────────────────────────────────
-     LEAVE / RECONNECT
-  ───────────────────────────────────────────────────────────── */
-
-  override async onLeave(client: Client, consented: boolean) {
-    try {
-      const player = this.state.players.get(client.sessionId);
-      if (!player) return;
-      const leaver = player.username;
-
-      if (consented) {
-        this.state.players.delete(client.sessionId);
-        this.USER_TO_SESSION_MAP.delete(leaver);
-
-        this.broadcast("notification", { message: `${leaver} has left the room` });
-        this.broadcastGameState();
-
-        const activePlayers = [...this.state.players.values()].filter(
-          (p) => p.active,
-        );
-        if (activePlayers.length === 1) {
-          const lastPlayer       = activePlayers[0];
-          lastPlayer.score       = this.state.maxPoints;
-          this.state.gameWinner  = lastPlayer.username;
-          this.state.gameStatus  = "complete";
-          this.broadcast("notification", {
-            message: `${lastPlayer.username} wins by default.`,
-          });
-          this.broadcastGameState();
-          this.clock.setTimeout(() => this.disconnect(), 3000);
-        }
-        return;
-      }
-
-      player.active = false;
-      await this.allowReconnection(client, 60);
-
-      this.clock.setTimeout(() => {
-        const stillInactive =
-          this.state.players.get(client.sessionId)?.active === false;
-
-        if (stillInactive) {
-          this.state.players.delete(client.sessionId);
-          this.USER_TO_SESSION_MAP.delete(leaver);
-
-          this.broadcast("notification", {
-            message: `${leaver} was removed after disconnect timeout.`,
-          });
-          this.broadcastGameState();
-
-          const activePlayers = [...this.state.players.values()].filter(
-            (p) => p.active,
-          );
-          if (activePlayers.length === 0) {
-            this.disconnect();
-          }
-        }
-      }, 60 * 1000);
-    } catch (e) {
-      console.error("[onLeave]", e);
-    }
+  override onLeave(client: Client, consented: boolean) {
+    this.broadcast("notification", { message: "Player left — room closing." });
+    this.clock.setTimeout(() => this.disconnect(), 3000);
   }
 }

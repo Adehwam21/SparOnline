@@ -90,7 +90,7 @@ export class CustomRoom extends Room<GameState> {
       if (nextIndex !== -1) {
         const nextUsername = this.state.playerUsernames[nextIndex];
         this.state.nextPlayerIndex = nextIndex;
-        this.state.currentTurn = nextUsername;
+        this.state.currentTurn = nextUsername!;
 
         // this.broadcast("notification", {
         //   message: `Turn skipped — ${leaverUsername} left. It's now ${nextUsername}'s turn.`,
@@ -131,7 +131,7 @@ export class CustomRoom extends Room<GameState> {
         return;
       }
       this.state.nextPlayerIndex = fallbackIndex;
-      this.state.currentTurn = this.state.playerUsernames[fallbackIndex];
+      this.state.currentTurn = this.state.playerUsernames[fallbackIndex]!;
     }
   }
 
@@ -432,10 +432,10 @@ export class CustomRoom extends Room<GameState> {
         }
 
         this.state.nextPlayerIndex = fallbackIndex;
-        this.state.currentTurn = this.state.playerUsernames[fallbackIndex];
+        this.state.currentTurn = this.state.playerUsernames[fallbackIndex]!;
         nextPlayer = eligiblePlayers.find(p => p.username === this.state.currentTurn);
       } else {
-        this.state.currentTurn = nextUsername;
+        this.state.currentTurn = nextUsername!;
       }
 
       rnd.moves = new MapSchema<Moves>();
@@ -485,7 +485,7 @@ export class CustomRoom extends Room<GameState> {
 
       // Penalty Check
       if (move.bids.length > 1) {
-        const firstSuit = move.bids[0].suit;
+        const firstSuit = move.bids[0]!.suit;
         const currentSuit = newCard.suit;
         const hasSuit = player.hand.some(card => getCardSuit(card) === firstSuit);
 
