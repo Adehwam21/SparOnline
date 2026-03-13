@@ -1,4 +1,4 @@
-import { Room, Client, Delayed, logger } from "colyseus";
+import { Room, Client, Delayed } from "colyseus";
 import { ArraySchema, MapSchema } from "@colyseus/schema";
 import {
   GameState,Player,Round,PlayedCard,
@@ -90,7 +90,7 @@ export class CustomRoom extends Room<GameState> {
       if (nextIndex !== -1) {
         const nextUsername = this.state.playerUsernames[nextIndex];
         this.state.nextPlayerIndex = nextIndex;
-        this.state.currentTurn = nextUsername;
+        this.state.currentTurn = nextUsername!;
 
         // this.broadcast("notification", {
         //   message: `Turn skipped — ${leaverUsername} left. It's now ${nextUsername}'s turn.`,
@@ -131,7 +131,7 @@ export class CustomRoom extends Room<GameState> {
         return;
       }
       this.state.nextPlayerIndex = fallbackIndex;
-      this.state.currentTurn = this.state.playerUsernames[fallbackIndex];
+      this.state.currentTurn = this.state.playerUsernames[fallbackIndex]!;
     }
   }
 
@@ -432,10 +432,10 @@ export class CustomRoom extends Room<GameState> {
         }
 
         this.state.nextPlayerIndex = fallbackIndex;
-        this.state.currentTurn = this.state.playerUsernames[fallbackIndex];
+        this.state.currentTurn = this.state.playerUsernames[fallbackIndex]!;
         nextPlayer = eligiblePlayers.find(p => p.username === this.state.currentTurn);
       } else {
-        this.state.currentTurn = nextUsername;
+        this.state.currentTurn = nextUsername!;
       }
 
       rnd.moves = new MapSchema<Moves>();
@@ -485,7 +485,7 @@ export class CustomRoom extends Room<GameState> {
 
       // Penalty Check
       if (move.bids.length > 1) {
-        const firstSuit = move.bids[0].suit;
+        const firstSuit = move.bids[0]!.suit;
         const currentSuit = newCard.suit;
         const hasSuit = player.hand.some(card => getCardSuit(card) === firstSuit);
 
@@ -724,7 +724,7 @@ export class CustomRoom extends Room<GameState> {
 
       // Dispose room after timeout
       this.clock.setTimeout(() => {
-        this.disconnect(4000);
+        this.disconnect();
       }, this.DISPOSE_AFTER);
 
     } catch (e) {
@@ -812,7 +812,7 @@ export class CustomRoom extends Room<GameState> {
 
         const connected = [...this.state.players.values()].filter(p => p.connected);
         if (connected.length === 0) {
-          logger.info(`[Room] No connected players remaining, disposing room ${this.roomId}`);
+          console.log(`[Room] No connected players remaining, disposing room ${this.roomId}`);
           this.disconnect();
         }
       }, 60 * 1000);

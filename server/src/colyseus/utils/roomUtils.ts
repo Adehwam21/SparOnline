@@ -110,6 +110,22 @@ export function getCardPoints(cardName: string): number {
   return ranks.find((r) => r.name === rank)?.points! || 0;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+export function lowestOf(cards: string[]): string {
+  return cards.reduce(
+    (low, c) => getCardValue(c) < getCardValue(low) ? c : low,
+    cards[0]
+  );
+}
+
+export function highestOf(cards: string[]): string {
+  return cards.reduce(
+    (hi, c) => getCardValue(c) > getCardValue(hi) ? c : hi,
+    cards[0]
+  );
+}
+
 export function calculateRoundPoints(combo: IWinningCard[]): number {
   if (combo.length < 5) return 0;
 

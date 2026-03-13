@@ -15,6 +15,7 @@ import cookieParser from "cookie-parser";
 import routes from "./routes/rotues";
 import { createGameServer } from "./colyseus/gameServer";
 import { playground } from "@colyseus/playground";
+import { clear } from "console";
 
 // Global AppContext for game rooms.
 export const appContext: IAppContext =  {};
@@ -34,7 +35,7 @@ const frontendQRCode = () => {
   }
 
   if (localIP) {
-      const url = `http://${localIP}:5173`; // change port if needed
+      const url = `http://${localIP}:5173/`; // change port if needed
       qrcode.generate(url, {small: true}, function (qrcode) {
       console.log("Scan to connect to frontend dev server")
       console.log(qrcode)
@@ -51,10 +52,10 @@ export default async function start(config: Config) {
     appContext.services = await initServices(appContext);
     const app = express();
     app.use(cors({
-      origin: [
-      process.env.CLIENT_URL || "http://localhost:5173",
-      ],
-      credentials: true
+      origin: process.env.CLIENT_URL ?? "http://localhost:5173",
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization"],
     }));
     app.use(morgan('dev'));
     app.use(express.json(), bodyParser.json());
@@ -99,13 +100,13 @@ export default async function start(config: Config) {
       const processingTimeMs = (seconds * 1000 + nanoseconds / 1e6).toFixed();
 
       res.status(200).json({
-        status: "Greeeeeen! ✅",
+        status: "Greeeeeen!",
         serverProcessingTime: `${processingTimeMs}`
       });
     });
 
     app.use(customError);
-    app.use("/colyseus-playground", playground());
+    // app.use("/colyseus-playground", );
 
     // Create and start Colyseus + Express server
     const { server } = createGameServer(app);
